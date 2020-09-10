@@ -263,6 +263,72 @@ def runSelectQuery(query, cur):
         raise Exception("Could not run select query and/or return data")
 
 
+# ===========================================================
+# Additional Helper Functions from sf_api.py
+# Need to revisit to see if we need these
+
+def helper_upload_meal_img(file, bucket, key):
+    if file and allowed_file(file.filename):
+        filename = 'https://s3-us-west-1.amazonaws.com/' \
+                   + str(bucket) + '/' + str(key)
+
+        upload_file = s3.put_object(
+                            Bucket=bucket,
+                            Body=file,
+                            Key=key,
+                            ACL='public-read',
+                            ContentType='image/jpeg'
+                        )
+        return filename
+    return None
+
+def helper_upload_refund_img(file, bucket, key):
+    print("Bucket = ", bucket)
+    print("Key = ", key)
+    if file:
+        filename = 'https://s3-us-west-1.amazonaws.com/' \
+                   + str(bucket) + '/' + str(key)
+        #print('bucket:{}'.format(bucket))
+        upload_file = s3.put_object(
+                            Bucket=bucket,
+                            Body=file,
+                            Key=key,
+                            ACL='public-read',
+                            ContentType='image/png'
+                        )
+        return filename
+    return None
+
+def allowed_file(filename):
+    """Checks if the file is allowed to upload"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+
+def kitchenExists(kitchen_id):
+    # scan to check if the kitchen name exists
+    kitchen = db.scan(TableName='kitchens',
+        FilterExpression='kitchen_id = :val',
+        ExpressionAttributeValues={
+            ':val': {'S': kitchen_id}
+        }
+    )
+
+    return not kitchen.get('Items') == []
+
+def couponExists(coupon_id):
+    # scan to check if the kitchen name exists
+    coupon = db.scan(TableName='coupons',
+        FilterExpression='coupon_id = :val',
+        ExpressionAttributeValues={
+            ':val': {'S': coupon_id}
+        }
+    )
+
+    return not coupon.get('Items') == []
+
+
+# ===========================================================
 
 
 
@@ -398,6 +464,33 @@ class ItemsbyBusiness(Resource):
         # http://localhost:4000/api/v2/itemsByBusiness/200-000003
         # https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/itemsByBusiness/200-000003
 
+# QUERY 2A
+class SubscriptionsbyBusiness(Resource):
+    # RETURNS ALL SUBSCRIPTION ITEMS FOR A SPECIFIC BUSINESS
+    def get(self, business_id):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.subscription_items
+                    WHERE itm_business_id = \'""" + business_id + """\'
+                    """
+            items = execute(query, 'get', conn)
+
+            response['message'] = 'SubscriptionsbyBusiness successful'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+        # http://localhost:4000/api/v2/subscriptionsByBusiness/200-000001
+        # https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/subscriptionsByBusiness/200-000001
+
+
+
 
 
 # QUERY 3
@@ -454,6 +547,158 @@ class CouponDetails(Resource):
             raise BadRequest('Q3 POST Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+# QUERY 4
+# WRITES REFUND INFO TO DB
+class RefundDetails(Resource):
+    def post(self):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            # print to Received data to Terminal
+            print("Received:", data)
+
+            email = data['email_id']
+            phone = data['phone_num']
+            image = data['image_url']
+            note = data['customer_note']
+            print('email:', email)
+            print('phone_num:', phone)
+            print('image_url:', image)
+            print('note:', note)
+
+
+            # Query [0]  Get New Refund UID
+            query = ["CALL new_refund_uid;"]
+            NewIDresponse = execute(query[0], 'get', conn)
+            NewID = NewIDresponse['result'][0]['new_id']
+            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            print("NewRefundID = ", NewID)
+
+            TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print("TimeStamp = ", TimeStamp)
+
+            #Query [1]  Main Query to Insert Data Into Table
+            query =  '''
+                    INSERT INTO  sf.refunds
+                    SET refund_uid = \'''' + NewID + '''\',
+                        created_at = \'''' + TimeStamp + '''\',
+                        email_id = \'''' + email + '''\',
+	                    phone_num = \'''' + phone + '''\',
+	                    image_url = \'''' + image + '''\',
+	                    customer_note = \'''' + note + '''\';
+                    '''
+            items = execute(query,'post',conn)
+
+            response['message'] = 'RefundDetails Post successful'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+        # ENDPOINT AND JSON OBJECT THAT WORKS
+        # http://localhost:4000/api/v2/refundDetails
+        # https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/refundDetails
+            # {"email_id":"wmarathay@gmail.com",
+            #  "phone_num":"408-476-0001",
+            #  "image_url":"http://servingnow.me",
+            #  "customer_note":"Please Refund"}
+
+
+# QUERY 4 REWRITE TO MATCH HOWARD'S OUTPUT
+# WRITES REFUND INFO TO DB
+class RefundDetailsNEW(Resource):
+    def post(self):
+        response = {}
+        items = {}
+
+        try:
+            conn = connect()
+            client_email = request.form.get('client_email')
+            client_message = request.form.get('client_message')
+            client_phone = request.form.get('client_phone')
+            # data = request.get_json(force=True)
+            # print to Received data to Terminal
+            # print("Received:", data)
+
+            # email = data['client_email']
+            # phone = data['phone_num']
+            # image = data['image_url']
+            # note = data['client_message']
+            print('email:', client_email)
+            # print('phone_num:', phone)
+            # print('image_url:', image)
+            print('note:', client_message)
+            print('phone:', client_phone)
+
+
+            # Query [0]  Get New Refund UID
+            query = ["CALL new_refund_uid;"]
+            NewIDresponse = execute(query[0], 'get', conn)
+            NewID = NewIDresponse['result'][0]['new_id']
+            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            print("NewRefundID = ", NewID)
+
+            photo_key = 'refund_imgs/{}'.format(NewID)
+            print("Photo Key = ", photo_key)
+
+            print("Photo = ", photo)
+            photo_path = helper_upload_refund_img(photo, BUCKET_NAME, photo_key)
+            print("Photo Path = ", photo_path)
+
+
+
+            TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print("TimeStamp = ", TimeStamp)
+
+            #Query [1]  Main Query to Insert Data Into Table
+            query =  '''
+                    INSERT INTO  sf.refunds
+                    SET refund_uid = \'''' + NewID + '''\',
+                        created_at = \'''' + TimeStamp + '''\',
+                        email_id = \'''' + client_email + '''\',
+	                    phone_num = \'''' + client_phone + '''\',
+	                    image_url = \'''' + photo_path + '''\',
+	                    customer_note = \'''' + client_message + '''\';
+                    '''
+            items = execute(query,'post',conn)
+
+            response['message'] = 'RefundDetails Post successful'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -912,29 +1157,6 @@ class Profile(Resource):
         finally:
             disconnect(conn)
 
-class History(Resource):
-    # RETURNS PAST ORDERS FOR A SPECIFIC USER
-    # INPUT EXAMPLE - api/v2/Login/XYZ@gmail.com
-    def get(self, email):
-        response = {}
-        items = {}
-        print("Email: ", email)
-        try:
-            conn = connect()
-            query = """
-                    SELECT *
-                    FROM sf.customers c
-                    WHERE customer_email = \'""" + email + """\'
-                    """
-            items = execute(query, 'get', conn)
-
-            response['message'] = 'Profile Loaded successful'
-            response['result'] = items
-            return response, 200
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
 
 class getItems(Resource):
     def get(self):
@@ -1033,11 +1255,157 @@ class Refund(Resource):
 
 # -- Queries end here -------------------------------------------------------------------------------
 
+
+# Add Comment Here ie Shows All Meal Plan Info
+class TemplateApi(Resource):
+    def get(self):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+
+            items = execute(""" SELECT
+                                *
+                                FROM
+                                ptyd_meal_plans;""", 'get', conn)
+
+            response['message'] = 'successful'
+            response['result'] = items
+
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+# -- START NOTIFICATIONS INFO -------------------------------------------------------------------------------
+class Send_Notification(Resource):
+    def post(self):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        tags = request.form.get('tags')
+        message = request.form.get('message')
+
+        if tags is None:
+            raise BadRequest('Request failed. Please provide the tag field.')
+        if message is None:
+            raise BadRequest('Request failed. Please provide the message field.')
+        tags = tags.split(',')
+        for tag in tags:
+            alert_payload = {
+                "aps" : {
+                    "alert" : message,
+                },
+            }
+            # hub.send_apple_notification(alert_payload, tags = "default")
+            hub.send_apple_notification(alert_payload, tags = tag)
+            fcm_payload = {
+                "data":{"message": message}
+            }
+            # hub.send_gcm_notification(fcm_payload, tags = "default")
+            hub.send_gcm_notification(fcm_payload, tags = tag)
+        return 200
+
+class Get_Registrations_From_Tag(Resource):
+    def get(self, tag):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        if tag is None:
+            raise BadRequest('Request failed. Please provide the tag field.')
+        response = hub.get_all_registrations_with_a_tag(tag)
+        response = str(response.read())
+        print(response)
+        return response,200
+
+class Create_or_Update_Registration_iOS(Resource):
+    def post(self):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        registration_id = request.form.get('registration_id')
+        device_token = request.form.get('device_token')
+        tags = request.form.get('tags')
+
+        if tags is None:
+            raise BadRequest('Request failed. Please provide the tags field.')
+        if registration_id is None:
+            raise BadRequest('Request failed. Please provide the registration_id field.')
+        if device_token is None:
+            raise BadRequest('Request failed. Please provide the device_token field.')
+
+        response = hub.create_or_update_registration_iOS(registration_id, device_token, tags)
+
+        return response.status
+
+class Update_Registration_With_GUID_iOS(Resource):
+    def post(self):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        guid = request.form.get('guid')
+        tags = request.form.get('tags')
+        if guid is None:
+            raise BadRequest('Request failed. Please provide the guid field.')
+        if tags is None:
+            raise BadRequest('Request failed. Please provide the tags field.')
+        response = hub.get_all_registrations_with_a_tag(guid)
+        xml_response = str(response.read())[2:-1]
+        # root = ET.fromstring(xml_response)
+        xml_response_soup = BeautifulSoup(xml_response,features="html.parser")
+        appleregistrationdescription = xml_response_soup.feed.entry.content.appleregistrationdescription
+        registration_id = appleregistrationdescription.registrationid.get_text()
+        device_token = appleregistrationdescription.devicetoken.get_text()
+        old_tags = appleregistrationdescription.tags.get_text().split(",")
+        tags = tags.split(",")
+        new_tags = set(old_tags + tags)
+        new_tags = ','.join(new_tags)
+        print(f"tags: {old_tags}\ndevice_token: {device_token}\nregistration_id: {registration_id}")
+
+        if device_token is None or registration_id is None:
+            raise BadRequest('Something went wrong in retriving device_token and registration_id')
+
+        response = hub.create_or_update_registration_iOS(registration_id, device_token, new_tags)
+        # for type_tag in root.findall('feed/entry/content/AppleRegistrationDescription'):
+        #     value = type_tag.get('Tags')
+        #     print(value)
+        # print("\n\n--- RESPONSE ---")
+        # print(str(response.status) + " " + response.reason)
+        # print(response.msg)
+        # print(response.read())
+        # print("--- END RESPONSE ---")
+        return response.status
+
+class Update_Registration_With_GUID_Android(Resource):
+    def post(self):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        guid = request.form.get('guid')
+        tags = request.form.get('tags')
+        if guid is None:
+            raise BadRequest('Request failed. Please provide the guid field.')
+        if tags is None:
+            raise BadRequest('Request failed. Please provide the tags field.')
+        response = hub.get_all_registrations_with_a_tag(guid)
+        xml_response = str(response.read())[2:-1]
+        # root = ET.fromstring(xml_response)
+        xml_response_soup = BeautifulSoup(xml_response,features="html.parser")
+        gcmregistrationdescription = xml_response_soup.feed.entry.content.gcmregistrationdescription
+        registration_id = gcmregistrationdescription.registrationid.get_text()
+        gcm_registration_id = gcmregistrationdescription.gcmregistrationid.get_text()
+        old_tags = gcmregistrationdescription.tags.get_text().split(",")
+        tags = tags.split(",")
+        new_tags = set(old_tags + tags)
+        new_tags = ','.join(new_tags)
+        print(f"tags: {old_tags}\nregistration_id: {registration_id}\ngcm_registration_id: {gcm_registration_id}")
+
+        if gcm_registration_id is None or registration_id is None:
+            raise BadRequest('Something went wrong in retriving gcm_registration_id and registration_id')
+
+        response = hub.create_or_update_registration_android(registration_id, gcm_registration_id, new_tags)
+        return response.status
+
+# -- END NOTIFICATIONS INFO -------------------------------------------------------------------------------
+
 # Define API routes
 
 api.add_resource(Businesses, '/api/v2/businesses')
 api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
+api.add_resource(SubscriptionsbyBusiness, '/api/v2/subscriptionsByBusiness/<string:business_uid>')
 api.add_resource(CouponDetails, '/api/v2/couponDetails/<string:coupon_id>', '/api/v2/couponDetails')
+api.add_resource(RefundDetails, '/api/v2/refundDetails')
 api.add_resource(PurchaseData, '/api/v2/purchaseData')
 
 
