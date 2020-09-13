@@ -1023,6 +1023,183 @@ class MSPurchaseData(Resource):
 
 ### CODE WRITTEN BY PARVA
 
+
+'''
+INPUT: {"email" : "xyz@gmail.com",
+"first_name" : "parva",
+"last_name" : "shah",
+"phone_number" : "9876549879",
+"address" : "955 W President",
+"unit" : "3452",
+"city" : "Dallas",
+"state" : "TX",
+"zip_code" : "75980",
+"latitude" : "-14.3",
+"longitude" : "94.3",
+"referral_source" : "WEB",
+"role" : "CUSTOMER",
+"access_token" : "NULL",
+"refresh_token": "NULL",
+"social" : "FALSE",
+"password": "work123"
+} 
+
+'''
+
+class SignUp(Resource):
+    def post(self):
+        response = {}
+        items = []
+        try:
+            print('NEW__________')
+            print('IN__________')
+            conn = connect()
+            data = request.get_json(force=True)
+            print(data)
+            print('IN__________')
+            email = data['email']
+            firstName = data['first_name']
+            lastName = data['last_name']
+            phone = data['phone_number']
+            address = data['address']
+            unit = data['unit'] if data.get('unit') is not None else 'NULL'
+            city = data['city']
+            state = data['state']
+            zip_code = data['zip_code']
+            latitude = data['latitude']
+            longitude = data['longitude']
+
+            referral = data['referral_source']
+            role = data['role']
+            print(data)
+            if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
+                social_signup = False
+            else:
+                social_signup = True
+            # check if there is a same customer_id existing
+            query = """
+                    SELECT customer_email FROM sf.customers
+                    WHERE customer_email = \'""" + email + "\';"
+            print('email---------')
+            items = execute(query, 'get', conn)
+            if items['result']:
+                response = {
+                    'message': "Email address has already been taken."
+                }
+                return response, 409
+
+            if items['code'] == 480:
+                response['message'] = "Internal Server Error."
+                return response, 480
+
+            get_user_id_query = "CALL new_customer_uid();"
+            NewUserIDresponse = execute(get_user_id_query, 'get', conn)
+            print('NewUserIDresponse------')
+            if NewUserIDresponse['code'] == 490:
+                string = " Cannot get new User id. "
+                print("*" * (len(string) + 10))
+                print(string.center(len(string) + 10, "*"))
+                print("*" * (len(string) + 10))
+                response['message'] = "Internal Server Error."
+                return response, 500
+            print('NewUserIDresponse------')
+            NewUserID = NewUserIDresponse['result'][0]['new_id']
+            print('NewUserIDresponse------')
+            print('social_signup-----', social_signup)
+            if social_signup == False:
+
+                salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+
+                password = sha512((data['password'] + salt).encode()).hexdigest()
+                print('password------', password)
+                algorithm = "SHA512"
+
+                access_token = 'NULL'
+                refresh_token = 'NULL'
+                user_social_signup = 'NULL'
+            else:
+                access_token = "'" + data['access_token'] + "'"
+                refresh_token = "'" + data['refresh_token'] + "'"
+                salt = 'NULL'
+                password = 'NULL'
+                algorithm = 'NULL'
+                user_social_signup = data['social']
+            print('BEFORE INSERT_____________-')
+            # write everything to database
+            customer_insert_query = ["""
+                                    INSERT INTO sf.customers 
+                                    (
+                                        customer_uid,
+                                        customer_created_at,
+                                        customer_first_name,
+                                        customer_last_name,
+                                        customer_phone_num,
+                                        customer_email,
+                                        customer_address,
+                                        customer_unit,
+                                        customer_city,
+                                        customer_state,
+                                        customer_zip,
+                                        customer_lat,
+                                        customer_long,
+                                        password_salt,
+                                        password_hashed,
+                                        password_algorithm,
+                                        referral_source,
+                                        role,
+                                        user_social_media,
+                                        user_access_token,
+                                        user_refresh_token
+                                    )
+                                    VALUES
+                                    (
+                                    
+                                        \'""" + NewUserID + """\',
+                                        \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
+                                        \'""" + firstName + """\',
+                                        \'""" + lastName + """\',
+                                        \'""" + phone + """\',
+                                        \'""" + email + """\',
+                                        \'""" + address + """\',
+                                        \'""" + unit + """\',
+                                        \'""" + city + """\',
+                                        \'""" + state + """\',
+                                        \'""" + zip_code + """\',
+                                        \'""" + latitude + """\',
+                                        \'""" + longitude + """\',
+                                        \'""" + salt + """\',
+                                        \'""" + password + """\',
+                                        \'""" + algorithm + """\',
+                                        \'""" + referral + """\',
+                                        \'""" + role + """\',
+                                        \'""" + user_social_signup + """\',
+                                        \'""" + access_token + """\',
+                                        \'""" + refresh_token + """\');"""]
+
+            items = execute(customer_insert_query[0], 'post', conn)
+
+            if items['code'] != 281:
+                return items
+            items['result'] = {
+                'first_name': firstName,
+                'last_name': lastName,
+                'customer_uid': NewUserID,
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }
+            items['response'] = 'Signup successful'
+
+            return items, 200
+        except:
+            print("Error happened while Sign Up")
+            if "NewUserID" in locals():
+                execute("""DELETE FROM customers WHERE customer_uid = '""" + NewUserID + """';""", 'post', conn)
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
 class AccountSalt(Resource):
     def get(self, email):
         response = {}
@@ -1045,9 +1222,9 @@ class AccountSalt(Resource):
         finally:
             disconnect(conn)
 
-
+# input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
 class Login(Resource):
-    # input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
+
     def get(self, email, password, refresh_token):
         response = {}
         items = []
@@ -1081,7 +1258,7 @@ class Login(Resource):
                 response['message'] = 'Not Found'
                 return response, 404
             else:
-                print('in else')
+
                 print(items['result'])
                 print('sc: ', items['result'][0]['user_social_media'])
                 if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
@@ -1091,7 +1268,7 @@ class Login(Resource):
                     return BadRequest("Bad request.")
                 # compare passwords if user_social_media is false
                 elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
-                    print('IN ELIF')
+
                     print(items['result'][0]['password_hashed'])
 
                     if items['result'][0]['password_hashed'] != password:
@@ -1133,9 +1310,10 @@ class Login(Resource):
         finally:
             disconnect(conn)
 
+# INPUT EXAMPLE - api/v2/Login/XYZ@gmail.com
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
-    # INPUT EXAMPLE - api/v2/Login/XYZ@gmail.com
+
     def get(self, email):
         response = {}
         items = {}
@@ -1180,9 +1358,9 @@ class getItems(Resource):
             disconnect(conn)
 
 # updated refund
+# input example : {"image_url":"http://servingnow.me","email":"annrupp22@gmail.com","note":"Please issue a refund for carrots" }
 class Refund(Resource):
     # HTTP method POST
-    # input example : {"image_url":"http://servingnow.me","email":"annrupp22@gmail.com","note":"Please issue a refund for carrots" }
 
     def post(self):
         response = {}
@@ -1248,6 +1426,260 @@ class Refund(Resource):
         finally:
             disconnect(conn)
             print('process completed')
+
+
+class available_Coupons(Resource):
+    def get(self, email):
+        response = {}
+        items = []
+        try:
+            conn = connect()
+
+            query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > 0;
+                    """
+            items = execute(query, 'get', conn)
+            response['message'] = 'Coupons sent successfully'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class update_Coupons(Resource):
+    def post(self, coupon_uid):
+            response = {}
+            items = []
+            try:
+                conn = connect()
+                query = """
+                        UPDATE sf.coupons SET limits = limits - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
+                        """
+                items = execute(query, 'post', conn)
+                statusCode = 200
+                response['result'] = items
+                response['message'] = 'Coupon info updated'
+                return response, statusCode
+
+            except:
+                print("Error happened while updating coupon table")
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
+
+'''
+INPUT: 
+{
+"pur_customer_uid" : "100-000009",
+"pur_business_uid" : "200-000001",
+"items" : "[{\"qty\": \"1\", \"name\": \"5 Meal Plan - Weekly\", \"price\": \"59.99\", \"item_uid\": \"320-000002\"}]",
+"order_instructions" : "fast",
+"delivery_instructions" : "Keep Fresh",
+"order_type" : "meal",
+"delivery_first_name" : "Parva",
+"delivery_last_name" : "Shah",
+"delivery_phone_num" : "6197872089",
+"delivery_email" : "parva.shah@hotmail.com",
+"delivery_address" : "790 Carrywood Way",
+"delivery_unit" : "9",
+"delivery_city" : "San Jose",
+"delivery_state" : "CA",
+"delivery_zip" : "95120",
+"delivery_latitude" : "37.2271302",
+"delivery_longitude" : "-121.8891617",
+"purchase_notes" : "purchase_notes"
+}
+'''
+class purchase(Resource):
+    def post(self):
+            response = {}
+            item = {}
+            try:
+                conn = connect()
+                data = request.get_json(force=True)
+
+                query = "CALL sf.new_purchase_uid"
+                newPurchaseUID_query = execute(query, 'get', conn)
+                newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
+                print('newPurchaseUID----', newPurchaseUID)
+
+                purchase_uid = newPurchaseUID
+                purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+                purchase_id = purchase_uid
+                purchase_status = 'ACTIVE'
+                pur_customer_uid = data['pur_customer_uid']
+                pur_business_uid = data['pur_business_uid']
+                items = data['items']
+                order_instructions = data['order_instructions']
+                delivery_instructions = data['delivery_instructions']
+                order_type = data['order_type']
+                delivery_first_name = data['delivery_first_name']
+                delivery_last_name = data['delivery_last_name']
+                delivery_phone_num = data['delivery_phone_num']
+                delivery_email = data['delivery_email']
+                delivery_address = data['delivery_address']
+                delivery_unit = data['delivery_unit']
+                delivery_city = data['delivery_city']
+                delivery_state = data['delivery_state']
+                delivery_zip = data['delivery_zip']
+                delivery_latitude = data['delivery_latitude']
+                delivery_longitude = data['delivery_longitude']
+                purchase_notes = data['purchase_notes']
+
+                print(data, purchase_date)
+
+                query_insert = [""" 
+                                    INSERT INTO  sf.purchases
+                                    SET
+                                    purchase_uid = \'""" + newPurchaseUID + """\',
+                                    purchase_date = \'""" + purchase_date + """\',
+                                    purchase_id = \'""" + purchase_id + """\',
+                                    purchase_status = \'""" + purchase_status + """\',
+                                    pur_customer_uid = \'""" + pur_customer_uid + """\',
+                                    pur_business_uid = \'""" + pur_business_uid + """\',
+                                    items = \'""" + items + """\',
+                                    order_instructions = \'""" + order_instructions + """\',
+                                    delivery_instructions = \'""" + delivery_instructions + """\',
+                                    order_type = \'""" + order_type + """\',
+                                    delivery_first_name = \'""" + delivery_first_name + """\',
+                                    delivery_last_name = \'""" + delivery_last_name + """\',
+                                    delivery_phone_num = \'""" + delivery_phone_num + """\',
+                                    delivery_email = \'""" + delivery_email + """\',
+                                    delivery_address = \'""" + delivery_address + """\',
+                                    delivery_unit = \'""" + delivery_unit + """\',
+                                    delivery_city = \'""" + delivery_city + """\',
+                                    delivery_state = \'""" + delivery_state + """\',
+                                    delivery_zip = \'""" + delivery_zip + """\',
+                                    delivery_latitude = \'""" + delivery_latitude + """\',
+                                    delivery_longitude = \'""" + delivery_longitude + """\',
+                                    purchase_notes = \'""" + purchase_notes + """\';
+                                """]
+
+                
+                print(query_insert)
+                item = execute(query_insert[0], 'post', conn)
+
+                if item['code'] == 281:
+                    statusCode = 200
+                    response['message'] = 'Purchase info updated'
+                else:
+                    response['message'] = 'check sql query'
+                    statusCode = 490
+
+                response['result'] = item
+                return response, statusCode
+
+            except:
+                print("Error happened while inserting in purchase table")
+
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
+
+
+'''
+INPUT:
+{
+"pay_purchase_uid" : "400-000035",
+"pay_purchase_id" : "400-000035",
+"start_delivery_date" : "2020-08-02 00:00:00",
+"pay_coupon_id" : "",
+"amount_due" : "53.75",
+"amount_discount" : "0",
+"amount_paid" : "53.75",
+"info_is_Addon" : "FALSE",
+"cc_num" : "4545",
+"cc_exp_date" : "2028-07-01 00:00:00",
+"cc_cvv" : "666",
+"cc_zip" : "99999",
+"charge_id" : "",
+"payment_type" : "STRIPE"
+}
+'''
+
+class payment(Resource):
+    def post(self):
+            response = {}
+            item = {}
+            try:
+                conn = connect()
+                data = request.get_json(force=True)
+
+                query = "CALL sf.new_payment_uid"
+                newPaymentUID_query = execute(query, 'get', conn)
+                newPaymentUID = newPaymentUID_query['result'][0]['new_id']
+                print('newPaymentUID----', newPaymentUID)
+
+                payment_uid = newPaymentUID
+                payment_id = payment_uid
+                pay_purchase_uid = data['pay_purchase_uid']
+                pay_purchase_id = data['pay_purchase_id']
+                payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+                start_delivery_date = data['start_delivery_date']
+                pay_coupon_id = data['pay_coupon_id']
+                amount_due = data['amount_due']
+                amount_discount = data['amount_discount']
+                amount_paid = data['amount_paid']
+                info_is_Addon = data['info_is_Addon']
+                cc_num = data['cc_num']
+                cc_exp_date = data['cc_exp_date']
+                cc_cvv = data['cc_cvv']
+                cc_zip = data['cc_zip']
+                charge_id = data['charge_id']
+                payment_type = data['payment_type']
+                print(data)
+
+                query_insert = [""" 
+                                    INSERT INTO  sf.payments
+                                    SET
+                                    payment_uid = \'""" + payment_uid + """\',
+                                    payment_id = \'""" + payment_id + """\',
+                                    pay_purchase_uid = \'""" + pay_purchase_uid + """\',
+                                    pay_purchase_id = \'""" + pay_purchase_id + """\',
+                                    payment_time_stamp = \'""" + payment_time_stamp + """\',
+                                    start_delivery_date = \'""" + start_delivery_date + """\',
+                                    pay_coupon_id = \'""" + pay_coupon_id + """\',
+                                    amount_due = \'""" + amount_due + """\',
+                                    amount_discount = \'""" + amount_discount + """\',
+                                    amount_paid = \'""" + amount_paid + """\',
+                                    info_is_Addon = \'""" + info_is_Addon + """\',
+                                    cc_num = \'""" + cc_num + """\',
+                                    cc_exp_date = \'""" + cc_exp_date + """\',
+                                    cc_cvv = \'""" + cc_cvv + """\',
+                                    cc_zip = \'""" + cc_zip + """\',
+                                    charge_id = \'""" + charge_id + """\',
+                                    payment_type = \'""" + payment_type + """\';
+                                    
+                                """]
+
+
+                print(query_insert)
+                item = execute(query_insert[0], 'post', conn)
+
+                if item['code'] == 281:
+                    statusCode = 200
+                    response['message'] = 'Payment info updated'
+                else:
+                    response['message'] = 'check sql query'
+                    statusCode = 490
+
+                response['result'] = item
+                return response, statusCode
+
+            except:
+                print("Error happened while inserting in payments table")
+                print(item)
+
+
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
 
 
 
@@ -1409,11 +1841,20 @@ api.add_resource(RefundDetails, '/api/v2/refundDetails')
 api.add_resource(PurchaseData, '/api/v2/purchaseData')
 
 
+api.add_resource(SignUp, '/api/v2/SignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt/<string:email>')
 api.add_resource(Login, '/api/v2/Login/<string:email>,<string:password>,<string:refresh_token>')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
+api.add_resource(purchase, '/api/v2/purchase')
+api.add_resource(payment, '/api/v2/payment')
+api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
+api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
+
+'''
+
+'''
 
 
 api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
