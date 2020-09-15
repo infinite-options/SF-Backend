@@ -1051,12 +1051,9 @@ class SignUp(Resource):
         response = {}
         items = []
         try:
-            print('NEW__________')
-            print('IN__________')
             conn = connect()
             data = request.get_json(force=True)
             print(data)
-            print('IN__________')
             email = data['email']
             firstName = data['first_name']
             lastName = data['last_name']
@@ -1071,7 +1068,6 @@ class SignUp(Resource):
 
             referral = data['referral_source']
             role = data['role']
-            print(data)
             if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
                 social_signup = False
             else:
@@ -1094,7 +1090,7 @@ class SignUp(Resource):
 
             get_user_id_query = "CALL new_customer_uid();"
             NewUserIDresponse = execute(get_user_id_query, 'get', conn)
-            print('NewUserIDresponse------')
+
             if NewUserIDresponse['code'] == 490:
                 string = " Cannot get new User id. "
                 print("*" * (len(string) + 10))
@@ -1102,29 +1098,26 @@ class SignUp(Resource):
                 print("*" * (len(string) + 10))
                 response['message'] = "Internal Server Error."
                 return response, 500
-            print('NewUserIDresponse------')
             NewUserID = NewUserIDresponse['result'][0]['new_id']
-            print('NewUserIDresponse------')
-            print('social_signup-----', social_signup)
+
             if social_signup == False:
 
                 salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-
                 password = sha512((data['password'] + salt).encode()).hexdigest()
                 print('password------', password)
                 algorithm = "SHA512"
-
                 access_token = 'NULL'
                 refresh_token = 'NULL'
                 user_social_signup = 'NULL'
             else:
+
                 access_token = "'" + data['access_token'] + "'"
                 refresh_token = "'" + data['refresh_token'] + "'"
                 salt = 'NULL'
                 password = 'NULL'
                 algorithm = 'NULL'
                 user_social_signup = data['social']
-            print('BEFORE INSERT_____________-')
+
             # write everything to database
             customer_insert_query = ["""
                                     INSERT INTO sf.customers 
@@ -1214,7 +1207,7 @@ class AccountSalt(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-            response['message'] = 'Login successful'
+            response['message'] = 'SALT sent successfully'
             response['result'] = items
             return response, 200
         except:
@@ -1232,7 +1225,6 @@ class Login(Resource):
 
             conn = connect()
             print(email, password, refresh_token)
-
             query = """ 
                     # CUSTOMER QUERY 1: LOGIN
                     SELECT customer_uid,
@@ -1249,7 +1241,6 @@ class Login(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-            print('----------------- IN LOGIN ---------')
             print(items)
             if items['code'] == 480:
                 response['message'] = "Internal Server Error."
@@ -1300,7 +1291,7 @@ class Login(Resource):
                     """
                 items = execute(query, 'get', conn)
 
-                response['message'] = "Authenticated success."
+                response['message'] = "Authenticated successfully."
                 response['result'] = items['result']
                 return response, 200
 
@@ -1310,7 +1301,7 @@ class Login(Resource):
         finally:
             disconnect(conn)
 
-# INPUT EXAMPLE - api/v2/Login/XYZ@gmail.com
+# INPUT EXAMPLE - api/v2/Profile/XYZ@gmail.com
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -1336,21 +1327,46 @@ class Profile(Resource):
             disconnect(conn)
 
 
+# input:  http://127.0.0.1:4000//api/v2/getItems/Monday
 class getItems(Resource):
-    def get(self):
+    def get(self, day):
         response = {}
         items = {}
 
         try:
             conn = connect()
             query = """
+                    SELECT business_delivery_hours,business_uid
+                    FROM sf.businesses;
+                    """
+
+
+            items = execute(query, 'get', conn)
+
+            uids = []
+            for vals in items['result']:
+                open_days = json.loads(vals['business_delivery_hours'])
+                print(open_days[day][1])
+                if open_days[day][1] == '00:00:00':
+                    continue
+                uids.append(vals['business_uid'])
+
+
+            print(uids)
+
+            query = """
                     SELECT it.*, bs.business_delivery_hours
                     FROM sf.items AS it, sf.businesses AS bs
                     WHERE it.itm_business_uid = bs.business_uid
+                    AND bs.business_uid IN """ + str(tuple(uids)) + """;
                     """
+
+            print(query)
+
             items = execute(query, 'get', conn)
             response['message'] = 'Items sent successfully'
             response['result'] = items
+
             return response, 200
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -1374,19 +1390,27 @@ class Refund(Resource):
             email = data['email']
             note = data['note']
             timeStamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-            print('TIMESTAMP----------', timeStamp)
             query = ["CALL new_refund_uid;"]
 
             NewRefundIDresponse = execute(query[0], 'get', conn)
             NewRefundID = NewRefundIDresponse['result'][0]['new_id']
-            print('refund id------', NewRefundIDresponse)
+            print('INN')
+            customer_phone = execute("""SELECT customer_phone_num FROM sf.customers WHERE customer_email = \'""" + email + "\';", 'get', conn)
 
-            customer_phone = execute("select customer_phone_num from sf.customers where customer_email =  \'" + email + "\';", 'get', conn)
-            print('phone---', customer_phone)
+
+
+            print('OUTT')
+
+            print('customer_phone---', customer_phone, '--dd')
+            if not customer_phone['result']:
+
+                response['result'] = email
+                response['message'] = 'Email does not exists'
+                response['code'] = 400
+
+                return response
+
             phone = customer_phone['result'][0]['customer_phone_num']
-            print('completed')
-            print("SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';")
-
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
             query_insert = [""" INSERT INTO sf.refunds
                     (
@@ -1403,22 +1427,19 @@ class Refund(Resource):
                     \'""" + NewRefundID + """\'
                     , \'""" + timeStamp + """\'
                     , \'""" + email + """\'
-                    , \'""" +  phone + """\'
-                    , \'""" +  image_url + """\'
+                    , \'""" + phone + """\'
+                    , \'""" + image_url + """\'
                     , \'""" + note + """\');"""]
 
             emailExists = execute(query_email[0], 'get', conn)
             print('email_exists', emailExists)
-            if emailExists['result']:
-                items = execute(query_insert[0], 'post', conn)
-                statusCode = 200
-                response['result'] = items
-                response['message'] = 'Refund info generated'
-            else:
-                statusCode = 400
-                response['result'] = 'Email does not exists'
-                response['message'] = 'Email does not exists'
-            return response, statusCode
+
+            items = execute(query_insert[0], 'post', conn)
+            response['code'] = 200
+            response['result'] = items
+            response['message'] = 'Refund info generated'
+
+            return response
 
         except:
             print("Error happened while generating refund ticket")
@@ -1438,7 +1459,7 @@ class available_Coupons(Resource):
             query = """
                     SELECT *
                     FROM sf.coupons
-                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > 0;
+                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND num_used > 0;
                     """
             items = execute(query, 'get', conn)
             response['message'] = 'Coupons sent successfully'
@@ -1456,7 +1477,7 @@ class update_Coupons(Resource):
             try:
                 conn = connect()
                 query = """
-                        UPDATE sf.coupons SET limits = limits - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
+                        UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
                         """
                 items = execute(query, 'post', conn)
                 statusCode = 200
@@ -1505,7 +1526,6 @@ class purchase(Resource):
                 query = "CALL sf.new_purchase_uid"
                 newPurchaseUID_query = execute(query, 'get', conn)
                 newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
-                print('newPurchaseUID----', newPurchaseUID)
 
                 purchase_uid = newPurchaseUID
                 purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
@@ -1579,7 +1599,6 @@ class purchase(Resource):
                 raise BadRequest('Request failed, please try again later.')
             finally:
                 disconnect(conn)
-                print('process completed')
 
 
 '''
@@ -1613,7 +1632,6 @@ class payment(Resource):
                 query = "CALL sf.new_payment_uid"
                 newPaymentUID_query = execute(query, 'get', conn)
                 newPaymentUID = newPaymentUID_query['result'][0]['new_id']
-                print('newPaymentUID----', newPaymentUID)
 
                 payment_uid = newPaymentUID
                 payment_id = payment_uid
@@ -1846,7 +1864,7 @@ api.add_resource(AccountSalt, '/api/v2/AccountSalt/<string:email>')
 api.add_resource(Login, '/api/v2/Login/<string:email>,<string:password>,<string:refresh_token>')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
-api.add_resource(getItems, '/api/v2/getItems')
+api.add_resource(getItems, '/api/v2/getItems/<string:day>')
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
