@@ -1194,12 +1194,12 @@ class SignUp(Resource):
 
 
 class AccountSalt(Resource):
-    def get(self, email):
+    def get(self):
         response = {}
         items = {}
-        print("user email: ", email)
         try:
             conn = connect()
+            email = request.args['email']
             query = """
                     SELECT password_algorithm, 
                             password_salt 
@@ -1208,7 +1208,7 @@ class AccountSalt(Resource):
                     """
             items = execute(query, 'get', conn)
             response['message'] = 'SALT sent successfully'
-            response['result'] = items
+            response['result'] = items['result']
             return response, 200
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -1217,57 +1217,60 @@ class AccountSalt(Resource):
 
 # input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
 class Login(Resource):
-
-    def get(self, email, password, refresh_token):
+    def post(self):
         response = {}
-        items = []
         try:
-
             conn = connect()
-            print(email, password, refresh_token)
-            query = """ 
+            data = request.get_json(force=True)
+            email = data['email']
+            password = data.get('password')
+            refresh_token = data.get('token')
+            query = """
                     # CUSTOMER QUERY 1: LOGIN
                     SELECT customer_uid,
-                            customer_last_name,
-                            customer_first_name,
-                            customer_email, 	
-                            password_hashed, 	
-                            email_verified, 	
-                            user_social_media,
-                            user_access_token,
-                            user_refresh_token  
-                    FROM sf.customers c 
+                        customer_last_name,
+                        customer_first_name,
+                        customer_email,
+                        password_hashed,
+                        email_verified,
+                        user_social_media,
+                        user_access_token,
+                        user_refresh_token
+                    FROM sf.customers c
                     -- WHERE customer_email = "1m4kfun@gmail.com";
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
             print(items)
-            if items['code'] == 480:
+            if items['code'] != 280:
                 response['message'] = "Internal Server Error."
-                return response, 480
+                return response, 500
             elif not items['code']:
                 response['message'] = 'Not Found'
                 return response, 404
             else:
-
                 print(items['result'])
                 print('sc: ', items['result'][0]['user_social_media'])
+                
+                # checks if login was by social media
                 if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
                     response['message'] = "Need to login by Social Media"
                     return response, 401
+                    
+               # nothing to check
                 elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'FALSE'):
                     return BadRequest("Bad request.")
+                
                 # compare passwords if user_social_media is false
                 elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
-
                     print(items['result'][0]['password_hashed'])
-
                     if items['result'][0]['password_hashed'] != password:
                         response['message'] = "Wrong password."
                         return response, 401
                     if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
                         response['message'] = "Account need to be verified by email."
                         return response, 401
+            
                 # compare the refresh token because it never expire.
                 elif (items['result'][0]['user_social_media']) == 'TRUE':
                     if (items['result'][0]['user_refresh_token'] != refresh_token):
@@ -1280,26 +1283,117 @@ class Login(Resource):
                     print("*" * (len(string) + 10))
                     response['message'] = 'Internal Server Error.'
                     return response, 500
-
                 del items['result'][0]['password_hashed']
                 del items['result'][0]['email_verified']
-
-                query = """
-                    SELECT *
-                    FROM sf.customers c
-                    WHERE customer_email = \'""" + email + """\'
-                    """
-                items = execute(query, 'get', conn)
-
+                
                 response['message'] = "Authenticated successfully."
                 response['result'] = items['result']
                 return response, 200
-
-
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+
+
+
+
+
+
+    # OLD LOGIN CLASS - DEPRECRATED ON 09-15-2020
+    # input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
+#    class Login(Resource):
+#    def get(self, email, password, refresh_token):
+#        response = {}
+#        items = []
+#        try:
+#
+#            conn = connect()
+#            print(email, password, refresh_token)
+#            query = """
+#                    # CUSTOMER QUERY 1: LOGIN
+#                    SELECT customer_uid,
+#                            customer_last_name,
+#                            customer_first_name,
+#                            customer_email,
+#                            password_hashed,
+#                            email_verified,
+#                            user_social_media,
+#                            user_access_token,
+#                            user_refresh_token
+#                    FROM sf.customers c
+#                    -- WHERE customer_email = "1m4kfun@gmail.com";
+#                    WHERE customer_email = \'""" + email + """\';
+#                    """
+#            items = execute(query, 'get', conn)
+#            print(items)
+#            if items['code'] == 480:
+#                response['message'] = "Internal Server Error."
+#                return response, 480
+#            elif not items['code']:
+#                response['message'] = 'Not Found'
+#                return response, 404
+#            else:
+#
+#                print(items['result'])
+#                print('sc: ', items['result'][0]['user_social_media'])
+#                if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
+#                    response['message'] = "Need to login by Social Media"
+#                    return response, 401
+#                elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'FALSE'):
+#                    return BadRequest("Bad request.")
+#                # compare passwords if user_social_media is false
+#                elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
+#
+#                    print(items['result'][0]['password_hashed'])
+#
+#                    if items['result'][0]['password_hashed'] != password:
+#                        response['message'] = "Wrong password."
+#                        return response, 401
+#                    if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
+#                        response['message'] = "Account need to be verified by email."
+#                        return response, 401
+#                # compare the refresh token because it never expire.
+#                elif (items['result'][0]['user_social_media']) == 'TRUE':
+#                    if (items['result'][0]['user_refresh_token'] != refresh_token):
+#                        response['message'] = "Cannot Authenticated. Token is invalid."
+#                        return response, 401
+#                else:
+#                    string = " Cannot compare the password or refresh token while log in. "
+#                    print("*" * (len(string) + 10))
+#                    print(string.center(len(string) + 10, "*"))
+#                    print("*" * (len(string) + 10))
+#                    response['message'] = 'Internal Server Error.'
+#                    return response, 500
+#
+#                del items['result'][0]['password_hashed']
+#                del items['result'][0]['email_verified']
+#
+#                query = """
+#                    SELECT *
+#                    FROM sf.customers c
+#                    WHERE customer_email = \'""" + email + """\'
+#                    """
+#                items = execute(query, 'get', conn)
+#
+#                response['message'] = "Authenticated successfully."
+#                response['result'] = items['result']
+#                return response, 200
+#
+#
+#        except:
+#            raise BadRequest('Request failed, please try again later.')
+#        finally:
+#            disconnect(conn)
+
+
+
+
+
+
+
+
 
 # INPUT EXAMPLE - api/v2/Profile/XYZ@gmail.com
 class Profile(Resource):
@@ -1860,8 +1954,8 @@ api.add_resource(PurchaseData, '/api/v2/purchaseData')
 
 
 api.add_resource(SignUp, '/api/v2/SignUp/')
-api.add_resource(AccountSalt, '/api/v2/AccountSalt/<string:email>')
-api.add_resource(Login, '/api/v2/Login/<string:email>,<string:password>,<string:refresh_token>')
+api.add_resource(AccountSalt, '/api/v2/AccountSalt/') #<string:email>')
+api.add_resource(Login, '/api/v2/Login/')  # <string:email>,<string:password>,<string:refresh_token>')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems/<string:day>')
