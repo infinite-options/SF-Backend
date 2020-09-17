@@ -1079,14 +1079,19 @@ class SignUp(Resource):
             print('email---------')
             items = execute(query, 'get', conn)
             if items['result']:
-                response = {
-                    'message': "Email address has already been taken."
-                }
-                return response, 409
+
+                items['result'] = ""
+                items['code'] = 409
+                items['message'] = "Email address has already been taken."
+
+                return items
 
             if items['code'] == 480:
-                response['message'] = "Internal Server Error."
-                return response, 480
+
+                items['result'] = ""
+                items['code'] = 480
+                items['message'] = "Internal Server Error."
+                return items
 
             get_user_id_query = "CALL new_customer_uid();"
             NewUserIDresponse = execute(get_user_id_query, 'get', conn)
@@ -1172,6 +1177,10 @@ class SignUp(Resource):
             items = execute(customer_insert_query[0], 'post', conn)
 
             if items['code'] != 281:
+                items['result'] = ""
+                items['code'] = 480
+                items['message'] = "Error while inserting values in database"
+
                 return items
             items['result'] = {
                 'first_name': firstName,
@@ -1180,9 +1189,10 @@ class SignUp(Resource):
                 'access_token': access_token,
                 'refresh_token': refresh_token
             }
-            items['response'] = 'Signup successful'
+            items['message'] = 'Signup successful'
+            items['code'] = 200
 
-            return items, 200
+            return items
         except:
             print("Error happened while Sign Up")
             if "NewUserID" in locals():
@@ -1207,9 +1217,13 @@ class AccountSalt(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-            response['message'] = 'SALT sent successfully'
-            response['result'] = items['result']
-            return response, 200
+            if not items['result']:
+                items['message'] = "Email doesn't exists"
+                items['code'] = 404
+            return items
+            items['message'] = 'SALT sent successfully'
+            items['code'] = 200
+            return items
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1242,40 +1256,54 @@ class Login(Resource):
                     """
             items = execute(query, 'get', conn)
             print(items)
+            if items['code'] == 480:
+                items['message'] = "Internal Server Error."
+                items['result'] = ''
+                items['code'] = 480
+                return items
             if items['code'] != 280:
                 response['message'] = "Internal Server Error."
                 return response, 500
             elif not items['code']:
-                response['message'] = 'Not Found'
-                return response, 404
+                items['message'] = 'Not Found'
+                items['result'] = ''
+                items['code'] = 404
+                return items
             else:
                 print(items['result'])
                 print('sc: ', items['result'][0]['user_social_media'])
-                
+
                 # checks if login was by social media
                 if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
                     response['message'] = "Need to login by Social Media"
                     return response, 401
-                    
+
                # nothing to check
                 elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'FALSE'):
                     return BadRequest("Bad request.")
-                
+
                 # compare passwords if user_social_media is false
                 elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
                     print(items['result'][0]['password_hashed'])
                     if items['result'][0]['password_hashed'] != password:
-                        response['message'] = "Wrong password."
-                        return response, 401
+                        items['message'] = "Wrong password"
+                        items['result'] = ''
+                        items['code'] = 401
+                        return items
+
                     if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
                         response['message'] = "Account need to be verified by email."
                         return response, 401
-            
+
                 # compare the refresh token because it never expire.
                 elif (items['result'][0]['user_social_media']) == 'TRUE':
                     if (items['result'][0]['user_refresh_token'] != refresh_token):
-                        response['message'] = "Cannot Authenticated. Token is invalid."
-                        return response, 401
+
+                        items['message'] = "Cannot Authenticated. Token is invalid"
+                        items['result'] = ''
+                        items['code'] = 401
+                        return items
+
                 else:
                     string = " Cannot compare the password or refresh token while log in. "
                     print("*" * (len(string) + 10))
@@ -1285,7 +1313,7 @@ class Login(Resource):
                     return response, 500
                 del items['result'][0]['password_hashed']
                 del items['result'][0]['email_verified']
-                
+
                 response['message'] = "Authenticated successfully."
                 response['result'] = items['result']
                 return response, 200
@@ -1411,10 +1439,20 @@ class Profile(Resource):
                     WHERE customer_email = \'""" + email + """\'
                     """
             items = execute(query, 'get', conn)
+            if items['result']:
 
-            response['message'] = 'Profile Loaded successful'
-            response['result'] = items
-            return response, 200
+                items['message'] = 'Profile Loaded successful'
+                items['result'] = items['result']
+                items['code'] = 200
+                return items
+            else:
+                items['message'] = "Email doesn't exists"
+                items['result'] = items['result']
+                items['code'] = 404
+                return items
+
+
+
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1458,10 +1496,11 @@ class getItems(Resource):
             print(query)
 
             items = execute(query, 'get', conn)
-            response['message'] = 'Items sent successfully'
-            response['result'] = items
 
-            return response, 200
+            items['message'] = 'Items sent successfully'
+            items['code'] = 200
+
+            return items
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1498,11 +1537,11 @@ class Refund(Resource):
             print('customer_phone---', customer_phone, '--dd')
             if not customer_phone['result']:
 
-                response['result'] = email
-                response['message'] = 'Email does not exists'
-                response['code'] = 400
+                items['result'] = email
+                items['message'] = 'Email does not exists'
+                items['code'] = 400
 
-                return response
+                return items
 
             phone = customer_phone['result'][0]['customer_phone_num']
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
@@ -1529,11 +1568,11 @@ class Refund(Resource):
             print('email_exists', emailExists)
 
             items = execute(query_insert[0], 'post', conn)
-            response['code'] = 200
-            response['result'] = items
-            response['message'] = 'Refund info generated'
+            items['code'] = 200
 
-            return response
+            items['message'] = 'Refund info generated'
+
+            return items
 
         except:
             print("Error happened while generating refund ticket")
@@ -1549,6 +1588,17 @@ class available_Coupons(Resource):
         items = []
         try:
             conn = connect()
+            query = """
+                    SELECT *
+                    FROM sf.customers cus
+                    WHERE customer_email = \'""" + email + """\';
+                    """
+
+            items = execute(query, 'get', conn)
+            if not items['result']:
+                items['message'] = "Email doesn't exists"
+                items['code'] = 404
+                return items
 
             query = """
                     SELECT *
@@ -1556,9 +1606,9 @@ class available_Coupons(Resource):
                     WHERE (email_id = \'""" + email + """\' OR email_id = '') AND num_used > 0;
                     """
             items = execute(query, 'get', conn)
-            response['message'] = 'Coupons sent successfully'
-            response['result'] = items
-            return response, 200
+            items['message'] = 'Coupons sent successfully'
+            items['code'] = 200
+            return items
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1571,13 +1621,28 @@ class update_Coupons(Resource):
             try:
                 conn = connect()
                 query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + coupon_uid + """\';
+                    """
+
+                items = execute(query, 'get', conn)
+                if not items['result']:
+                    items['message'] = "Coupon uid doesn't exists"
+                    items['code'] = 404
+                    return items
+
+
+
+                query = """
                         UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
                         """
                 items = execute(query, 'post', conn)
-                statusCode = 200
-                response['result'] = items
-                response['message'] = 'Coupon info updated'
-                return response, statusCode
+
+
+                items['message'] = 'Coupon info updated'
+                items['code'] = 200
+                return items
 
             except:
                 print("Error happened while updating coupon table")
@@ -1612,7 +1677,7 @@ INPUT:
 class purchase(Resource):
     def post(self):
             response = {}
-            item = {}
+            items = {}
             try:
                 conn = connect()
                 data = request.get_json(force=True)
@@ -1627,7 +1692,7 @@ class purchase(Resource):
                 purchase_status = 'ACTIVE'
                 pur_customer_uid = data['pur_customer_uid']
                 pur_business_uid = data['pur_business_uid']
-                items = data['items']
+                items_pur = data['items']
                 order_instructions = data['order_instructions']
                 delivery_instructions = data['delivery_instructions']
                 order_type = data['order_type']
@@ -1644,10 +1709,22 @@ class purchase(Resource):
                 delivery_longitude = data['delivery_longitude']
                 purchase_notes = data['purchase_notes']
 
-                print(data, purchase_date)
+                query = "SELECT * FROM sf.customers " \
+                        "WHERE customer_email =\'"+delivery_email+"\';"
 
-                query_insert = [""" 
-                                    INSERT INTO  sf.purchases
+                items = execute(query, 'get', conn)
+
+                print('ITEMS--------------', items)
+
+                if not items['result']:
+                    items['code'] = 404
+                    items['message'] = "User email doesn't exists"
+                    return items
+
+                print('in insert-------')
+
+                query_insert = """ 
+                                    INSERT INTO sf.purchases
                                     SET
                                     purchase_uid = \'""" + newPurchaseUID + """\',
                                     purchase_date = \'""" + purchase_date + """\',
@@ -1655,7 +1732,7 @@ class purchase(Resource):
                                     purchase_status = \'""" + purchase_status + """\',
                                     pur_customer_uid = \'""" + pur_customer_uid + """\',
                                     pur_business_uid = \'""" + pur_business_uid + """\',
-                                    items = \'""" + items + """\',
+                                    items = \'""" + items_pur + """\',
                                     order_instructions = \'""" + order_instructions + """\',
                                     delivery_instructions = \'""" + delivery_instructions + """\',
                                     order_type = \'""" + order_type + """\',
@@ -1671,21 +1748,21 @@ class purchase(Resource):
                                     delivery_latitude = \'""" + delivery_latitude + """\',
                                     delivery_longitude = \'""" + delivery_longitude + """\',
                                     purchase_notes = \'""" + purchase_notes + """\';
-                                """]
+                                """
 
                 
-                print(query_insert)
-                item = execute(query_insert[0], 'post', conn)
+                #print(query_insert)
+                items = execute(query_insert, 'post', conn)
+                print('execute')
+                if items['code'] == 281:
+                    items['code'] = 200
+                    items['message'] = 'Purchase info updated'
 
-                if item['code'] == 281:
-                    statusCode = 200
-                    response['message'] = 'Purchase info updated'
                 else:
-                    response['message'] = 'check sql query'
-                    statusCode = 490
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
 
-                response['result'] = item
-                return response, statusCode
+                return items
 
             except:
                 print("Error happened while inserting in purchase table")
@@ -1774,14 +1851,14 @@ class payment(Resource):
                 item = execute(query_insert[0], 'post', conn)
 
                 if item['code'] == 281:
-                    statusCode = 200
-                    response['message'] = 'Payment info updated'
+                    item['code'] = 200
+                    item['message'] = 'Payment info updated'
                 else:
-                    response['message'] = 'check sql query'
-                    statusCode = 490
+                    item['message'] = 'check sql query'
+                    item['code'] = 490
 
-                response['result'] = item
-                return response, statusCode
+
+                return item
 
             except:
                 print("Error happened while inserting in payments table")
