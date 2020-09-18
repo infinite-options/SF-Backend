@@ -1871,6 +1871,41 @@ class payment(Resource):
                 print('process completed')
 
 
+class history(Resource):
+    # Fetches ALL DETAILS FOR A SPECIFIC USER
+
+    def get(self, email):
+        response = {}
+        items = {}
+        print("user_email: ", email)
+        try:
+            conn = connect()
+            query = """
+                    SELECT * 
+                    FROM sf.purchases as pur, sf.payments as pay
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.delivery_email = \'""" + email + """\'
+                    ORDER BY pur.purchase_date DESC
+                    LIMIT 5; 
+                    """
+            items = execute(query, 'get', conn)
+
+
+            items['message'] = 'History Loaded successful'
+            items['result'] = items['result']
+            items['code'] = 200
+            return items
+
+
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
 
 
 
@@ -2040,6 +2075,7 @@ api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
+api.add_resource(history, '/api/v2/history/<string:email>')
 
 
 
