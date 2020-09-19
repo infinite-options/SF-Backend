@@ -219,6 +219,7 @@ def execute(sql, cmd, conn, skipSerialization = False):
             cur.execute(sql)
             if cmd is 'get':
                 result = cur.fetchall()
+
                 response['message'] = 'Successfully executed SQL query.'
                 # Return status code of 280 for successful GET request
                 response['code'] = 280
@@ -1753,6 +1754,7 @@ class purchase(Resource):
                 
                 #print(query_insert)
                 items = execute(query_insert, 'post', conn)
+
                 print('execute')
                 if items['code'] == 281:
                     items['code'] = 200
@@ -1762,6 +1764,8 @@ class purchase(Resource):
                     items['message'] = 'check sql query'
                     items['code'] = 490
 
+
+                items['result'] = newPurchaseUID
                 return items
 
             except:
@@ -1889,9 +1893,12 @@ class history(Resource):
                     """
             items = execute(query, 'get', conn)
 
-
             items['message'] = 'History Loaded successful'
-            items['result'] = items['result']
+
+            print('RESULT______________', type(items['result'][0]['items']))
+
+            print(items['result'][0]['items'].strip('][').split(', '))
+
             items['code'] = 200
             return items
 
