@@ -533,7 +533,48 @@ return: lastest 5 purchases by the user
     ]
 
 
+### purchase_Data_SF 
 
+[Post]
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/purchase_Data_SF
+
+Input :
+
+{
+"pur_customer_uid" : "100-000009",
+"pur_business_uid" : "200-000001",
+"items" : "[{\"qty\": \"1\", \"name\": \"5 Meal Plan - Weekly\", \"price\": \"59.99\", \"item_uid\": \"320-000002\"}]",
+"order_instructions" : "fast",
+"delivery_instructions" : "Keep Fresh",
+"order_type" : "meal",
+"delivery_first_name" : "xyz",
+"delivery_last_name" : "aad",
+"delivery_phone_num" : "6197872089",
+"delivery_email" : "abc@gmail.com",
+"delivery_address" : "790 Carrywood Way",
+"delivery_unit" : "9",
+"delivery_city" : "San Jose",
+"delivery_state" : "CA",
+"delivery_zip" : "95120",
+"delivery_latitude" : "37.2271302",
+"delivery_longitude" : "-121.8891617",
+"purchase_notes" : "purchase_notes",
+"start_delivery_date" : "2020-08-02 00:00:00",
+"pay_coupon_id" : "",
+"amount_due" : "53.75",
+"amount_discount" : "0",
+"amount_paid" : "53.75",
+"info_is_Addon" : "FALSE",
+"cc_num" : "4545",
+"cc_exp_date" : "2028-07-01 00:00:00",
+"cc_cvv" : "666",
+"cc_zip" : "99999",
+"charge_id" : "",
+"payment_type" : "STRIPE"
+}
+
+return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
 
 
 
