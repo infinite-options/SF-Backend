@@ -321,7 +321,7 @@ example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/hist
 
 return: lastest 5 purchases by the user
 
-{
+{\
         "purchase_uid": "400-000307",\
         "purchase_date": "2020-09-20",\
         "purchase_id": "400-000307",\
@@ -363,9 +363,9 @@ return: lastest 5 purchases by the user
         "cc_cvv": "666",\
         "cc_zip": "99999",\
         "charge_id": "",\
-        "payment_type": "STRIPE"
+        "payment_type": "STRIPE"\
     },\
-    {
+    {\
         "purchase_uid": "400-000306",\
         "purchase_date": "2020-09-20",\
         "purchase_id": "400-000306",\
@@ -407,9 +407,9 @@ return: lastest 5 purchases by the user
         "cc_cvv": "666",\
         "cc_zip": "99999",\
         "charge_id": "",\
-        "payment_type": "STRIPE"
+        "payment_type": "STRIPE"\
     },\
-    {
+    {\
         "purchase_uid": "400-000305",\
         "purchase_date": "2020-09-20",\
         "purchase_id": "400-000305",\
@@ -451,9 +451,9 @@ return: lastest 5 purchases by the user
         "cc_cvv": "666",\
         "cc_zip": "99999",\
         "charge_id": "",\
-        "payment_type": "STRIPE"
+        "payment_type": "STRIPE"\
     },\
-    {
+    {\
         "purchase_uid": "400-000304",\
         "purchase_date": "2020-09-19",\
         "purchase_id": "400-000304",\
@@ -495,9 +495,9 @@ return: lastest 5 purchases by the user
         "cc_cvv": "666",\
         "cc_zip": "99999",\
         "charge_id": "",\
-        "payment_type": "STRIPE"
+        "payment_type": "STRIPE"\
     },\
-    {
+    {\
         "purchase_uid": "400-000303",\
         "purchase_date": "2020-09-19",\
         "purchase_id": "400-000303",\
@@ -539,7 +539,7 @@ return: lastest 5 purchases by the user
         "cc_cvv": "666",\
         "cc_zip": "99999",\
         "charge_id": "",\
-        "payment_type": "STRIPE"
+        "payment_type": "STRIPE"\
     }
 
 
