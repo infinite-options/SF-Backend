@@ -317,7 +317,7 @@ return: code 200 if information updated successfully else any other code.
 
 endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/<email>
 
-example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/tazi.arthur@hotmail.com
+example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/abc@gmail.com
 
 return: lastest 5 purchases by the user
 
