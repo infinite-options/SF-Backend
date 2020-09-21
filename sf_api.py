@@ -331,23 +331,6 @@ def couponExists(coupon_id):
 
 # ===========================================================
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # -- Queries start here -------------------------------------------------------------------------------
 
 
@@ -681,29 +664,6 @@ class RefundDetailsNEW(Resource):
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 # QUERY 8
 # WRITES PURCHASE INFO TO PURCHASES AND PAYMENTS TABLES
 class PurchaseData(Resource):
@@ -1022,7 +982,9 @@ class MSPurchaseData(Resource):
         #     "cc_cvv":"123",
         #     "billing_zip":"12345"}
 
-### CODE WRITTEN BY PARVA
+####################### CODE WRITTEN BY PARVA ##############################
+
+# -- Customer Queries Start here -------------------------------------------------------------------------------
 
 
 '''
@@ -1203,7 +1165,6 @@ class SignUp(Resource):
             disconnect(conn)
 
 
-
 class AccountSalt(Resource):
     def get(self):
         response = {}
@@ -1325,11 +1286,6 @@ class Login(Resource):
 
 
 
-
-
-
-
-
     # OLD LOGIN CLASS - DEPRECRATED ON 09-15-2020
     # input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
 #    class Login(Resource):
@@ -1418,12 +1374,6 @@ class Login(Resource):
 
 
 
-
-
-
-
-
-
 # INPUT EXAMPLE - api/v2/Profile/XYZ@gmail.com
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
@@ -1452,8 +1402,6 @@ class Profile(Resource):
                 items['code'] = 404
                 return items
 
-
-
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1472,8 +1420,6 @@ class getItems(Resource):
                     SELECT business_delivery_hours,business_uid
                     FROM sf.businesses;
                     """
-
-
             items = execute(query, 'get', conn)
 
             uids = []
@@ -1483,9 +1429,6 @@ class getItems(Resource):
                 if open_days[day][1] == '00:00:00':
                     continue
                 uids.append(vals['business_uid'])
-
-
-            print(uids)
 
             query = """
                     SELECT it.*, bs.business_delivery_hours
@@ -1530,11 +1473,6 @@ class Refund(Resource):
             NewRefundID = NewRefundIDresponse['result'][0]['new_id']
             print('INN')
             customer_phone = execute("""SELECT customer_phone_num FROM sf.customers WHERE customer_email = \'""" + email + "\';", 'get', conn)
-
-
-
-            print('OUTT')
-
             print('customer_phone---', customer_phone, '--dd')
             if not customer_phone['result']:
 
@@ -1547,32 +1485,29 @@ class Refund(Resource):
             phone = customer_phone['result'][0]['customer_phone_num']
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
             query_insert = [""" INSERT INTO sf.refunds
-                    (
-                        refund_uid,
-                        created_at,
-                        email_id,
-                        phone_num,
-                        image_url,
-                        customer_note
-                    )
-
-                    VALUES
-                    (
-                    \'""" + NewRefundID + """\'
-                    , \'""" + timeStamp + """\'
-                    , \'""" + email + """\'
-                    , \'""" + phone + """\'
-                    , \'""" + image_url + """\'
-                    , \'""" + note + """\');"""]
+                            (
+                                refund_uid,
+                                created_at,
+                                email_id,
+                                phone_num,
+                                image_url,
+                                customer_note
+                            )
+                            VALUES
+                            (
+                            \'""" + NewRefundID + """\'
+                            , \'""" + timeStamp + """\'
+                            , \'""" + email + """\'
+                            , \'""" + phone + """\'
+                            , \'""" + image_url + """\'
+                            , \'""" + note + """\');"""
+                            ]
 
             emailExists = execute(query_email[0], 'get', conn)
             print('email_exists', emailExists)
-
             items = execute(query_insert[0], 'post', conn)
             items['code'] = 200
-
             items['message'] = 'Refund info generated'
-
             return items
 
         except:
@@ -1633,14 +1568,10 @@ class update_Coupons(Resource):
                     items['code'] = 404
                     return items
 
-
-
                 query = """
                         UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
                         """
                 items = execute(query, 'post', conn)
-
-
                 items['message'] = 'Coupon info updated'
                 items['code'] = 200
                 return items
@@ -1764,7 +1695,6 @@ class purchase(Resource):
                     items['message'] = 'check sql query'
                     items['code'] = 490
 
-
                 items['result'] = newPurchaseUID
                 return items
 
@@ -1861,14 +1791,10 @@ class payment(Resource):
                     item['message'] = 'check sql query'
                     item['code'] = 490
 
-
                 return item
 
             except:
                 print("Error happened while inserting in payments table")
-                print(item)
-
-
                 raise BadRequest('Request failed, please try again later.')
             finally:
                 disconnect(conn)
@@ -1918,6 +1844,8 @@ class purchase_Data_SF(Resource):
             try:
                 conn = connect()
                 data = request.get_json(force=True)
+
+                # Purchases start here
 
                 query = "CALL sf.new_purchase_uid"
                 newPurchaseUID_query = execute(query, 'get', conn)
@@ -1986,9 +1914,6 @@ class purchase_Data_SF(Resource):
                                     delivery_longitude = \'""" + delivery_longitude + """\',
                                     purchase_notes = \'""" + purchase_notes + """\';
                                 """
-
-
-                #print(query_insert)
                 items = execute(query_insert, 'post', conn)
 
                 print('execute')
@@ -2050,7 +1975,6 @@ class purchase_Data_SF(Resource):
                                     
                                 """]
 
-
                 print(query_insert)
                 item = execute(query_insert[0], 'post', conn)
 
@@ -2060,7 +1984,6 @@ class purchase_Data_SF(Resource):
                 else:
                     item['message'] = 'check sql query'
                     item['code'] = 490
-
 
                 return item
 
@@ -2091,16 +2014,175 @@ class history(Resource):
             items = execute(query, 'get', conn)
 
             items['message'] = 'History Loaded successful'
-
-            print('RESULT______________', type(items['result'][0]['items']))
-
-            print(items['result'][0]['items'].strip('][').split(', '))
-
             items['code'] = 200
             return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
+# -- Customer Queries End here -------------------------------------------------------------------------------
 
+# -- Farmers Queries Start here -------------------------------------------------------------------------------
+'''
+INPUT:
+--insert
+{
+"itm_business_uid" : "200-000009",
+"item_name" : "Grapes",
+"item_status" : "",
+"item_type" : "fruit",
+"item_desc" : "[organic,red,seedless]",
+"item_unit" : "lbs",
+"item_price" : "5.99",
+"item_sizes" : "M",
+"favorite" : "FALSE",
+"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
+"exp_date" : ""
+}
 
+--update
+{
+"itm_business_uid" : "200-000009",
+"item_name" : "Banana",
+"item_status" : "",
+"item_type" : "fruit",
+"item_desc" : "[organic,red,seedless]",
+"item_unit" : "lbs",
+"item_price" : "5.99",
+"item_sizes" : "M",
+"favorite" : "FALSE",
+"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
+"exp_date" : "",
+"item_uid" : "310-000208"
+}
+
+--status
+{
+"item_uid" : "310-000208",
+"item_status" : "Past"
+}
+'''
+
+class addItems(Resource):
+    def post(self, action):
+
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            if action == 'Insert':
+                itm_business_uid = data['itm_business_uid']
+                item_name = data['item_name']
+                item_status = data['item_status']
+                item_type = data['item_type']
+                item_desc = data['item_desc']
+                item_unit = data['item_unit']
+                item_price = data['item_price']
+                item_sizes = data['item_sizes']
+                favorite = data['favorite']
+                item_photo = data['item_photo']
+                exp_date = data['exp_date']
+                query = ["CALL sf.new_items_uid;"]
+                NewIDresponse = execute(query[0], 'get', conn)
+                NewID = NewIDresponse['result'][0]['new_id']
+                print("NewRefundID = ", NewID)
+                TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print("TimeStamp = ", TimeStamp)
+
+                # INSERT query
+                query_insert =  '''
+                                INSERT INTO sf.items
+                                SET 
+                                itm_business_uid = \'''' + itm_business_uid + '''\',
+                                item_name = \'''' + item_name + '''\',
+                                item_status = \'''' + item_status + '''\',
+                                item_type = \'''' + item_type + '''\',
+                                item_desc = \'''' + item_desc + '''\',
+                                item_unit = \'''' + item_unit + '''\',
+                                item_price = \'''' + item_price + '''\',
+                                item_sizes = \'''' + item_sizes + '''\',
+                                favorite = \'''' + favorite + '''\',
+                                item_photo = \'''' + item_photo + '''\',
+                                exp_date = \'''' + exp_date + '''\',
+                                created_at = \'''' + TimeStamp + '''\',
+                                item_uid = \'''' + NewID + '''\';
+                                '''
+                items = execute(query_insert, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item added successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
+
+            elif action == 'Update':
+                # Update query
+                itm_business_uid = data['itm_business_uid']
+                item_uid = data['item_uid']
+                item_name = data['item_name']
+                item_status = data['item_status']
+                item_type = data['item_type']
+                item_desc = data['item_desc']
+                item_unit = data['item_unit']
+                item_price = data['item_price']
+                item_sizes = data['item_sizes']
+                favorite = data['favorite']
+                item_photo = data['item_photo']
+                exp_date = data['exp_date']
+                query_update =  '''
+                                UPDATE sf.items
+                                SET 
+                                itm_business_uid = \'''' + itm_business_uid + '''\',
+                                item_name = \'''' + item_name + '''\',
+                                item_status = \'''' + item_status + '''\',
+                                item_type = \'''' + item_type + '''\',
+                                item_desc = \'''' + item_desc + '''\',
+                                item_unit = \'''' + item_unit + '''\',
+                                item_price = \'''' + item_price + '''\',
+                                item_sizes = \'''' + item_sizes + '''\',
+                                favorite = \'''' + favorite + '''\',
+                                item_photo = \'''' + item_photo + '''\',
+                                exp_date = \'''' + exp_date + '''\'
+                                WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+                items = execute(query_update, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item updated successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
+
+            else:
+
+                # Update item_status
+                print('ELSE-------------')
+                item_uid = data['item_uid']
+                item_status = data['item_status']
+                query_status =  '''
+                                UPDATE sf.items
+                                SET 
+                                item_status = \'''' + item_status + '''\'
+                                WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+                items = execute(query_status, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item updated successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -2109,8 +2191,7 @@ class history(Resource):
 
 
 
-
-
+# -- Farmers Queries End here -------------------------------------------------------------------------------
 
 
 # -- Queries end here -------------------------------------------------------------------------------
@@ -2267,6 +2348,9 @@ api.add_resource(SubscriptionsbyBusiness, '/api/v2/subscriptionsByBusiness/<stri
 api.add_resource(CouponDetails, '/api/v2/couponDetails/<string:coupon_id>', '/api/v2/couponDetails')
 api.add_resource(RefundDetails, '/api/v2/refundDetails')
 api.add_resource(PurchaseData, '/api/v2/purchaseData')
+api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
+
+# Customer Endpoints
 
 
 api.add_resource(SignUp, '/api/v2/SignUp/')
@@ -2283,9 +2367,12 @@ api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 
 
+# Farmer Endpoints
+
+api.add_resource(addItems, '/api/v2/addItems/<string:action>')
 
 
-api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
+
 
 # Run on below IP address and port
 # Make sure port number is unused (i.e. don't use numbers 0-1023)
