@@ -89,7 +89,7 @@ return:
             "user_access_token": "NULL",\
             "user_refresh_token": "NULL"\
         }\
-    ]\
+    ]
 
 NOTE:
 
@@ -606,11 +606,11 @@ INPUT:
 For Insert ---
 
 {\
-"itm_business_uid" : "200-000009",\  
+"itm_business_uid" : "200-000009",\
 "item_name" : "Grapes",\
 "item_status" : "",\
 "item_type" : "fruit",\
-"item_desc" : "[organic,\red,\seedless]",\
+"item_desc" : "[organic,red,seedless]",\
 "item_unit" : "lbs",\
 "item_price" : "5.99",\
 "item_sizes" : "M",\
