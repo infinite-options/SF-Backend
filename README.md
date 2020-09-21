@@ -626,7 +626,7 @@ For Update ---
 "item_name" : "Banana",\
 "item_status" : "",\
 "item_type" : "fruit",\
-"item_desc" : "[organic,\red,\seedless]",\
+"item_desc" : "[organic,red,seedless]",\
 "item_unit" : "lbs",\
 "item_price" : "5.99",\
 "item_sizes" : "M",\
@@ -638,9 +638,9 @@ For Update ---
 
 For Status ---
 
-{
+{\
 "item_uid" : "310-000208",\
-"item_status" : "Past"
+"item_status" : "Past"\
 }
 
 return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
