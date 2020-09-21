@@ -577,6 +577,62 @@ Input :
 return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
 
 
+### addItems
+
+[Post]
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/<input>
+
+example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/Insert
+            https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/Update
+            https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/Status
+
+Input :
+
+
+INPUT:
+For Insert ---
+{
+"itm_business_uid" : "200-000009",
+"item_name" : "Grapes",
+"item_status" : "",
+"item_type" : "fruit",
+"item_desc" : "[organic,red,seedless]",
+"item_unit" : "lbs",
+"item_price" : "5.99",
+"item_sizes" : "M",
+"favorite" : "FALSE",
+"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
+"exp_date" : ""
+}
+
+For Update ---
+{
+"itm_business_uid" : "200-000009",
+"item_name" : "Banana",
+"item_status" : "",
+"item_type" : "fruit",
+"item_desc" : "[organic,red,seedless]",
+"item_unit" : "lbs",
+"item_price" : "5.99",
+"item_sizes" : "M",
+"favorite" : "FALSE",
+"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
+"exp_date" : "",
+"item_uid" : "310-000208"
+}
+
+For Status ---
+{
+"item_uid" : "310-000208",
+"item_status" : "Past"
+}
+
+return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
+
+
+
+
 
 
 
