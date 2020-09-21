@@ -615,7 +615,7 @@ For Insert ---
 "item_price" : "5.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
-"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",\
+"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07", \
 "exp_date" : ""\
 }
 
