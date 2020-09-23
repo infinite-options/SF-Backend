@@ -1180,9 +1180,15 @@ class AccountSalt(Resource):
                 items['message'] = "Email doesn't exists"
                 items['code'] = 404
             return items
-            items['message'] = 'SALT sent successfully'
+            items['result'] = {
+                'first_name': firstName,
+                'last_name': lastName,
+                'customer_uid': NewUserID,
+                'access_token': access_token,
+                'refresh_token': refresh_token
+            }
+            items['message'] = 'Signup successful'
             items['code'] = 200
-            return items
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
