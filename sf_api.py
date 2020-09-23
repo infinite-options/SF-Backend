@@ -1145,13 +1145,10 @@ class SignUp(Resource):
                 items['message'] = "Error while inserting values in database"
 
                 return items
-            items['result'] = {
-                'first_name': firstName,
-                'last_name': lastName,
-                'customer_uid': NewUserID,
-                'access_token': access_token,
-                'refresh_token': refresh_token
-            }
+
+            query = "SELECT * from sf.customers WHERE customer_email = \'" + email + "\';"
+            items = execute(query, 'get', conn)
+
             items['message'] = 'Signup successful'
             items['code'] = 200
 
@@ -1277,6 +1274,8 @@ class Login(Resource):
                 del items['result'][0]['email_verified']
 
                 response['message'] = "Authenticated successfully."
+                query = "SELECT * from sf.customers WHERE customer_email = \'" + email + "\';"
+                items = execute(query, 'get', conn)
                 response['result'] = items['result']
                 return response, 200
         except:
