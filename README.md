@@ -647,6 +647,208 @@ return: code 200 for successful insertion of data in purchase and payments table
 
 
 
+### delivery_status
+
+[Post]
+
+This endpoint helps in changing delivery status of a purchase from not delivered to delivered
+
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/<purchase_uid>
+
+example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/400-000001
+
+
+### business_details_update
+
+[Post]
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/<action>
+
+example:
+
+1. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/Get
+2. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/Post
+
+Get request returns all business details of a specific business uid
+
+Post request updates business details of a specific business uid
+
+INPUT:
+
+--Get--:
+
+{
+"business_uid" : "200-000004"
+}
+
+--Post--:
+
+{
+"business_uid" : "200-000001",\
+"business_created_at" : "2020-01-09 17:34:48",\
+"business_name" : "PTYD",\
+"business_type" : "kriti",\
+"business_desc" : "Vegan Delivery Service",\
+"business_contact_first_name" : "Heather",\
+"business_contact_last_name" : "Faiez",\
+"business_phone_num" : "(512) 555-1234",\
+"business_phone_num2" : "(512) 555-1200",\
+"business_email" : "heather@ptyd.com",\
+"business_hours" : "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"]}",\
+"business_accepting_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
+"business_delivery_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
+"business_address" :"360 Cowden Road",\
+"business_unit" : "",\
+"business_city" :  "Hollister",\
+"business_state" : "CA",\
+"business_zip" : "95135",\
+"business_longitude" : "-121.9141246",\
+"business_latitude" : "37.3316565",\
+"business_EIN" : "",\
+"business_WAUBI" : "",\
+"business_license" : "",\
+"business_USDOT" : "",\
+"notification_approval" : "",\
+"notification_device_id" : "",\
+"can_cancel" : "0",\
+"delivery" : "0",\
+"reusable" : "0",\
+"business_image" : "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",\
+"business_password" : "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798"\
+}
+
+### orders_by_farm
+
+[Get]
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/orders_by_farm
+
+Deconstructs items json object and outputs items ordered for a particular farm
+
+Used in order details on farmer's report page
+
+Return:
+        
+{
+    "purchase_uid": "400-000331",\
+    "purchase_date": "2020-09-23",\
+    "purchase_id": "400-000331",\
+    "purchase_status": "ACTIVE",\
+    "pur_customer_uid": "100-000101",\
+    "pur_business_uid": "",\
+    "items": "[{"qty": "2", "name": "Squash", "price": "4", "item_uid": "310-000133", "itm_business_uid": "200-000006"}, {"qty": "4", "name": "Eggplant", "price": "3", "item_uid": "310-000135", "itm_business_uid": "200-000006"}]",\
+    "order_instructions": "fast",\
+    "delivery_instructions": "",\
+    "order_type": "meal",\
+    "delivery_first_name": "Zach",\
+    "delivery_last_name": "Lind",\
+    "delivery_phone_num": "9259840473",\
+    "delivery_email": "zlind@ucsc.edu",\
+    "delivery_address": "373 Western Drive",\
+    "delivery_unit": "K",\
+    "delivery_city": "Santa Cruz",\
+    "delivery_state": "CA",\
+    "delivery_zip": "94526",\
+    "delivery_latitude": "0",\
+    "delivery_longitude": "0",\
+    "purchase_notes": "purchase_notes",\
+    "delivery_status": null,
+    "feedback_rating": 0,
+    "feedback_notes": null,
+    "qty": "2",\
+    "name": "Squash",\
+    "price": "4",\
+    "item_uid": "310-000133",\
+    "itm_business_uid": "200-000006",\
+    "deconstruct.qty": "2",\
+    "deconstruct.name": "Squash",\
+    "deconstruct.price": "4",\
+    "deconstruct.item_uid": "310-000133",\
+    "deconstruct.itm_business_uid": "200-000006"\
+},\
+{\
+    "purchase_uid": "400-000331",\
+    "purchase_date": "2020-09-23",\
+    "purchase_id": "400-000331",\
+    "purchase_status": "ACTIVE",\
+    "pur_customer_uid": "100-000101",\
+    "pur_business_uid": "",\
+    "items": "[{"qty": "2", "name": "Squash", "price": "4", "item_uid": "310-000133", "itm_business_uid": "200-000006"}, {"qty": "4", "name": "Eggplant", "price": "3", "item_uid": "310-000135", "itm_business_uid": "200-000006"}]",\
+    "order_instructions": "fast",\
+    "delivery_instructions": "",\
+    "order_type": "meal",\
+    "delivery_first_name": "Zach",\
+    "delivery_last_name": "Lind",\
+    "delivery_phone_num": "9259840473",\
+    "delivery_email": "zlind@ucsc.edu",\
+    "delivery_address": "373 Western Drive",\
+    "delivery_unit": "K",\
+    "delivery_city": "Santa Cruz",\
+    "delivery_state": "CA",\
+    "delivery_zip": "94526",\
+    "delivery_latitude": "0",\
+    "delivery_longitude": "0",\
+    "purchase_notes": "purchase_notes",\
+    "delivery_status": null,
+    "feedback_rating": 0,
+    "feedback_notes": null,
+    "qty": "4",\
+    "name": "Eggplant",\
+    "price": "3",\
+    "item_uid": "310-000135",\
+    "itm_business_uid": "200-000006",\
+    "deconstruct.qty": "4",\
+    "deconstruct.name": "Eggplant",\
+    "deconstruct.price": "3",\
+    "deconstruct.item_uid": "310-000135",\
+    "deconstruct.itm_business_uid": "200-000006"\
+}
+
+
+### orders_info
+
+[Get]
+
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/orders_info
+
+Ouputs purchase info and amount due and paid which will help to deduce if payment is completed or not
+
+Used at Report page in front
+
+return:
+
+ {\
+            "purchase_uid": "400-000331"'\
+            "purchase_date": "2020-09-23"'\
+            "purchase_id": "400-000331"'\
+            "purchase_status": "ACTIVE"'\
+            "pur_customer_uid": "100-000101"'\
+            "pur_business_uid": ""'\
+            "items": "[{"qty": "2", "name": "Squash", "price": "4", "item_uid": "310-000133", "itm_business_uid": "200-000006"}, {"qty": "4", "name": "Eggplant", "price": "3", "item_uid": "310-000135", "itm_business_uid": "200-000006"}]",\
+            "order_instructions": "fast"'\
+            "delivery_instructions": ""'\
+            "order_type": "meal"'\
+            "delivery_first_name": "Zach"'\
+            "delivery_last_name": "Lind"'\
+            "delivery_phone_num": "9259840473"'\
+            "delivery_email": "zlind@ucsc.edu"'\
+            "delivery_address": "373 Western Drive"'\
+            "delivery_unit": "K"'\
+            "delivery_city": "Santa Cruz"'\
+            "delivery_state": "CA"'\
+            "delivery_zip": "94526"'\
+            "delivery_latitude": "0"'\
+            "delivery_longitude": "0"'\
+            "purchase_notes": "purchase_notes"'\
+            "delivery_status": null,\
+            "feedback_rating": 0,\
+            "feedback_notes": null,\
+            "amount_due": 21.2,\
+            "amount_paid": 21.2\
+        }
+
 
 
 
