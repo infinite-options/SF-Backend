@@ -1006,7 +1006,6 @@ INPUT: {"email" : "xyz@gmail.com",
 "social" : "FALSE",
 "password": "work123"
 } 
-
 '''
 
 class SignUp(Resource):
@@ -1687,7 +1686,7 @@ class purchase(Resource):
                                     purchase_notes = \'""" + purchase_notes + """\';
                                 """
 
-                
+
                 #print(query_insert)
                 items = execute(query_insert, 'post', conn)
 
@@ -2045,7 +2044,6 @@ INPUT:
 "item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
 "exp_date" : ""
 }
-
 --update
 {
 "itm_business_uid" : "200-000009",
@@ -2061,7 +2059,6 @@ INPUT:
 "exp_date" : "",
 "item_uid" : "310-000208"
 }
-
 --status
 {
 "item_uid" : "310-000208",
@@ -2194,6 +2191,196 @@ class addItems(Resource):
         finally:
             disconnect(conn)
 
+
+class delivery_status(Resource):
+    def post(self, purchase_uid):
+            try:
+                conn = connect()
+
+                query = "UPDATE sf.purchases SET delivery_status = 'Yes' WHERE purchase_uid = \'" + purchase_uid + "\';"
+
+                item = execute(query, 'post', conn)
+
+                if item['code'] == 281:
+                    item['code'] = 200
+                    item['message'] = 'Delivery Status updated'
+                else:
+                    item['message'] = 'check sql query'
+                    item['code'] = 490
+                return item
+
+            except:
+                print("Error happened while inserting in payments table")
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
+
+
+
+# Input for post ACTION request
+'''
+{
+"business_uid" : "200-000001",
+"business_created_at" : "2020-01-09 17:34:48",
+"business_name" : "PTYD",
+"business_type" : "kriti",
+"business_desc" : "Vegan Delivery Service",
+"business_contact_first_name" : "Heather",
+"business_contact_last_name" : "Faiez",
+"business_phone_num" : "(512) 555-1234",
+"business_phone_num2" : "(512) 555-1200",
+"business_email" : "heather@ptyd.com",
+"business_hours" : "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"]}",
+"business_accepting_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",
+"business_delivery_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",
+"business_address" :"360 Cowden Road",
+"business_unit" : "",
+"business_city" :  "Hollister",
+"business_state" : "CA",
+"business_zip" : "95135",
+"business_longitude" : "-121.9141246",
+"business_latitude" : "37.3316565",
+"business_EIN" : "",
+"business_WAUBI" : "", 
+"business_license" : "",
+"business_USDOT" : "",
+"notification_approval" : "",
+"notification_device_id" : "",
+"can_cancel" : "0",
+"delivery" : "0",
+"reusable" : "0",
+"business_image" : "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",
+"business_password" : "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798"
+}
+'''
+
+class buisness_details_update(Resource):
+    def post(self, action):
+            try:
+                conn = connect()
+                data = request.get_json(force=True)
+
+                if action == 'Get':
+                    query = "SELECT * FROM sf.businesses WHERE business_uid = \'" + data['business_uid'] + "\';"
+                    item = execute(query, 'get', conn)
+                    if item['code'] == 280:
+                        if not item['result']:
+                            item['message'] = 'No such business uid exists'
+                        else:
+                            item['message'] = 'Business table loaded successfully'
+                        item['code'] = 200
+                    else:
+                        item['message'] = 'check sql query'
+                        item['code'] = 490
+                    return item
+                else:
+                    print('IN ELSE')
+                    query = """
+                               UPDATE sf.businesses
+                               SET 
+                               business_created_at = \'""" + data["business_created_at"] + """\',
+                               business_name = \'""" + data["business_name"] + """\',
+                               business_type = \'""" + data["business_type"] + """\',
+                               business_desc = \'""" + data["business_desc"] + """\',
+                               business_contact_first_name = \'""" + data["business_contact_first_name"] + """\',
+                               business_contact_last_name = \'""" + data["business_contact_last_name"] + """\',
+                               business_phone_num = \'""" + data["business_phone_num"] + """\',
+                               business_phone_num2 = \'""" + data["business_phone_num2"] + """\',
+                               business_email = \'""" + data["business_email"] + """\',
+                               business_hours = \'""" + data["business_hours"] + """\',
+                               business_accepting_hours = \'""" + data["business_accepting_hours"] + """\',
+                               business_delivery_hours = \'""" + data["business_delivery_hours"] + """\',
+                               business_address = \'""" + data["business_address"] + """\',
+                               business_unit = \'""" + data["business_unit"] + """\',
+                               business_city = \'""" + data["business_city"] + """\',
+                               business_state = \'""" + data["business_state"] + """\',
+                               business_zip = \'""" + data["business_zip"] + """\',
+                               business_longitude = \'""" + data["business_longitude"] + """\',
+                               business_latitude = \'""" + data["business_latitude"] + """\',
+                               business_EIN = \'""" + data["business_EIN"] + """\',
+                               business_WAUBI = \'""" + data["business_WAUBI"] + """\',
+                               business_license = \'""" + data["business_license"] + """\',
+                               business_USDOT = \'""" + data["business_USDOT"] + """\',
+                               notification_approval = \'""" + data["notification_approval"] + """\',
+                               notification_device_id = \'""" + data["notification_device_id"] + """\',
+                               can_cancel = \'""" + data["can_cancel"] + """\',
+                               delivery = \'""" + data["delivery"] + """\',
+                               reusable = \'""" + data["reusable"] + """\',
+                               business_image = \'""" + data["business_image"] + """\',
+                               business_password = \'""" + data["business_password"] + """\'
+                               WHERE business_uid = \'""" + data["business_uid"] + """\' ;
+                             """
+                    print(query)
+                    item = execute(query, 'post', conn)
+                    print(item)
+                    if item['code'] == 281:
+                        item['code'] = 200
+                        item['message'] = 'Business info updated'
+                    else:
+                        item['message'] = 'check sql query'
+                        item['code'] = 490
+                    return item
+
+            except:
+                print("Error happened while outputting from business table")
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
+
+class orders_by_farm(Resource):
+
+    def get(self):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT *,deconstruct.* 
+                    FROM sf.purchases, 
+                         JSON_TABLE(items, '$[*]' COLUMNS (
+                                    qty VARCHAR(255)  PATH '$.qty',
+                                    name VARCHAR(255)  PATH '$.name',
+                                    price VARCHAR(255)  PATH '$.price',
+                                    item_uid VARCHAR(255)  PATH '$.item_uid',
+                                    itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                         ) AS deconstruct; 
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Orders by farm view loaded successful'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+class orders_info(Resource):
+
+    def get(self):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT pur.*, pay.amount_due, pay.amount_paid  
+                    FROM sf.purchases as pur, sf.payments as pay
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid;
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Orders view loaded successful'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 # -- Farmers Queries End here -------------------------------------------------------------------------------
@@ -2359,8 +2546,8 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 
 
 api.add_resource(SignUp, '/api/v2/SignUp/')
-api.add_resource(AccountSalt, '/api/v2/AccountSalt/') #<string:email>')
-api.add_resource(Login, '/api/v2/Login/')  # <string:email>,<string:password>,<string:refresh_token>')
+api.add_resource(AccountSalt, '/api/v2/AccountSalt/')
+api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems/<string:day>')
@@ -2375,7 +2562,10 @@ api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 # Farmer Endpoints
 
 api.add_resource(addItems, '/api/v2/addItems/<string:action>')
-
+api.add_resource(delivery_status, '/api/v2/delivery_status/<string:purchase_uid>')
+api.add_resource(buisness_details_update, '/api/v2/buisness_details_update/<string:action>')
+api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
+api.add_resource(orders_info, '/api/v2/orders_info')
 
 
 
