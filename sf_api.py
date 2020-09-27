@@ -1218,6 +1218,7 @@ class Login(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
+
             print(items)
             if items['code'] == 480:
                 items['message'] = "Internal Server Error."
@@ -1246,7 +1247,7 @@ class Login(Resource):
                     return BadRequest("Bad request.")
 
                 # compare passwords if user_social_media is false
-                elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
+                elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL' or items['result'][0]['user_social_media'] == None) and password is not None:
                     print(items['result'][0]['password_hashed'])
                     if items['result'][0]['password_hashed'] != password:
                         items['message'] = "Wrong password"
