@@ -88,7 +88,7 @@ Example 2:\
 }
 
 NOTE: \
-Input to email is Mandatory
+Input to email is Mandatory\
 Input to password will be empty string "" if social media signup is there.\
 Input to token will be empty string "" if social media signup is NOT there.\
 Input to signup_platform will be empty string "" if social media signup is NOT there else GOOGLE, FACEBOOK or APPLE.
