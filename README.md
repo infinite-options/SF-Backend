@@ -71,29 +71,32 @@ endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Logi
 
 input:
 
-{
+Example 1:\
+{\
 "email" : "annrupp22@gmail.com",\
 "password" : "4178980d28dcec5b36521c1a9beeef791db4e6674aa77",\
-"token" : ""\
+"token" : "",\
+"signup_platform" : ""\
 }
+
+Example 2:\
+{\
+"email" : "llshen@scu.edu",\
+"password" : "",\
+"token" : "114258941436931104766",\
+"signup_platform" : "GOOGLE"\
+}
+
+NOTE: \
+Input to email is Mandatory
+Input to password will be empty string "" if social media signup is there.\
+Input to token will be empty string "" if social media signup is NOT there.\
+Input to signup_platform will be empty string "" if social media signup is NOT there else GOOGLE, FACEBOOK or APPLE.
+
 
 return:
 
-[\
-        {\
-            "customer_uid": "100-000005",\
-            "customer_last_name": "Rupp",\
-            "customer_first_name": "Ann",\
-            "customer_email": "annrupp22@gmail.com",\
-            "user_social_media": "NULL",\
-            "user_access_token": "NULL",\
-            "user_refresh_token": "NULL"\
-        }\
-    ]
-
-NOTE:
-
-email is necessary in fields but you can pass either hashed_password generated at front end or refresh token
+All the details of that customer
 
 
 ### Profile
@@ -729,7 +732,7 @@ Deconstructs items json object and outputs items ordered for a particular farm
 Used in order details on farmer's report page
 
 Return:
-        
+
 {
     "purchase_uid": "400-000331",\
     "purchase_date": "2020-09-23",\
