@@ -1202,6 +1202,7 @@ class Login(Resource):
             email = data['email']
             password = data.get('password')
             refresh_token = data.get('token')
+            signup_platform = data.get('signup_platform')
             query = """
                     # CUSTOMER QUERY 1: LOGIN
                     SELECT customer_uid,
@@ -1218,16 +1219,17 @@ class Login(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-
+            print('Password', password)
             print(items)
             if items['code'] == 480:
-                items['message'] = "Internal Server Error."
+                items['message'] = "Internal Server Error-1."
                 items['result'] = ''
                 items['code'] = 480
                 return items
             if items['code'] != 280:
-                response['message'] = "Internal Server Error."
-                return response, 500
+                response['message'] = "Internal Server Error-2."
+                response['code'] = 500
+                return response
             elif not items['code']:
                 items['message'] = 'Not Found'
                 items['result'] = ''
@@ -1238,17 +1240,18 @@ class Login(Resource):
                 print('sc: ', items['result'][0]['user_social_media'])
 
                 # checks if login was by social media
-                if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
+                if password and items['result'][0]['user_social_media'] != 'NULL':
                     response['message'] = "Need to login by Social Media"
-                    return response, 401
+                    response['code'] = 401
+                    return response
 
                # nothing to check
-                elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'FALSE'):
+                elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'NULL'):
                     return BadRequest("Bad request.")
 
                 # compare passwords if user_social_media is false
-                elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL' or items['result'][0]['user_social_media'] == None) and password is not None:
-                    print(items['result'][0]['password_hashed'])
+                elif (items['result'][0]['user_social_media'] == 'NULL') and password is not None:
+
                     if items['result'][0]['password_hashed'] != password:
                         items['message'] = "Wrong password"
                         items['result'] = ''
@@ -1260,8 +1263,15 @@ class Login(Resource):
                         return response, 401
 
                 # compare the refresh token because it never expire.
-                elif (items['result'][0]['user_social_media']) == 'TRUE':
+                elif (items['result'][0]['user_social_media']) != 'NULL':
+                    if signup_platform != items['result'][0]['user_social_media']:
+                        items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
+                        items['result'] = ''
+                        items['code'] = 401
+                        return items
+
                     if (items['result'][0]['user_refresh_token'] != refresh_token):
+                        print(items['result'][0]['user_refresh_token'])
 
                         items['message'] = "Cannot Authenticated. Token is invalid"
                         items['result'] = ''
@@ -1273,7 +1283,7 @@ class Login(Resource):
                     print("*" * (len(string) + 10))
                     print(string.center(len(string) + 10, "*"))
                     print("*" * (len(string) + 10))
-                    response['message'] = 'Internal Server Error.'
+                    response['message'] = 'Internal Server Error.-3'
                     return response, 500
                 del items['result'][0]['password_hashed']
                 del items['result'][0]['email_verified']
