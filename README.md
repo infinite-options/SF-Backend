@@ -52,7 +52,7 @@ return:
 
 [Get]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt/<email>
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt/email
 
 example:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt/xyz@gmail.com
 
@@ -104,7 +104,7 @@ All the details of that customer
 [Get]
 
 
-endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/<email>
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/email
 
 example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/xyz@gmail.com
 
@@ -113,18 +113,69 @@ return: all the details about customer
 
 ### getItems
 
+[Post]
+
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/getItems
+
+input:
+
+{\
+"type" : ["fruit","desert"],\
+"ids" : ["200-000003","200-000004","200-000005"]\
+}
+
+
+return: information of all items available filtered by business ids and type of item.
+
+
+### Categorical_Options
+
 [Get]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/getItems/<day>
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Categorical_Options/longitude,latitude
 
-example: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/getItems/Monday
+example: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Categorical_Options/-121.928472,37.24370
 
 
-return: information of all items available at particular day
+return: information of all businesses and type of food category available in that business within field item_type
 
- "item_uid","created_at","itm_business_uid","item_name","item_status",\
- "item_type","item_desc","item_unit","item_price","item_sizes","favorite",\
- "item_photo","exp_date","business_delivery_hours"
+{\
+"business_uid": "200-000001",\
+"business_created_at": "2020-01-09T17:34:48",\
+"business_name": "PTYD",\
+"business_type": "toomuch",\
+"business_desc": "Vegan Delivery Service",\
+"business_association": null,\
+"business_contact_first_name": "Heather",\
+"business_contact_last_name": "Faiez",\
+"business_phone_num": "(512) 555-1234",\
+"business_phone_num2": "(512) 555-1200",\
+"business_email": "heather@ptyd.com",\
+"business_hours": "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"], "Thursday": ["00:00:00", "23:59:00"], "Wednesday": ["00:00:00", "23:59:00"]}",\
+"business_accepting_hours": "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
+"business_delivery_hours": "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
+"business_address": "360 Cowden Road",\
+"business_unit": "",\
+"business_city": "Hollister",\
+"business_state": "CA",\
+"business_zip": "95135",\
+"business_longitude": "-121.9141246",\
+"business_latitude": "37.3316565",\
+"business_EIN": "",\
+"business_WAUBI": "",\
+"business_license": "",\
+"business_USDOT": "",\
+"notification_approval": "",\
+"notification_device_id": "",\
+"can_cancel": 0,\
+"delivery": 0,\
+"reusable": 0,\
+"business_image": "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",\
+"business_password": "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798",\
+"itm_business_uid": "200-000001",\
+"item_type": "dessert,fruit,other,vegetable"\
+}
+
 
 
 ### Refund
@@ -142,7 +193,7 @@ return: code either 200 or 400. If 200 refund ticket generated else email doesn'
 
 [Get]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/available_Coupons/<email>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/available_Coupons/email
 
 example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/available_Coupons/xyz@gmail.com
 
@@ -244,7 +295,7 @@ return: json object with all general available coupons and coupons associated wi
 
 [Post]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/<coupon_uid>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/coupon_uid
 
 example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/600-000001
 
@@ -318,7 +369,7 @@ return: code 200 if information updated successfully else any other code.
 
 [Get]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/<email>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/email
 
 example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/history/abc@gmail.com
 
@@ -596,7 +647,7 @@ return: code 200 for successful insertion of data in purchase and payments table
 
 [Post]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/<input>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/input
 
 example:
 
@@ -657,7 +708,7 @@ return: code 200 for successful insertion of data in purchase and payments table
 This endpoint helps in changing delivery status of a purchase from not delivered to delivered
 
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/<purchase_uid>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/purchase_uid
 
 example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/400-000001
 
@@ -666,7 +717,7 @@ example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/ad
 
 [Post]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/<action>
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/action
 
 example:
 
