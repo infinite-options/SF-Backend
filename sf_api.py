@@ -1423,14 +1423,16 @@ class Profile(Resource):
             disconnect(conn)
 
 
-# input:  http://127.0.0.1:4000//api/v2/getItems/Monday
 class getItems(Resource):
-    def get(self, day):
+    def post(self):
         response = {}
         items = {}
 
         try:
             conn = connect()
+
+            #OLD QUERY
+            '''
             query = """
                     SELECT business_delivery_hours,business_uid
                     FROM sf.businesses;
@@ -1453,12 +1455,99 @@ class getItems(Resource):
                     """
 
             print(query)
-
             items = execute(query, 'get', conn)
+            items['message'] = 'Items sent successfully'
+            items['code'] = 200
+            return items
+            '''
+            data = request.get_json(force=True)
+            ids = data['ids']
+            type = data['type']
+            type.append('Random')
+            type.append('Random2')
+
+            query = """
+                    SELECT * 
+                    FROM sf.items
+                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """;
+                    """
+            print(query)
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
 
             items['message'] = 'Items sent successfully'
             items['code'] = 200
+            return items
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+class Categorical_Options(Resource):
+    def get(self, long, lat):
+        response = {}
+        items = {}
+
+        try:
+            conn = connect()
+
+            # query for businesses serving in customer's zone
+            query = """
+                    SELECT DISTINCT z_business_uid
+                    FROM
+                    (SELECT *,  
+                    IF (
+                    IF ((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) <= 0,
+                    \'""" + lat + """\' >=  (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),
+                    \'""" + lat + """\' <=   (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long)) AND
+                           
+                    \'""" + lat + """\' <= (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) * \'""" + long + """\' + z.RT_lat - z.RT_long * (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) AND
+                           
+                    IF ((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) >= 0,  
+                    \'""" + lat + """\' >= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),
+                    \'""" + lat + """\' <= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long)) AND
+                           
+                    \'""" + lat + """\' >= (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long) * \'""" + long + """\' + z.LB_lat - z.LB_long * (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long), "TRUE", "FALSE") AS "In_Zone",
+                     
+                    FORMAT((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),3) AS "LEFT_SLOPE",
+                    FORMAT((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),3) AS "RIGHT_SLOPE"
+                    FROM sf.zones z) AS DD
+                    WHERE In_Zone = 'True'
+                    ;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            ids = []
+            for vals in items['result']:
+                ids.append(vals['z_business_uid'])
+            print(ids)
+
+            #query for getting categorical data
+            query = """
+                    SELECT * 
+                    FROM sf.businesses as bus,
+                    (SELECT itm_business_uid, GROUP_CONCAT(DISTINCT item_type SEPARATOR ',') AS item_type
+                    FROM sf.items
+                    GROUP BY itm_business_uid) as itm
+                    WHERE bus.business_uid = itm.itm_business_uid AND bus.business_uid IN """ + str(tuple(ids)) + """;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            items['message'] = 'Categorical options successful'
+            items['code'] = 200
             return items
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -2036,6 +2125,7 @@ class history(Resource):
         finally:
             disconnect(conn)
 
+
 # -- Customer Queries End here -------------------------------------------------------------------------------
 
 # -- Farmers Queries Start here -------------------------------------------------------------------------------
@@ -2561,7 +2651,8 @@ api.add_resource(AccountSalt, '/api/v2/AccountSalt/')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
-api.add_resource(getItems, '/api/v2/getItems/<string:day>')
+api.add_resource(getItems, '/api/v2/getItems')
+api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
