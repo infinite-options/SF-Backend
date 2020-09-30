@@ -27,7 +27,7 @@ import random
 import string
 import stripe
 
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect
 from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -36,6 +36,7 @@ from flask_mail import Mail, Message
 #from flask_cors import CORS
 
 from werkzeug.exceptions import BadRequest, NotFound
+from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.security import generate_password_hash, \
      check_password_hash
 
@@ -65,6 +66,7 @@ import json
 import pytz
 import pymysql
 import requests
+import jwt
 
 #RDS_HOST = 'pm-mysqldb.cxjnrciilyjq.us-west-1.rds.amazonaws.com'
 RDS_HOST = 'io-mysqldb8.cxjnrciilyjq.us-west-1.rds.amazonaws.com'
@@ -1390,7 +1392,33 @@ class Login(Resource):
 #        finally:
 #            disconnect(conn)
 
-
+class AppleLogin (Resource):
+    def post(self):
+        try:
+            token = request.form.get('id_token')
+            print(token)
+            if token:
+                data = jwt.decode(token, verify=False)
+                email = data.get('email')
+                print(data, email)
+                if email is not None:
+                    key = 'secret'
+                    # create our own token to compare with our record in database.
+                    sending_token = jwt.encode({"customer_email": email}, key, algorithm='HS256').decode('UTF-8')
+                    print('ss', sending_token)
+                    return redirect("http://127.0.0.1:3000/?email={}&token={}".format(email, sending_token))
+                else:
+                    response = {
+                        "message": "Not Found user's email in Apple's Token."
+                    }
+                    return response, 400
+            else:
+                response = {
+                    "message": "Token not found in Apple's Response"
+                }
+                return response, 400
+        except:
+            raise BadRequest("Request failed, please try again later.")
 
 # INPUT EXAMPLE - api/v2/Profile/XYZ@gmail.com
 class Profile(Resource):
@@ -2487,6 +2515,30 @@ class orders_info(Resource):
             disconnect(conn)
 
 
+class images(Resource):
+
+    def post(self):
+
+        try:
+            conn = connect()
+            test = request.form.get('some_text')
+            print('tt', test)
+            rr = request.files.get('img')
+
+
+            rr.save('D:/test_image.jpg')
+            return "OK"
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
 # -- Farmers Queries End here -------------------------------------------------------------------------------
 
 
@@ -2652,6 +2704,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 api.add_resource(SignUp, '/api/v2/SignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt/')
 api.add_resource(Login, '/api/v2/Login/')
+api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(Profile, '/api/v2/Profile/<string:email>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
@@ -2671,6 +2724,7 @@ api.add_resource(delivery_status, '/api/v2/delivery_status/<string:purchase_uid>
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
+api.add_resource(images, '/api/v2/images')
 
 
 
