@@ -1202,7 +1202,7 @@ class Login(Resource):
             email = data['email']
             password = data.get('password')
             refresh_token = data.get('token')
-            signup_platform = data.get('signup_platform')
+            #signup_platform = data.get('signup_platform')
             query = """
                     # CUSTOMER QUERY 1: LOGIN
                     SELECT customer_uid,
@@ -1239,8 +1239,9 @@ class Login(Resource):
                 print(items['result'])
                 print('sc: ', items['result'][0]['user_social_media'])
 
+
                 # checks if login was by social media
-                if password and items['result'][0]['user_social_media'] != 'NULL':
+                if password and items['result'][0]['user_social_media'] != 'NULL' and items['result'][0]['user_social_media'] != None:
                     response['message'] = "Need to login by Social Media"
                     response['code'] = 401
                     return response
@@ -1250,7 +1251,7 @@ class Login(Resource):
                     return BadRequest("Bad request.")
 
                 # compare passwords if user_social_media is false
-                elif (items['result'][0]['user_social_media'] == 'NULL') and password is not None:
+                elif (items['result'][0]['user_social_media'] == 'NULL' or items['result'][0]['user_social_media'] == None) and password is not None:
 
                     if items['result'][0]['password_hashed'] != password:
                         items['message'] = "Wrong password"
@@ -1264,12 +1265,14 @@ class Login(Resource):
 
                 # compare the refresh token because it never expire.
                 elif (items['result'][0]['user_social_media']) != 'NULL':
+                    '''
+                    keep
                     if signup_platform != items['result'][0]['user_social_media']:
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['result'] = ''
                         items['code'] = 401
                         return items
-
+                    '''
                     if (items['result'][0]['user_refresh_token'] != refresh_token):
                         print(items['result'][0]['user_refresh_token'])
 
