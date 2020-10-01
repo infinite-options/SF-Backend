@@ -67,6 +67,13 @@ import pytz
 import pymysql
 import requests
 import jwt
+s3 = boto3.client('s3')
+
+# aws s3 bucket where the image is stored
+BUCKET_NAME = os.environ.get('MEAL_IMAGES_BUCKET')
+#BUCKET_NAME = 'servingnow'
+# allowed extensions for uploading a profile photo file
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 #RDS_HOST = 'pm-mysqldb.cxjnrciilyjq.us-west-1.rds.amazonaws.com'
 RDS_HOST = 'io-mysqldb8.cxjnrciilyjq.us-west-1.rds.amazonaws.com'
@@ -1395,23 +1402,49 @@ class Login(Resource):
 class AppleLogin (Resource):
     def post(self):
         try:
+            conn = connect()
             token = request.form.get('id_token')
             print(token)
             if token:
                 data = jwt.decode(token, verify=False)
                 email = data.get('email')
+
                 print(data, email)
                 if email is not None:
-                    key = 'secret'
-                    # create our own token to compare with our record in database.
-                    sending_token = jwt.encode({"customer_email": email}, key, algorithm='HS256').decode('UTF-8')
-                    print('ss', sending_token)
-                    return redirect("http://127.0.0.1:3000/?email={}&token={}".format(email, sending_token))
+                    sub = data['sub']
+                    query = """
+                    SELECT customer_uid,
+                        customer_last_name,
+                        customer_first_name,
+                        customer_email,
+                        password_hashed,
+                        email_verified,
+                        user_social_media,
+                        user_access_token,
+                        user_refresh_token
+                    FROM sf.customers c
+                    WHERE customer_email = \'""" + email + """\';
+                    """
+                    items = execute(query, 'get', conn)
+
+                    if not items['result']:
+                        items['message'] = "Email doesn't exists Please go to the signup page"
+                        items['code'] = 404
+                        return items
+
+                    if items['code'] != 280:
+                        items['message'] = "Internal error"
+                        return items
+
+                    if items['result'][0]['user_refresh_token'] != sub:
+                        return "Token mismatch"
+
+                    else:
+                        return redirect("http://localhost:3000/farms")
+
                 else:
-                    response = {
-                        "message": "Not Found user's email in Apple's Token."
-                    }
-                    return response, 400
+                    return "Email not returned by Apple LOGIN"
+
             else:
                 response = {
                     "message": "Token not found in Apple's Response"
@@ -2207,17 +2240,17 @@ class addItems(Resource):
             data = request.get_json(force=True)
 
             if action == 'Insert':
-                itm_business_uid = data['itm_business_uid']
-                item_name = data['item_name']
-                item_status = data['item_status']
-                item_type = data['item_type']
-                item_desc = data['item_desc']
-                item_unit = data['item_unit']
-                item_price = data['item_price']
-                item_sizes = data['item_sizes']
-                favorite = data['favorite']
-                item_photo = data['item_photo']
-                exp_date = data['exp_date']
+                itm_business_uid = request.form.get('itm_business_uid')
+                item_name = request.form.get('item_name')
+                item_status = request.form.get('item_status')
+                item_type = request.form.get('item_type')
+                item_desc = request.form.get('item_desc')
+                item_unit = request.form.get('item_unit')
+                item_price = request.form.get('item_price')
+                item_sizes = request.form.get('item_sizes')
+                favorite = request.form.get('favorite')
+                item_photo = request.form.get('item_photo')
+                exp_date = request.form.get('exp_date')
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
@@ -2256,18 +2289,19 @@ class addItems(Resource):
 
             elif action == 'Update':
                 # Update query
-                itm_business_uid = data['itm_business_uid']
-                item_uid = data['item_uid']
-                item_name = data['item_name']
-                item_status = data['item_status']
-                item_type = data['item_type']
-                item_desc = data['item_desc']
-                item_unit = data['item_unit']
-                item_price = data['item_price']
-                item_sizes = data['item_sizes']
-                favorite = data['favorite']
-                item_photo = data['item_photo']
-                exp_date = data['exp_date']
+
+                item_uid = request.form.get('item_uid')
+                itm_business_uid = request.form.get('itm_business_uid')
+                item_name = request.form.get('item_name')
+                item_status = request.form.get('item_status')
+                item_type = request.form.get('item_type')
+                item_desc = request.form.get('item_desc')
+                item_unit = request.form.get('item_unit')
+                item_price = request.form.get('item_price')
+                item_sizes = request.form.get('item_sizes')
+                favorite = request.form.get('favorite')
+                item_photo = request.form.get('item_photo')
+                exp_date = request.form.get('exp_date')
                 query_update =  '''
                                 UPDATE sf.items
                                 SET 
@@ -2299,8 +2333,8 @@ class addItems(Resource):
 
                 # Update item_status
                 print('ELSE-------------')
-                item_uid = data['item_uid']
-                item_status = data['item_status']
+                item_uid = request.form.get('item_uid')
+                item_status = request.form.get('item_status')
                 query_status =  '''
                                 UPDATE sf.items
                                 SET 
@@ -2515,25 +2549,31 @@ class orders_info(Resource):
             disconnect(conn)
 
 
-class images(Resource):
+def upload_images(self, file, key, id):
 
-    def post(self):
+        filename = file.filename
+        test = '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+        if not test:
+            return "Invalid file extension"
 
-        try:
-            conn = connect()
-            test = request.form.get('some_text')
-            print('tt', test)
-            rr = request.files.get('img')
+        if file and test:
+            print('IN')
+            bucket = 'servingfresh'
+            filename = 'https://s3-us-west-1.amazonaws.com/' + str(bucket) + '/' + str(key)
+            key = 'item_images/test_image.jpg'
+            upload_file = s3.put_object(
+                                Bucket=bucket,
+                                Body=file,
+                                Key=key,
+                                ACL='public-read',
+                                ContentType='image/jpeg'
+                            )
+        if upload_file['ResponseMetadata']['HTTPStatusCode'] == 200:
+            return "Success"
+        else:
+            return "Fail"
 
 
-            rr.save('D:/test_image.jpg')
-            return "OK"
-
-
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
 
 
 
@@ -2724,7 +2764,7 @@ api.add_resource(delivery_status, '/api/v2/delivery_status/<string:purchase_uid>
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
-api.add_resource(images, '/api/v2/images')
+
 
 
 
