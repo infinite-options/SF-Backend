@@ -277,7 +277,8 @@ def runSelectQuery(query, cur):
 # Additional Helper Functions from sf_api.py
 # Need to revisit to see if we need these
 
-def helper_upload_meal_img(file, bucket, key):
+def helper_upload_meal_img(file, key):
+    bucket = 'servingfresh'
     if file and allowed_file(file.filename):
         filename = 'https://s3-us-west-1.amazonaws.com/' \
                    + str(bucket) + '/' + str(key)
@@ -1529,6 +1530,8 @@ class getItems(Resource):
             type = data['type']
             type.append('Random')
             type.append('Random2')
+            ids.append('Random')
+            ids.append('Random2')
 
             query = """
                     SELECT * 
@@ -2237,7 +2240,6 @@ class addItems(Resource):
         items = {}
         try:
             conn = connect()
-            data = request.get_json(force=True)
 
             if action == 'Insert':
                 itm_business_uid = request.form.get('itm_business_uid')
@@ -2249,11 +2251,17 @@ class addItems(Resource):
                 item_price = request.form.get('item_price')
                 item_sizes = request.form.get('item_sizes')
                 favorite = request.form.get('favorite')
-                item_photo = request.form.get('item_photo')
+                item_photo = request.files.get('item_photo')
                 exp_date = request.form.get('exp_date')
+                image_category = request.form.get('image_category')
+                print('IN')
+
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
+                key = str(image_category) + '/' + str(NewID)
+                print(key)
+                item_photo_url = helper_upload_meal_img(item_photo, key)
                 print("NewRefundID = ", NewID)
                 TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print("TimeStamp = ", TimeStamp)
@@ -2271,7 +2279,7 @@ class addItems(Resource):
                                 item_price = \'''' + item_price + '''\',
                                 item_sizes = \'''' + item_sizes + '''\',
                                 favorite = \'''' + favorite + '''\',
-                                item_photo = \'''' + item_photo + '''\',
+                                item_photo = \'''' + item_photo_url + '''\',
                                 exp_date = \'''' + exp_date + '''\',
                                 created_at = \'''' + TimeStamp + '''\',
                                 item_uid = \'''' + NewID + '''\';
@@ -2300,8 +2308,14 @@ class addItems(Resource):
                 item_price = request.form.get('item_price')
                 item_sizes = request.form.get('item_sizes')
                 favorite = request.form.get('favorite')
-                item_photo = request.form.get('item_photo')
+                item_photo = request.files.get('item_photo')
                 exp_date = request.form.get('exp_date')
+                image_category = request.form.get('image_category')
+
+                key = str(image_category) + '/' + str(item_uid)
+                item_photo_url = helper_upload_meal_img(item_photo, key)
+
+
                 query_update =  '''
                                 UPDATE sf.items
                                 SET 
@@ -2314,7 +2328,7 @@ class addItems(Resource):
                                 item_price = \'''' + item_price + '''\',
                                 item_sizes = \'''' + item_sizes + '''\',
                                 favorite = \'''' + favorite + '''\',
-                                item_photo = \'''' + item_photo + '''\',
+                                item_photo = \'''' + item_photo_url + '''\',
                                 exp_date = \'''' + exp_date + '''\'
                                 WHERE item_uid = \'''' + item_uid + '''\';
                                 '''
@@ -2547,31 +2561,6 @@ class orders_info(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
-
-def upload_images(self, file, key, id):
-
-        filename = file.filename
-        test = '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-        if not test:
-            return "Invalid file extension"
-
-        if file and test:
-            print('IN')
-            bucket = 'servingfresh'
-            filename = 'https://s3-us-west-1.amazonaws.com/' + str(bucket) + '/' + str(key)
-            key = 'item_images/test_image.jpg'
-            upload_file = s3.put_object(
-                                Bucket=bucket,
-                                Body=file,
-                                Key=key,
-                                ACL='public-read',
-                                ContentType='image/jpeg'
-                            )
-        if upload_file['ResponseMetadata']['HTTPStatusCode'] == 200:
-            return "Success"
-        else:
-            return "Fail"
 
 
 
