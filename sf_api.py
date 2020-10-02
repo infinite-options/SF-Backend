@@ -2262,6 +2262,7 @@ class addItems(Resource):
                 key = str(image_category) + '/' + str(NewID)
                 print(key)
                 item_photo_url = helper_upload_meal_img(item_photo, key)
+                print(item_photo_url)
                 print("NewRefundID = ", NewID)
                 TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 print("TimeStamp = ", TimeStamp)
