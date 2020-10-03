@@ -1441,7 +1441,7 @@ class AppleLogin (Resource):
                         return "Token mismatch"
 
                     else:
-                        return redirect("http://localhost:3000/farms")
+                        return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
 
                 else:
                     return "Email not returned by Apple LOGIN"
