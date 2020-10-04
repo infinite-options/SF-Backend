@@ -1401,7 +1401,9 @@ class Login(Resource):
 #            disconnect(conn)
 
 class AppleLogin (Resource):
+
     def post(self):
+        response = {}
         try:
             conn = connect()
             token = request.form.get('id_token')
@@ -1427,22 +1429,79 @@ class AppleLogin (Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
                     items = execute(query, 'get', conn)
+                    print(items)
 
+                    # new customer
                     if not items['result']:
                         items['message'] = "Email doesn't exists Please go to the signup page"
-                        #http://localhost:3000/socialsignup
-                        items['code'] = 404
-                        return items
+                        get_user_id_query = "CALL new_customer_uid();"
+                        NewUserIDresponse = execute(get_user_id_query, 'get', conn)
+
+                        if NewUserIDresponse['code'] == 490:
+                            string = " Cannot get new User id. "
+                            print("*" * (len(string) + 10))
+                            print(string.center(len(string) + 10, "*"))
+                            print("*" * (len(string) + 10))
+                            response['message'] = "Internal Server Error."
+                            return response, 500
+                        NewUserID = NewUserIDresponse['result'][0]['new_id']
+                        user_social_signup = 'APPLE'
+                        print('NewUserID', NewUserID)
+
+                        customer_insert_query = """
+                                    INSERT INTO sf.customers 
+                                    (
+                                        customer_uid,
+                                        customer_created_at,
+                                        customer_email,
+                                        user_social_media,
+                                        user_refresh_token
+                                    )
+                                    VALUES
+                                    (
+                                    
+                                        \'""" + NewUserID + """\',
+                                        \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
+                                        \'""" + email + """\',
+                                        \'""" + user_social_signup + """\',
+                                        \'""" + sub + """\'
+                                    );"""
+
+                        item = execute(customer_insert_query, 'post', conn)
+
+                        print('INSERT')
+
+                        if item['code'] != 281:
+                            item['message'] = 'Check insert sql query'
+                            return item
+
+
+
+                        return redirect("http://localhost:3000/socialsignup?id=" + items['result'][0]['customer_uid'])
+
+                    print('not new customer ----------')
 
                     if items['code'] != 280:
                         items['message'] = "Internal error"
                         return items
+                    print('not new customer ----------')
 
-                    if items['result'][0]['user_refresh_token'] != sub:
-                        return "Token mismatch"
+                    print(items)
 
-                    else:
-                        return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
+                    if items['result'][0]['user_refresh_token']:
+                        print('INoiuNNN____')
+                        print(items['result'][0]['user_social_media'],items['result'][0]['user_refresh_token'])
+
+                        if items['result'][0]['user_social_media'] != "APPLE":
+                            print('INNNNN____')
+                            return "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
+
+                        elif items['result'][0]['user_refresh_token'] != sub:
+                            return "Token mismatch"
+
+                        else:
+                            print('OUT_______')
+                            return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
 
                 else:
                     return "Email not returned by Apple LOGIN"
@@ -1459,16 +1518,16 @@ class AppleLogin (Resource):
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
-    def get(self, email):
+    def get(self, id):
         response = {}
         items = {}
-        print("user_email: ", email)
+        print("user_id: ", id)
         try:
             conn = connect()
             query = """
                     SELECT *
                     FROM sf.customers c
-                    WHERE customer_email = \'""" + email + """\'
+                    WHERE customer_uid = \'""" + id + """\'
                     """
             items = execute(query, 'get', conn)
             if items['result']:
@@ -1478,7 +1537,7 @@ class Profile(Resource):
                 items['code'] = 200
                 return items
             else:
-                items['message'] = "Email doesn't exists"
+                items['message'] = "Customer UID doesn't exists"
                 items['result'] = items['result']
                 items['code'] = 404
                 return items
@@ -2736,7 +2795,7 @@ api.add_resource(SignUp, '/api/v2/SignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt/')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
-api.add_resource(Profile, '/api/v2/Profile/<string:email>')
+api.add_resource(Profile, '/api/v2/Profile/<string:id>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
