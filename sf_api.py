@@ -1409,7 +1409,9 @@ class AppleLogin (Resource):
             token = request.form.get('id_token')
             print(token)
             if token:
+                print('INN')
                 data = jwt.decode(token, verify=False)
+                print('data-----', data)
                 email = data.get('email')
 
                 print(data, email)
@@ -1430,6 +1432,12 @@ class AppleLogin (Resource):
                     """
                     items = execute(query, 'get', conn)
                     print(items)
+                    print('not new customer ----------')
+
+                    if items['code'] != 280:
+                        items['message'] = "Internal error"
+                        return items
+                    print('not new customer ----------')
 
                     # new customer
                     if not items['result']:
@@ -1477,14 +1485,9 @@ class AppleLogin (Resource):
 
 
 
-                        return redirect("http://localhost:3000/socialsignup?id=" + items['result'][0]['customer_uid'])
+                        return redirect("http://localhost:3000/socialsignup?id=" + NewUserID)
 
-                    print('not new customer ----------')
 
-                    if items['code'] != 280:
-                        items['message'] = "Internal error"
-                        return items
-                    print('not new customer ----------')
 
                     print(items)
 
