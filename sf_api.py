@@ -1240,8 +1240,8 @@ class Login(Resource):
                 response['message'] = "Internal Server Error-2."
                 response['code'] = 500
                 return response
-            elif not items['code']:
-                items['message'] = 'Not Found'
+            elif not items['result']:
+                items['message'] = 'Email Not Found. Please signup'
                 items['result'] = ''
                 items['code'] = 404
                 return items
@@ -1430,6 +1430,7 @@ class AppleLogin (Resource):
 
                     if not items['result']:
                         items['message'] = "Email doesn't exists Please go to the signup page"
+                        #http://localhost:3000/socialsignup
                         items['code'] = 404
                         return items
 
