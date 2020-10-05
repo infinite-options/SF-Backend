@@ -24,7 +24,8 @@ input:
 "access_token" : "NULL",\
 "refresh_token": "NULL",\
 "social" : "FALSE",\
-"password": "work123"\
+"password": "work123",\
+"cust_id": "100-000236" ----- optional [if you are using APPLE login then only use this variable else don't include it in json]
 }
 
 NOTE:
