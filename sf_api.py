@@ -1037,33 +1037,15 @@ class SignUp(Resource):
             zip_code = data['zip_code']
             latitude = data['latitude']
             longitude = data['longitude']
-
             referral = data['referral_source']
             role = data['role']
+            cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
+
             if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
                 social_signup = False
             else:
                 social_signup = True
-            # check if there is a same customer_id existing
-            query = """
-                    SELECT customer_email FROM sf.customers
-                    WHERE customer_email = \'""" + email + "\';"
-            print('email---------')
-            items = execute(query, 'get', conn)
-            if items['result']:
 
-                items['result'] = ""
-                items['code'] = 409
-                items['message'] = "Email address has already been taken."
-
-                return items
-
-            if items['code'] == 480:
-
-                items['result'] = ""
-                items['code'] = 480
-                items['message'] = "Internal Server Error."
-                return items
 
             get_user_id_query = "CALL new_customer_uid();"
             NewUserIDresponse = execute(get_user_id_query, 'get', conn)
@@ -1088,63 +1070,127 @@ class SignUp(Resource):
                 user_social_signup = 'NULL'
             else:
 
-                access_token = "'" + data['access_token'] + "'"
-                refresh_token = "'" + data['refresh_token'] + "'"
+                access_token = data['access_token']
+                refresh_token = data['refresh_token']
                 salt = 'NULL'
                 password = 'NULL'
                 algorithm = 'NULL'
                 user_social_signup = data['social']
 
-            # write everything to database
-            customer_insert_query = ["""
-                                    INSERT INTO sf.customers 
-                                    (
-                                        customer_uid,
-                                        customer_created_at,
-                                        customer_first_name,
-                                        customer_last_name,
-                                        customer_phone_num,
-                                        customer_email,
-                                        customer_address,
-                                        customer_unit,
-                                        customer_city,
-                                        customer_state,
-                                        customer_zip,
-                                        customer_lat,
-                                        customer_long,
-                                        password_salt,
-                                        password_hashed,
-                                        password_algorithm,
-                                        referral_source,
-                                        role,
-                                        user_social_media,
-                                        user_access_token,
-                                        user_refresh_token
-                                    )
-                                    VALUES
-                                    (
-                                    
-                                        \'""" + NewUserID + """\',
-                                        \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
-                                        \'""" + firstName + """\',
-                                        \'""" + lastName + """\',
-                                        \'""" + phone + """\',
-                                        \'""" + email + """\',
-                                        \'""" + address + """\',
-                                        \'""" + unit + """\',
-                                        \'""" + city + """\',
-                                        \'""" + state + """\',
-                                        \'""" + zip_code + """\',
-                                        \'""" + latitude + """\',
-                                        \'""" + longitude + """\',
-                                        \'""" + salt + """\',
-                                        \'""" + password + """\',
-                                        \'""" + algorithm + """\',
-                                        \'""" + referral + """\',
-                                        \'""" + role + """\',
-                                        \'""" + user_social_signup + """\',
-                                        \'""" + access_token + """\',
-                                        \'""" + refresh_token + """\');"""]
+            if cust_id != 'NULL' and cust_id:
+
+                NewUserID = cust_id
+
+                query = '''
+                            SELECT user_access_token, user_refresh_token
+                            FROM sf.customers
+                            WHERE customer_uid = \'''' + cust_id + '''\';
+                       '''
+                it = execute(query, 'get', conn)
+                print('it-------', it)
+
+                access_token = it['result'][0]['user_access_token']
+                refresh_token = it['result'][0]['user_refresh_token']
+
+
+                customer_insert_query =  ['''
+                                    UPDATE sf.customers 
+                                    SET 
+                                    customer_created_at = \'''' + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + '''\',
+                                    customer_first_name = \'''' + firstName + '''\',
+                                    customer_last_name = \'''' + lastName + '''\',
+                                    customer_phone_num = \'''' + phone + '''\',
+                                    customer_address = \'''' + address + '''\',
+                                    customer_unit = \'''' + unit + '''\',
+                                    customer_city = \'''' + city + '''\',
+                                    customer_state = \'''' + state + '''\',
+                                    customer_zip = \'''' + zip_code + '''\',
+                                    customer_lat = \'''' + latitude + '''\',
+                                    customer_long = \'''' + longitude + '''\',
+                                    password_salt = \'''' + salt + '''\',
+                                    password_hashed = \'''' + password + '''\',
+                                    password_algorithm = \'''' + algorithm + '''\',
+                                    referral_source = \'''' + referral + '''\',
+                                    role = \'''' + role + '''\',
+                                    user_social_media = \'''' + user_social_signup + '''\'
+                                    WHERE customer_uid = \'''' + cust_id + '''\';
+                                    ''']
+
+
+            else:
+
+                # check if there is a same customer_id existing
+                query = """
+                        SELECT customer_email FROM sf.customers
+                        WHERE customer_email = \'""" + email + "\';"
+                print('email---------')
+                items = execute(query, 'get', conn)
+                if items['result']:
+
+                    items['result'] = ""
+                    items['code'] = 409
+                    items['message'] = "Email address has already been taken."
+
+                    return items
+
+                if items['code'] == 480:
+
+                    items['result'] = ""
+                    items['code'] = 480
+                    items['message'] = "Internal Server Error."
+                    return items
+
+
+                # write everything to database
+                customer_insert_query = ["""
+                                        INSERT INTO sf.customers 
+                                        (
+                                            customer_uid,
+                                            customer_created_at,
+                                            customer_first_name,
+                                            customer_last_name,
+                                            customer_phone_num,
+                                            customer_email,
+                                            customer_address,
+                                            customer_unit,
+                                            customer_city,
+                                            customer_state,
+                                            customer_zip,
+                                            customer_lat,
+                                            customer_long,
+                                            password_salt,
+                                            password_hashed,
+                                            password_algorithm,
+                                            referral_source,
+                                            role,
+                                            user_social_media,
+                                            user_access_token,
+                                            user_refresh_token
+                                        )
+                                        VALUES
+                                        (
+                                        
+                                            \'""" + NewUserID + """\',
+                                            \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
+                                            \'""" + firstName + """\',
+                                            \'""" + lastName + """\',
+                                            \'""" + phone + """\',
+                                            \'""" + email + """\',
+                                            \'""" + address + """\',
+                                            \'""" + unit + """\',
+                                            \'""" + city + """\',
+                                            \'""" + state + """\',
+                                            \'""" + zip_code + """\',
+                                            \'""" + latitude + """\',
+                                            \'""" + longitude + """\',
+                                            \'""" + salt + """\',
+                                            \'""" + password + """\',
+                                            \'""" + algorithm + """\',
+                                            \'""" + referral + """\',
+                                            \'""" + role + """\',
+                                            \'""" + user_social_signup + """\',
+                                            \'""" + access_token + """\',
+                                            \'""" + refresh_token + """\');"""]
 
             items = execute(customer_insert_query[0], 'post', conn)
 
