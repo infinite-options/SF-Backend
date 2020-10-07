@@ -99,6 +99,18 @@ return:
 
 All the details of that customer
 
+Error Codes:
+
+500 - internal server error -- Try again\
+404 - Email not found -- Redirect to signup page\
+401 - Need to login by social media\
+405 - Password not entered and no refresh token available in database -- Redirect to signup page\
+406 - Wrong password\
+407 - Account not verified\
+408 - Token incorrect\
+500 - Cannot compare the password or refresh token while log in. -- Try again\
+200 - Successful login
+
 
 ### Profile
 
