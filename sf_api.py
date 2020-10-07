@@ -1342,6 +1342,7 @@ class AppleLogin (Resource):
 
     def post(self):
         response = {}
+        items = {}
         try:
             conn = connect()
             token = request.form.get('id_token')
@@ -1388,7 +1389,8 @@ class AppleLogin (Resource):
                             print(string.center(len(string) + 10, "*"))
                             print("*" * (len(string) + 10))
                             response['message'] = "Internal Server Error."
-                            return response, 500
+                            response['code'] = 500
+                            return response
 
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
@@ -1426,25 +1428,33 @@ class AppleLogin (Resource):
                     # Existing customer
 
                     if items['result'][0]['user_refresh_token']:
-                        print(items['result'][0]['user_social_media'],items['result'][0]['user_refresh_token'])
+                        print(items['result'][0]['user_social_media'], items['result'][0]['user_refresh_token'])
 
                         if items['result'][0]['user_social_media'] != "APPLE":
-                            return "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
+                            items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
+                            items['code'] = 400
+                            return items
 
                         elif items['result'][0]['user_refresh_token'] != sub:
-                            return "Token mismatch"
+                            items['message'] = "Token mismatch"
+                            items['code'] = 400
+                            return items
 
                         else:
                             return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
 
                 else:
-                    return "Email not returned by Apple LOGIN"
+                    items['message'] = "Email not returned by Apple LOGIN"
+                    items['code'] = 400
+                    return items
+
 
             else:
                 response = {
-                    "message": "Token not found in Apple's Response"
+                    "message": "Token not found in Apple's Response",
+                    "code": 400
                 }
-                return response, 400
+                return response
         except:
             raise BadRequest("Request failed, please try again later.")
 
