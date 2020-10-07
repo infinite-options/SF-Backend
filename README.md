@@ -105,9 +105,9 @@ All the details of that customer
 [Get]
 
 
-endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/email
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/id
 
-example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/xyz@gmail.com
+example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/100-000232
 
 return: all the details about customer
 
@@ -124,7 +124,6 @@ input:
 "type" : ["fruit","desert"],\
 "ids" : ["200-000003","200-000004","200-000005"]\
 }
-
 
 return: information of all items available filtered by business ids and type of item.
 
@@ -670,7 +669,7 @@ For Insert ---
 "item_price" : "5.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
-"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07", \
+"item_photo" : file, \ --- upload image file
 "exp_date" : ""\
 }
 
@@ -686,7 +685,6 @@ For Update ---
 "item_price" : "5.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
-"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07", \
 "exp_date" : "",\
 "item_uid" : "310-000208"\
 }
