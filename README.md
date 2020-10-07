@@ -669,7 +669,7 @@ For Insert ---
 "item_price" : "5.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
-"item_photo" : file, \ --- upload image file
+"item_photo" : file, \ --- upload image file\
 "exp_date" : ""\
 }
 
