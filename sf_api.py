@@ -996,28 +996,6 @@ class MSPurchaseData(Resource):
 
 # -- Customer Queries Start here -------------------------------------------------------------------------------
 
-
-'''
-INPUT: {"email" : "xyz@gmail.com",
-"first_name" : "parva",
-"last_name" : "shah",
-"phone_number" : "9876549879",
-"address" : "955 W President",
-"unit" : "3452",
-"city" : "Dallas",
-"state" : "TX",
-"zip_code" : "75980",
-"latitude" : "-14.3",
-"longitude" : "94.3",
-"referral_source" : "WEB",
-"role" : "CUSTOMER",
-"access_token" : "NULL",
-"refresh_token": "NULL",
-"social" : "FALSE",
-"password": "work123"
-} 
-'''
-
 class SignUp(Resource):
     def post(self):
         response = {}
@@ -1248,7 +1226,6 @@ class AccountSalt(Resource):
         finally:
             disconnect(conn)
 
-# input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
 class Login(Resource):
     def post(self):
         response = {}
@@ -1359,93 +1336,6 @@ class Login(Resource):
             disconnect(conn)
 
 
-
-    # OLD LOGIN CLASS - DEPRECRATED ON 09-15-2020
-    # input:api/v2/Login/annrupp22@gmail.com,4178980d28dcec5b36521c1a9beeef791db4e6674aa77,''"
-#    class Login(Resource):
-#    def get(self, email, password, refresh_token):
-#        response = {}
-#        items = []
-#        try:
-#
-#            conn = connect()
-#            print(email, password, refresh_token)
-#            query = """
-#                    # CUSTOMER QUERY 1: LOGIN
-#                    SELECT customer_uid,
-#                            customer_last_name,
-#                            customer_first_name,
-#                            customer_email,
-#                            password_hashed,
-#                            email_verified,
-#                            user_social_media,
-#                            user_access_token,
-#                            user_refresh_token
-#                    FROM sf.customers c
-#                    -- WHERE customer_email = "1m4kfun@gmail.com";
-#                    WHERE customer_email = \'""" + email + """\';
-#                    """
-#            items = execute(query, 'get', conn)
-#            print(items)
-#            if items['code'] == 480:
-#                response['message'] = "Internal Server Error."
-#                return response, 480
-#            elif not items['code']:
-#                response['message'] = 'Not Found'
-#                return response, 404
-#            else:
-#
-#                print(items['result'])
-#                print('sc: ', items['result'][0]['user_social_media'])
-#                if password is not None and items['result'][0]['user_social_media'] == 'TRUE':
-#                    response['message'] = "Need to login by Social Media"
-#                    return response, 401
-#                elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'FALSE'):
-#                    return BadRequest("Bad request.")
-#                # compare passwords if user_social_media is false
-#                elif (items['result'][0]['user_social_media'] == 'FALSE' or items['result'][0]['user_social_media'] == 'NULL') and password is not None:
-#
-#                    print(items['result'][0]['password_hashed'])
-#
-#                    if items['result'][0]['password_hashed'] != password:
-#                        response['message'] = "Wrong password."
-#                        return response, 401
-#                    if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
-#                        response['message'] = "Account need to be verified by email."
-#                        return response, 401
-#                # compare the refresh token because it never expire.
-#                elif (items['result'][0]['user_social_media']) == 'TRUE':
-#                    if (items['result'][0]['user_refresh_token'] != refresh_token):
-#                        response['message'] = "Cannot Authenticated. Token is invalid."
-#                        return response, 401
-#                else:
-#                    string = " Cannot compare the password or refresh token while log in. "
-#                    print("*" * (len(string) + 10))
-#                    print(string.center(len(string) + 10, "*"))
-#                    print("*" * (len(string) + 10))
-#                    response['message'] = 'Internal Server Error.'
-#                    return response, 500
-#
-#                del items['result'][0]['password_hashed']
-#                del items['result'][0]['email_verified']
-#
-#                query = """
-#                    SELECT *
-#                    FROM sf.customers c
-#                    WHERE customer_email = \'""" + email + """\'
-#                    """
-#                items = execute(query, 'get', conn)
-#
-#                response['message'] = "Authenticated successfully."
-#                response['result'] = items['result']
-#                return response, 200
-#
-#
-#        except:
-#            raise BadRequest('Request failed, please try again later.')
-#        finally:
-#            disconnect(conn)
-
 class AppleLogin (Resource):
 
     def post(self):
@@ -1478,12 +1368,11 @@ class AppleLogin (Resource):
                     """
                     items = execute(query, 'get', conn)
                     print(items)
-                    print('not new customer ----------')
 
                     if items['code'] != 280:
                         items['message'] = "Internal error"
                         return items
-                    print('not new customer ----------')
+
 
                     # new customer
                     if not items['result']:
@@ -1498,6 +1387,7 @@ class AppleLogin (Resource):
                             print("*" * (len(string) + 10))
                             response['message'] = "Internal Server Error."
                             return response, 500
+
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
                         print('NewUserID', NewUserID)
@@ -1529,27 +1419,20 @@ class AppleLogin (Resource):
                             item['message'] = 'Check insert sql query'
                             return item
 
-
-
                         return redirect("http://localhost:3000/socialsignup?id=" + NewUserID)
 
-
-
-                    print(items)
+                    # Existing customer
 
                     if items['result'][0]['user_refresh_token']:
-                        print('INoiuNNN____')
                         print(items['result'][0]['user_social_media'],items['result'][0]['user_refresh_token'])
 
                         if items['result'][0]['user_social_media'] != "APPLE":
-                            print('INNNNN____')
                             return "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
 
                         elif items['result'][0]['user_refresh_token'] != sub:
                             return "Token mismatch"
 
                         else:
-                            print('OUT_______')
                             return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
 
                 else:
@@ -1563,7 +1446,7 @@ class AppleLogin (Resource):
         except:
             raise BadRequest("Request failed, please try again later.")
 
-# INPUT EXAMPLE - api/v2/Profile/XYZ@gmail.com
+
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -1731,7 +1614,6 @@ class Categorical_Options(Resource):
             disconnect(conn)
 
 # updated refund
-# input example : {"image_url":"http://servingnow.me","email":"annrupp22@gmail.com","note":"Please issue a refund for carrots" }
 class Refund(Resource):
     # HTTP method POST
 
@@ -1863,29 +1745,7 @@ class update_Coupons(Resource):
                 disconnect(conn)
                 print('process completed')
 
-'''
-INPUT: 
-{
-"pur_customer_uid" : "100-000009",
-"pur_business_uid" : "200-000001",
-"items" : "[{\"qty\": \"1\", \"name\": \"5 Meal Plan - Weekly\", \"price\": \"59.99\", \"item_uid\": \"320-000002\"}]",
-"order_instructions" : "fast",
-"delivery_instructions" : "Keep Fresh",
-"order_type" : "meal",
-"delivery_first_name" : "Parva",
-"delivery_last_name" : "Shah",
-"delivery_phone_num" : "6197872089",
-"delivery_email" : "parva.shah@hotmail.com",
-"delivery_address" : "790 Carrywood Way",
-"delivery_unit" : "9",
-"delivery_city" : "San Jose",
-"delivery_state" : "CA",
-"delivery_zip" : "95120",
-"delivery_latitude" : "37.2271302",
-"delivery_longitude" : "-121.8891617",
-"purchase_notes" : "purchase_notes"
-}
-'''
+
 class purchase(Resource):
     def post(self):
             response = {}
@@ -1986,26 +1846,6 @@ class purchase(Resource):
                 disconnect(conn)
 
 
-'''
-INPUT:
-{
-"pay_purchase_uid" : "400-000035",
-"pay_purchase_id" : "400-000035",
-"start_delivery_date" : "2020-08-02 00:00:00",
-"pay_coupon_id" : "",
-"amount_due" : "53.75",
-"amount_discount" : "0",
-"amount_paid" : "53.75",
-"info_is_Addon" : "FALSE",
-"cc_num" : "4545",
-"cc_exp_date" : "2028-07-01 00:00:00",
-"cc_cvv" : "666",
-"cc_zip" : "99999",
-"charge_id" : "",
-"payment_type" : "STRIPE"
-}
-'''
-
 class payment(Resource):
     def post(self):
             response = {}
@@ -2080,42 +1920,6 @@ class payment(Resource):
                 disconnect(conn)
                 print('process completed')
 
-
-'''
-INPUT: 
-{
-"pur_customer_uid" : "100-000009",
-"pur_business_uid" : "200-000001",
-"items" : "[{\"qty\": \"1\", \"name\": \"5 Meal Plan - Weekly\", \"price\": \"59.99\", \"item_uid\": \"320-000002\"}]",
-"order_instructions" : "fast",
-"delivery_instructions" : "Keep Fresh",
-"order_type" : "meal",
-"delivery_first_name" : "Parva",
-"delivery_last_name" : "Shah",
-"delivery_phone_num" : "6197872089",
-"delivery_email" : "parva.shah@hotmail.com",
-"delivery_address" : "790 Carrywood Way",
-"delivery_unit" : "9",
-"delivery_city" : "San Jose",
-"delivery_state" : "CA",
-"delivery_zip" : "95120",
-"delivery_latitude" : "37.2271302",
-"delivery_longitude" : "-121.8891617",
-"purchase_notes" : "purchase_notes",
-"start_delivery_date" : "2020-08-02 00:00:00",
-"pay_coupon_id" : "",
-"amount_due" : "53.75",
-"amount_discount" : "0",
-"amount_paid" : "53.75",
-"info_is_Addon" : "FALSE",
-"cc_num" : "4545",
-"cc_exp_date" : "2028-07-01 00:00:00",
-"cc_cvv" : "666",
-"cc_zip" : "99999",
-"charge_id" : "",
-"payment_type" : "STRIPE"
-}
-'''
 
 class purchase_Data_SF(Resource):
     def post(self):
@@ -2305,43 +2109,6 @@ class history(Resource):
 # -- Customer Queries End here -------------------------------------------------------------------------------
 
 # -- Farmers Queries Start here -------------------------------------------------------------------------------
-'''
-INPUT:
---insert
-{
-"itm_business_uid" : "200-000009",
-"item_name" : "Grapes",
-"item_status" : "",
-"item_type" : "fruit",
-"item_desc" : "[organic,red,seedless]",
-"item_unit" : "lbs",
-"item_price" : "5.99",
-"item_sizes" : "M",
-"favorite" : "FALSE",
-"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
-"exp_date" : ""
-}
---update
-{
-"itm_business_uid" : "200-000009",
-"item_name" : "Banana",
-"item_status" : "",
-"item_type" : "fruit",
-"item_desc" : "[organic,red,seedless]",
-"item_unit" : "lbs",
-"item_price" : "5.99",
-"item_sizes" : "M",
-"favorite" : "FALSE",
-"item_photo" : "https://s3-us-west-1.amazonaws.com/servingnow/meals_imgs/1e43591331714bdea715e8f50fb5d625_e1d73947e70541439bab8b95b2a07b07",
-"exp_date" : "",
-"item_uid" : "310-000208"
-}
---status
-{
-"item_uid" : "310-000208",
-"item_status" : "Past"
-}
-'''
 
 class addItems(Resource):
     def post(self, action):
@@ -2368,7 +2135,7 @@ class addItems(Resource):
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
-                key = str(image_category) + '/' + str(NewID)
+                key =  NewID
                 print(key)
                 item_photo_url = helper_upload_meal_img(item_photo, key)
                 print(item_photo_url)
@@ -2418,30 +2185,50 @@ class addItems(Resource):
                 item_price = request.form.get('item_price')
                 item_sizes = request.form.get('item_sizes')
                 favorite = request.form.get('favorite')
-                item_photo = request.files.get('item_photo')
+                print('In')
+                item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
+                print('oout')
                 exp_date = request.form.get('exp_date')
-                image_category = request.form.get('image_category')
+                key = str(item_uid)
 
-                key = str(image_category) + '/' + str(item_uid)
-                item_photo_url = helper_upload_meal_img(item_photo, key)
+                if item_photo == 'NULL':
+                    print('IFFFFF------')
 
-
-                query_update =  '''
-                                UPDATE sf.items
-                                SET 
-                                itm_business_uid = \'''' + itm_business_uid + '''\',
-                                item_name = \'''' + item_name + '''\',
-                                item_status = \'''' + item_status + '''\',
-                                item_type = \'''' + item_type + '''\',
-                                item_desc = \'''' + item_desc + '''\',
-                                item_unit = \'''' + item_unit + '''\',
-                                item_price = \'''' + item_price + '''\',
-                                item_sizes = \'''' + item_sizes + '''\',
-                                favorite = \'''' + favorite + '''\',
-                                item_photo = \'''' + item_photo_url + '''\',
-                                exp_date = \'''' + exp_date + '''\'
-                                WHERE item_uid = \'''' + item_uid + '''\';
+                    query_update =  '''
+                                    UPDATE sf.items
+                                    SET 
+                                    itm_business_uid = \'''' + itm_business_uid + '''\',
+                                    item_name = \'''' + item_name + '''\',
+                                    item_status = \'''' + item_status + '''\',
+                                    item_type = \'''' + item_type + '''\',
+                                    item_desc = \'''' + item_desc + '''\',
+                                    item_unit = \'''' + item_unit + '''\',
+                                    item_price = \'''' + item_price + '''\',
+                                    item_sizes = \'''' + item_sizes + '''\',
+                                    favorite = \'''' + favorite + '''\',
+                                    exp_date = \'''' + exp_date + '''\'
+                                    WHERE item_uid = \'''' + item_uid + '''\';
                                 '''
+                else:
+                    print('ELSE--------')
+                    item_photo_url = helper_upload_meal_img(item_photo, key)
+                    query_update =  '''
+                                    UPDATE sf.items
+                                    SET 
+                                    itm_business_uid = \'''' + itm_business_uid + '''\',
+                                    item_name = \'''' + item_name + '''\',
+                                    item_status = \'''' + item_status + '''\',
+                                    item_type = \'''' + item_type + '''\',
+                                    item_desc = \'''' + item_desc + '''\',
+                                    item_unit = \'''' + item_unit + '''\',
+                                    item_price = \'''' + item_price + '''\',
+                                    item_sizes = \'''' + item_sizes + '''\',
+                                    favorite = \'''' + favorite + '''\',
+                                    item_photo = \'''' + item_photo_url + '''\',
+                                    exp_date = \'''' + exp_date + '''\'
+                                    WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+
                 items = execute(query_update, 'post', conn)
                 print(items)
 
