@@ -1294,7 +1294,8 @@ class Login(Resource):
 
                     if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
                         response['message'] = "Account need to be verified by email."
-                        return response, 401
+                        response['code'] = 401
+                        return response
 
                 # compare the refresh token because it never expire.
                 elif (items['result'][0]['user_social_media']) != 'NULL':
@@ -1319,17 +1320,18 @@ class Login(Resource):
                     print("*" * (len(string) + 10))
                     print(string.center(len(string) + 10, "*"))
                     print("*" * (len(string) + 10))
-                    response['message'] = 'Internal Server Error.-3'
-                    return response, 500
+                    response['message'] = string
+                    response['code'] = 500
+                    return response
                 del items['result'][0]['password_hashed']
                 del items['result'][0]['email_verified']
 
-                response['message'] = "Authenticated successfully."
                 query = "SELECT * from sf.customers WHERE customer_email = \'" + email + "\';"
                 items = execute(query, 'get', conn)
-                response['result'] = items['result']
+                items['message'] = "Authenticated successfully."
+                items['code'] = 200
+                return items
 
-                return response, 200
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
