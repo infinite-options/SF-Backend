@@ -1431,12 +1431,12 @@ class AppleLogin (Resource):
                         if items['result'][0]['user_social_media'] != "APPLE":
                             items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                             items['code'] = 400
-                            return items
+                            return redirect("http://localhost:3000/?media=" + items['result'][0]['user_social_media'])
 
                         elif items['result'][0]['user_refresh_token'] != sub:
                             items['message'] = "Token mismatch"
                             items['code'] = 400
-                            return items
+                            return redirect("http://localhost:3000/")
 
                         else:
                             return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
