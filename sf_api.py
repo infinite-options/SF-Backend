@@ -1254,13 +1254,9 @@ class Login(Resource):
             items = execute(query, 'get', conn)
             print('Password', password)
             print(items)
-            if items['code'] == 480:
-                items['message'] = "Internal Server Error-1."
-                items['result'] = ''
-                items['code'] = 480
-                return items
+
             if items['code'] != 280:
-                response['message'] = "Internal Server Error-2."
+                response['message'] = "Internal Server Error."
                 response['code'] = 500
                 return response
             elif not items['result']:
@@ -1281,7 +1277,9 @@ class Login(Resource):
 
                # nothing to check
                 elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'NULL'):
-                    return BadRequest("Bad request.")
+                    response['message'] = "Enter password else login from social media"
+                    response['code'] = 405
+                    return response
 
                 # compare passwords if user_social_media is false
                 elif (items['result'][0]['user_social_media'] == 'NULL' or items['result'][0]['user_social_media'] == None) and password is not None:
@@ -1289,12 +1287,12 @@ class Login(Resource):
                     if items['result'][0]['password_hashed'] != password:
                         items['message'] = "Wrong password"
                         items['result'] = ''
-                        items['code'] = 401
+                        items['code'] = 406
                         return items
 
                     if ((items['result'][0]['email_verified']) == '0') or (items['result'][0]['email_verified'] == "FALSE"):
                         response['message'] = "Account need to be verified by email."
-                        response['code'] = 401
+                        response['code'] = 407
                         return response
 
                 # compare the refresh token because it never expire.
@@ -1312,7 +1310,7 @@ class Login(Resource):
 
                         items['message'] = "Cannot Authenticated. Token is invalid"
                         items['result'] = ''
-                        items['code'] = 401
+                        items['code'] = 408
                         return items
 
                 else:
