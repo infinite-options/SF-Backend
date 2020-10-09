@@ -27,12 +27,12 @@ import random
 import string
 import stripe
 
-from flask import Flask, request, render_template, redirect
+from flask import Flask, request, render_template, redirect, url_for
 from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_mail import Mail, Message
 # used for serializer email and error handling
-#from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignature
 #from flask_cors import CORS
 
 from werkzeug.exceptions import BadRequest, NotFound
@@ -100,6 +100,15 @@ stripe_secret_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
 stripe.api_key = stripe_secret_key
 # Allow cross-origin resource sharing
 cors = CORS(app, resources={r'/api/*': {'origins': '*'}})
+app.config['DEBUG'] = True
+# Adding for email testing
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = 'ptydtesting@gmail.com'
+app.config['MAIL_PASSWORD'] = 'ptydtesting06282020'
+app.config['MAIL_DEFAULT_SENDER'] = 'ptydtesting@gmail.com'
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
 
 app.config['MAIL_USERNAME'] = os.environ.get('EMAIL')
 app.config['MAIL_PASSWORD'] = os.environ.get('PASSWORD')
@@ -124,7 +133,7 @@ app.config['DEBUG'] = False
 app.config['STRIPE_SECRET_KEY'] = os.environ.get('STRIPE_SECRET_KEY')
 
 mail = Mail(app)
-
+s = URLSafeTimedSerializer('thisisaverysecretkey')
 # API
 api = Api(app)
 
@@ -1040,6 +1049,7 @@ class SignUp(Resource):
             if social_signup == False:
 
                 salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+
                 password = sha512((data['password'] + salt).encode()).hexdigest()
                 print('password------', password)
                 algorithm = "SHA512"
@@ -1190,6 +1200,20 @@ class SignUp(Resource):
             items['message'] = 'Signup successful'
             items['code'] = 200
 
+            print('sss-----', social_signup)
+
+            if social_signup == False:
+                token = s.dumps(email)
+                msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
+
+                print('MESSAGE----', msg)
+                print('message complete')
+                link = url_for('confirm', token=token, hashed=password, _external=True)
+                print('link---', link)
+                msg.body = "Click on the link {} to verify your email address.".format(link)
+                print('msg-bd----', msg.body)
+                mail.send(msg)
+
             return items
         except:
             print("Error happened while Sign Up")
@@ -1198,6 +1222,33 @@ class SignUp(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+# confirmation page
+@app.route('/api/v2/confirm', methods=['GET'])
+def confirm():
+    try:
+        token = request.args['token']
+        hashed = request.args['hashed']
+        print("hased: ", hashed)
+        email = s.loads(token)  # max_age = 86400 = 1 day
+
+        # marking email confirmed in database, then...
+        conn = connect()
+        query = """UPDATE customers SET email_verified = 1 WHERE customer_email = \'""" + email + """\';"""
+        update = execute(query, 'post', conn)
+        if update.get('code') == 281:
+            # redirect to login page
+            return redirect('http://localhost:3000/login?email={}&hashed={}'.format(email, hashed))
+        else:
+            print("Error happened while confirming an email address.")
+            error = "Confirm error."
+            err_code = 401  # Verification code is incorrect
+            return error, err_code
+    except (SignatureExpired, BadTimeSignature) as err:
+        status = 403  # forbidden
+        return str(err), status
+    finally:
+        disconnect(conn)
 
 
 class AccountSalt(Resource):
