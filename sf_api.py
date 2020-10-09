@@ -1238,7 +1238,9 @@ def confirm():
         update = execute(query, 'post', conn)
         if update.get('code') == 281:
             # redirect to login page
-            return redirect('http://localhost:3000/login?email={}&hashed={}'.format(email, hashed))
+            # only for testing on localhost
+            #return redirect('http://localhost:3000/login?email={}&hashed={}'.format(email, hashed))
+            return redirect('https://servingfresh.me/login?email={}&hashed={}'.format(email, hashed))
         else:
             print("Error happened while confirming an email address.")
             error = "Confirm error."
