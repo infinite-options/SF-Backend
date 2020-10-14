@@ -1281,12 +1281,15 @@ def sms_service(phone, name):
 
 
 class AccountSalt(Resource):
-    def get(self):
+    def post(self):
         response = {}
         items = {}
         try:
             conn = connect()
-            email = request.args['email']
+
+            data = request.get_json(force=True)
+            print(data)
+            email = data['email']
             query = """
                     SELECT password_algorithm, 
                             password_salt 
