@@ -53,9 +53,12 @@ return:
 
 [Get]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt/email
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt
 
-example:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt/xyz@gmail.com
+input:\
+{\
+"email" : "xyz@gmail.com"\
+}
 
 return: password_algorithm and password_salt
 
