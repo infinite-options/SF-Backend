@@ -40,6 +40,13 @@ from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.security import generate_password_hash, \
      check_password_hash
 
+# Twilio settings
+from twilio.rest import Client
+account_sid = 'AC3a9ae29f36f0f6f79a878e6b9f5e8c49'
+auth_token = 'c8c55e679c73523948b587a061019846'
+client = Client(account_sid, auth_token)
+
+
 
 #  NEED TO SOLVE THIS
 # from NotificationHub import Notification
@@ -93,9 +100,6 @@ import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
 stripe_secret_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
 
-#this is a testing key using ptydtesting's stripe account.
-# stripe_public_key = "pk_test_51H0sExEDOlfePYdd9TVlnhVDOCmmnmdxAxyAmgW4x7OI0CR7tTrGE2AyrTk8VjftoigEOhv2RTUv5F8yJrfp4jWQ00Q6KGXDHV"
-# stripe_secret_key = "sk_test_51H0sExEDOlfePYdd9UQDxfp8yoY7On272hCR9ti12WSNbIGTysaJI8K2W8NhCKqdBOEhiNj4vFOtQu6goliov8vF00cvqfWG6d"
 
 stripe.api_key = stripe_secret_key
 # Allow cross-origin resource sharing
@@ -129,8 +133,6 @@ app.config['MAIL_USE_SSL'] = True
 # Set this to false when deploying to live application
 #app.config['DEBUG'] = True
 app.config['DEBUG'] = False
-
-app.config['STRIPE_SECRET_KEY'] = os.environ.get('STRIPE_SECRET_KEY')
 
 mail = Mail(app)
 s = URLSafeTimedSerializer('thisisaverysecretkey')
@@ -1200,6 +1202,14 @@ class SignUp(Resource):
             items['message'] = 'Signup successful'
             items['code'] = 200
 
+            # Twilio sms service
+
+            #resp = url_for('sms_service', phone_num='+17327818408', _external=True)
+            resp = sms_service('+1'+phone, firstName)
+            print("resp --------", resp)
+
+
+
             print('sss-----', social_signup)
 
             if social_signup == False:
@@ -1213,6 +1223,8 @@ class SignUp(Resource):
                 msg.body = "Click on the link {} to verify your email address.".format(link)
                 print('msg-bd----', msg.body)
                 mail.send(msg)
+
+
 
             return items
         except:
@@ -1251,6 +1263,21 @@ def confirm():
         return str(err), status
     finally:
         disconnect(conn)
+
+def sms_service(phone, name):
+    print(phone)
+
+    message = client.messages \
+                    .create(
+                         body="Hi " +name+ " thanks for signing up with Serving Fresh",
+                         from_='+18659786905',
+                         to=phone
+                     )
+    print(message.sid)
+
+    return "Sent"
+
+
 
 
 class AccountSalt(Resource):
@@ -1525,6 +1552,7 @@ class Profile(Resource):
                     WHERE customer_uid = \'""" + id + """\'
                     """
             items = execute(query, 'get', conn)
+
             if items['result']:
 
                 items['message'] = 'Profile Loaded successful'
@@ -1541,6 +1569,7 @@ class Profile(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
 
 
 class getItems(Resource):
@@ -2169,6 +2198,34 @@ class history(Resource):
             disconnect(conn)
 
 
+class Stripe_Intent(Resource):
+    def post(self):
+        response = {}
+        amount = request.form.get('amount')
+
+        if request.form.get('amount') == None:
+            raise BadRequest('Request failed. Please provide the amount field.')
+        try:
+            amount = int(float(request.form.get('amount')) * 100)
+        except:
+            raise BadRequest('Request failed. Unable to convert amount to int')
+        print('AMOUNT------', amount)
+
+        intent = stripe.PaymentIntent.create(
+        amount=amount,
+        currency='usd',
+        )
+        print('INTENT------', intent)
+        client_secret = intent.client_secret
+        intent_id = intent.id
+        response['client_secret'] = client_secret
+        response['id'] = intent_id
+        response['code'] = 200
+        print(response['client_secret'])
+        print(response['id'])
+        return response
+
+
 # -- Customer Queries End here -------------------------------------------------------------------------------
 
 # -- Farmers Queries Start here -------------------------------------------------------------------------------
@@ -2534,6 +2591,9 @@ class orders_info(Resource):
 # -- Queries end here -------------------------------------------------------------------------------
 
 
+
+
+
 # Add Comment Here ie Shows All Meal Plan Info
 class TemplateApi(Resource):
     def get(self):
@@ -2677,6 +2737,12 @@ class Update_Registration_With_GUID_Android(Resource):
 
 # -- END NOTIFICATIONS INFO -------------------------------------------------------------------------------
 
+#--- Exprimentation -----
+
+
+#------
+
+
 # Define API routes
 
 api.add_resource(Businesses, '/api/v2/businesses')
@@ -2704,6 +2770,7 @@ api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
+api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 
 
 # Farmer Endpoints
