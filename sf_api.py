@@ -1205,8 +1205,8 @@ class SignUp(Resource):
             # Twilio sms service
 
             #resp = url_for('sms_service', phone_num='+17327818408', _external=True)
-            resp = sms_service('+1'+phone, firstName)
-            print("resp --------", resp)
+            #resp = sms_service('+1'+phone, firstName)
+            #print("resp --------", resp)
 
 
 
@@ -2760,7 +2760,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 
 
 api.add_resource(SignUp, '/api/v2/SignUp/')
-api.add_resource(AccountSalt, '/api/v2/AccountSalt/')
+api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
