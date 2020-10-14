@@ -51,7 +51,7 @@ return:
 
 ### AccountSalt
 
-[Get]
+[Post]
 
 endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AccountSalt
 
