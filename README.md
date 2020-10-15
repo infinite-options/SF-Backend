@@ -23,15 +23,17 @@ input:
 "role" : "CUSTOMER",\
 "access_token" : "NULL",\
 "refresh_token": "NULL",\
-"social" : "FALSE",\
+"social" : "FALSE",----- \
 "password": "work123",\
-"cust_id": "100-000236" ----- optional [if you are using APPLE login then only use this variable else don't include it in json]
+"cust_id": "100-000236" ----- optional [if you are using APPLE login (WEBSITE ONLY not mobile) then only use this variable else don't include it in json]
 }
 
 NOTE:
 
-For customers using email and password above input is valid but if customer uses social signup do
-update access_token, social = TRUE and refresh_token field respectively.
+For customers using email and password above input is valid but if customer uses social signup do\
+update access_token, social = FACEBOOK/GOOGLE/APPLE and refresh_token field respectively.\
+If you are getting just access_token then insert that value in refresh_token also because all authentication will\
+be done using refresh_token only and not access_token.
 
 return:
 
@@ -763,9 +765,9 @@ INPUT:
 "business_phone_num" : "(512) 555-1234",\
 "business_phone_num2" : "(512) 555-1200",\
 "business_email" : "heather@ptyd.com",\
-"business_hours" : "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"]}",\
-"business_accepting_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
-"business_delivery_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
+"business_hours" : "{'Friday': ['00:00:00', '23:59:00'], 'Monday': ['00:00:00', '23:59:00'], 'Sunday': ['00:00:00', '23:59:00'], 'Tuesday': ['00:00:00', '23:59:00'], 'Saturday': ['00:00:00', '23:59:00']}",\
+"business_accepting_hours" : "{'Friday': ['09:00:00', '23:59:59'], 'Monday': ['09:00:00', '23:59:59'], 'Sunday': ['09:00:00', '23:59:59'], 'Tuesday': ['09:00:00', '23:59:59'], 'Saturday': ['09:00:00', '21:00:00'], 'Thursday': ['09:00:00', '23:59:59'], 'Wednesday': ['09:00:00', '23:00:00']}",\
+"business_delivery_hours" : "{'Friday': ['09:00:00', '23:59:59'], 'Monday': ['00:00:00', '00:00:00'], 'Sunday': ['09:00:00', '23:59:59'], 'Tuesday': ['09:00:00', '23:59:59'], 'Saturday': ['09:00:00', '21:00:00'], 'Thursday': ['09:00:00', '23:59:59'], 'Wednesday': ['09:00:00', '23:00:00']}",\
 "business_address" :"360 Cowden Road",\
 "business_unit" : "",\
 "business_city" :  "Hollister",\
