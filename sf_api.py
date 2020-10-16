@@ -1028,7 +1028,7 @@ class SignUp(Resource):
             longitude = data['longitude']
             referral = data['referral_source']
             role = data['role']
-            social_timestamp = data['social_timestamp']
+            social_timestamp = data['social_timestamp'] if data.get('social_timestamp') is not None else 'NULL'
             cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
 
             if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
