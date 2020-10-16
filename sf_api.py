@@ -2068,7 +2068,9 @@ class purchase_Data_SF(Resource):
                 purchase_status = 'ACTIVE'
                 pur_customer_uid = data['pur_customer_uid']
                 pur_business_uid = data['pur_business_uid']
-                items_pur = data['items']
+                #items_pur = data['items']
+                items_pur = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['items']]) + "]'"
+
                 order_instructions = data['order_instructions']
                 delivery_instructions = data['delivery_instructions']
                 order_type = data['order_type']
@@ -2108,7 +2110,7 @@ class purchase_Data_SF(Resource):
                                     purchase_status = \'""" + purchase_status + """\',
                                     pur_customer_uid = \'""" + pur_customer_uid + """\',
                                     pur_business_uid = \'""" + pur_business_uid + """\',
-                                    items = \'""" + items_pur + """\',
+                                    items = """ + items_pur + """,
                                     order_instructions = \'""" + order_instructions + """\',
                                     delivery_instructions = \'""" + delivery_instructions + """\',
                                     order_type = \'""" + order_type + """\',
@@ -2422,70 +2424,6 @@ class addItems(Resource):
         finally:
             disconnect(conn)
 
-
-class delivery_status(Resource):
-    def post(self, purchase_uid):
-            try:
-                conn = connect()
-
-                query = "UPDATE sf.purchases SET delivery_status = 'Yes' WHERE purchase_uid = \'" + purchase_uid + "\';"
-
-                item = execute(query, 'post', conn)
-
-                if item['code'] == 281:
-                    item['code'] = 200
-                    item['message'] = 'Delivery Status updated'
-                else:
-                    item['message'] = 'check sql query'
-                    item['code'] = 490
-                return item
-
-            except:
-                print("Error happened while inserting in payments table")
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
-                print('process completed')
-
-
-
-# Input for post ACTION request
-'''
-{
-"business_uid" : "200-000001",
-"business_created_at" : "2020-01-09 17:34:48",
-"business_name" : "PTYD",
-"business_type" : "kriti",
-"business_desc" : "Vegan Delivery Service",
-"business_contact_first_name" : "Heather",
-"business_contact_last_name" : "Faiez",
-"business_phone_num" : "(512) 555-1234",
-"business_phone_num2" : "(512) 555-1200",
-"business_email" : "heather@ptyd.com",
-"business_hours" : "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"]}",
-"business_accepting_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",
-"business_delivery_hours" : "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",
-"business_address" :"360 Cowden Road",
-"business_unit" : "",
-"business_city" :  "Hollister",
-"business_state" : "CA",
-"business_zip" : "95135",
-"business_longitude" : "-121.9141246",
-"business_latitude" : "37.3316565",
-"business_EIN" : "",
-"business_WAUBI" : "", 
-"business_license" : "",
-"business_USDOT" : "",
-"notification_approval" : "",
-"notification_device_id" : "",
-"can_cancel" : "0",
-"delivery" : "0",
-"reusable" : "0",
-"business_image" : "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",
-"business_password" : "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798"
-}
-'''
-
 class business_details_update(Resource):
     def post(self, action):
             try:
@@ -2510,6 +2448,16 @@ class business_details_update(Resource):
                     print(data)
                     print('IN')
 
+
+                    business_association = str(data['business_association'])
+                    business_association = "'" + business_association.replace("'", "\"") + "'"
+                    business_hours = str(data['business_hours'])
+                    business_hours = "'" + business_hours.replace("'", "\"") + "'"
+                    business_accepting_hours = str(data['business_accepting_hours'])
+                    business_accepting_hours = "'" + business_accepting_hours.replace("'", "\"") + "'"
+                    business_delivery_hours = str(data['business_delivery_hours'])
+                    business_delivery_hours = "'" + business_delivery_hours.replace("'", "\"") + "'"
+
                     query = """
                                UPDATE sf.businesses
                                SET 
@@ -2517,15 +2465,15 @@ class business_details_update(Resource):
                                business_name = \'""" + data["business_name"] + """\',
                                business_type = \'""" + data["business_type"] + """\',
                                business_desc = \'""" + data["business_desc"] + """\',
-                               business_association = \'""" + str(data["business_association"]) + """\',
+                               business_association = """ + business_association + """,
                                business_contact_first_name = \'""" + data["business_contact_first_name"] + """\',
                                business_contact_last_name = \'""" + data["business_contact_last_name"] + """\',
                                business_phone_num = \'""" + data["business_phone_num"] + """\',
                                business_phone_num2 = \'""" + data["business_phone_num2"] + """\',
                                business_email = \'""" + data["business_email"] + """\',
-                               business_hours = \'""" + str(data["business_hours"]) + """\',
-                               business_accepting_hours = \'""" + str(data["business_accepting_hours"]) + """\',
-                               business_delivery_hours = \'""" + str(data["business_delivery_hours"]) + """\',
+                               business_hours = """ + business_hours + """,
+                               business_accepting_hours = """ + business_accepting_hours + """,
+                               business_delivery_hours = """ + business_delivery_hours + """,
                                business_address = \'""" + data["business_address"] + """\',
                                business_unit = \'""" + data["business_unit"] + """\',
                                business_city = \'""" + data["business_city"] + """\',
@@ -2639,22 +2587,22 @@ class order_actions(Resource):
                 query_pur = """
                         DELETE FROM sf.purchases WHERE (purchase_uid = \'""" + purchase_uid + """\');
                         """
-                items = execute(query_pur, 'post', conn)
-                if items['code'] == 281:
-                    items['message'] = 'Order deleted'
-                    items['code'] = 200
+                item = execute(query_pur, 'post', conn)
+                if item['code'] == 281:
+                    item['message'] = 'Order deleted'
+                    item['code'] = 200
                 else:
-                    items['message'] = 'Check sql query'
+                    item['message'] = 'Check sql query'
 
                 query_pay = """
                         DELETE FROM sf.payments WHERE (pay_purchase_uid = \'""" + purchase_uid + """\');
                         """
-                items = execute(query_pay, 'post', conn)
-                if items['code'] == 281:
-                    items['message'] = 'order deleted successful'
-                    items['code'] = 200
+                item = execute(query_pay, 'post', conn)
+                if item['code'] == 281:
+                    item['message'] = 'order deleted successful'
+                    item['code'] = 200
                 else:
-                    items['message'] = 'Check sql query'
+                    item['message'] = 'Check sql query'
 
             elif action == 'delivery_status_YES':
                 print('DELIVERY_YES')
@@ -2666,7 +2614,7 @@ class order_actions(Resource):
                         """
                 print(query)
                 item = execute(query, 'post', conn)
-                print(items)
+                print(item)
 
                 if item['code'] == 281:
                     item['code'] = 200
@@ -2695,10 +2643,20 @@ class order_actions(Resource):
 
             elif action == 'item_delete':
                 print('item_delete')
-                item_data = data['item_data']
-                query = """UPDATE sf.purchases SET items = \'""" + item_data + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');"""
+                #itm = str(data['item_data'])
+                itm = json.dumps(data['item_data'])
+                print(itm)
+                itm = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['item_data']]) + "]'"
 
+                query = """ 
+                        UPDATE sf.purchases 
+                        SET 
+                        items = """  + itm + """
+                        WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                        """
+                print(query)
                 item = execute(query, 'post', conn)
+                print(item)
 
                 if item['code'] == 281:
                     item['code'] = 200
@@ -2710,7 +2668,7 @@ class order_actions(Resource):
             else:
                 return 'Select proper option'
 
-            return items
+            return item
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -2724,6 +2682,9 @@ class order_actions(Resource):
 
 
 # -- Farmers Queries End here -------------------------------------------------------------------------------
+
+
+#UPDATE sf.businesses SET business_hours = '{\"Friday\": [\"00:01:00\", \"23:59:00\"], \"Monday\": [\"00:00:00\", \"23:59:00\"], \"Sunday\": [\"00:00:00\", \"23:59:00\"], \"Tuesday\": [\"00:00:00\", \"23:59:00\"], \"Saturday\": [\"00:00:00\", \"23:59:00\"], \"Thursday\": [\"00:00:00\", \"23:59:00\"], \"Wednesday\": [\"00:00:00\", \"23:59:00\"]}' WHERE (business_uid = '200-000030');
 
 
 # -- Queries end here -------------------------------------------------------------------------------
