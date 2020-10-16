@@ -627,7 +627,7 @@ Input :
 {\
 "pur_customer_uid" : "100-000009",\
 "pur_business_uid" : "200-000001",\
-"items" : "[{\"qty\": \"1\",\ \"name\": \"5 Meal Plan - Weekly\",\ \"price\": \"59.99\",\ \"item_uid\": \"320-000002\"}]",\
+"items" : [{"qty": "1", "name": "5 Meal Plan - Weekly", "price": "59.99", "item_uid": "320-000002"},{"qty": "1", "name": "oranges", "price": "59.99", "item_uid": "320-000002"}],\
 "order_instructions" : "fast",\
 "delivery_instructions" : "Keep Fresh",\
 "order_type" : "meal",\
@@ -748,45 +748,47 @@ INPUT:
 
 --Get--:
 
-{
-"business_uid" : "200-000004"
+{\
+"business_uid" : "200-000004"\
 }
 
 --Post--:
 
-{
-"business_uid" : "200-000001",\
-"business_created_at" : "2020-01-09 17:34:48",\
-"business_name" : "PTYD",\
-"business_type" : "kriti",\
-"business_desc" : "Vegan Delivery Service",\
-"business_contact_first_name" : "Heather",\
-"business_contact_last_name" : "Faiez",\
-"business_phone_num" : "(512) 555-1234",\
-"business_phone_num2" : "(512) 555-1200",\
-"business_email" : "heather@ptyd.com",\
-"business_hours" : "{'Friday': ['00:00:00', '23:59:00'], 'Monday': ['00:00:00', '23:59:00'], 'Sunday': ['00:00:00', '23:59:00'], 'Tuesday': ['00:00:00', '23:59:00'], 'Saturday': ['00:00:00', '23:59:00']}",\
-"business_accepting_hours" : "{'Friday': ['09:00:00', '23:59:59'], 'Monday': ['09:00:00', '23:59:59'], 'Sunday': ['09:00:00', '23:59:59'], 'Tuesday': ['09:00:00', '23:59:59'], 'Saturday': ['09:00:00', '21:00:00'], 'Thursday': ['09:00:00', '23:59:59'], 'Wednesday': ['09:00:00', '23:00:00']}",\
-"business_delivery_hours" : "{'Friday': ['09:00:00', '23:59:59'], 'Monday': ['00:00:00', '00:00:00'], 'Sunday': ['09:00:00', '23:59:59'], 'Tuesday': ['09:00:00', '23:59:59'], 'Saturday': ['09:00:00', '21:00:00'], 'Thursday': ['09:00:00', '23:59:59'], 'Wednesday': ['09:00:00', '23:00:00']}",\
-"business_address" :"360 Cowden Road",\
-"business_unit" : "",\
-"business_city" :  "Hollister",\
-"business_state" : "CA",\
-"business_zip" : "95135",\
-"business_longitude" : "-121.9141246",\
-"business_latitude" : "37.3316565",\
-"business_EIN" : "",\
-"business_WAUBI" : "",\
-"business_license" : "",\
-"business_USDOT" : "",\
-"notification_approval" : "",\
-"notification_device_id" : "",\
-"can_cancel" : "0",\
-"delivery" : "0",\
-"reusable" : "0",\
-"business_image" : "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",\
-"business_password" : "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798"\
-}
+{\
+  "business_uid" : "200-000030",\
+  "business_created_at" : "2020-01-09 17:34:48",\
+  "business_name" : "PTYD",\
+  "business_type" : "kriti",\
+  "business_desc" : "Vegan Delivery Service",\
+  "business_association" : ["200-000012"],\
+  "business_contact_first_name" : "Heather",\
+  "business_contact_last_name" : "Faiez",\
+  "business_phone_num" : "(512) 555-1234",\
+  "business_phone_num2" : "(512) 555-1200",\
+  "business_email" : "heather@ptyd.com",\
+  "business_hours" : {"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"]},\
+  "business_accepting_hours" : {"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]},\
+  "business_delivery_hours" : {"Friday": ["09:00:00", "23:59:59"]},\
+  "business_address" :"360 Cowden Road",\
+  "business_unit" : "",\
+  "business_city" : "Hollister",\
+  "business_state" : "CA",\
+  "business_zip" : "95135",\
+  "business_longitude" : "-121.9141246",\
+  "business_latitude" : "37.3316565",\
+  "business_EIN" : "",\
+  "business_WAUBI" : "",\
+  "business_license" : "",\
+  "business_USDOT" : "",\
+  "notification_approval" : "",\
+  "notification_device_id" : "",\
+  "can_cancel" : "0",\
+  "delivery" : "0",\
+  "reusable" : "0",\
+  "business_image" : "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",\
+  "business_password" : "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e896xxxxxxxxxxx"\
+  }
+
 
 ### orders_by_farm
 
@@ -921,6 +923,45 @@ return:
 
 
 
+### order_actions
 
+[Post]
+
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/order_actions/action
+
+example:
+
+1. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/Delete
+2. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/delivery_status_YES
+3. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/delivery_status_NO
+4. https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/business_details_update/item_delete
+
+
+inputs:
+
+1. Delete
+
+{\
+"purchase_uid" : "400-000387"\
+}
+
+2. delivery_status_YES
+
+{\
+"purchase_uid" : "400-000387"\
+}
+
+3. delivery_status_NO
+
+{\
+"purchase_uid" : "400-000387"\
+}
+
+4. item_delete
+
+{\
+"purchase_uid":"400-000001",\
+"item_data" : [{"qty": "5", "name": "Broccoli ", "price": "3.5", "item_uid": "310-000023"}, {"qty": "1", "name": "Iceberg Lettuce ", "price": "2.5", "item_uid": "310-000025"}, {"qty": "1", "name": "Collards ", "price": "2.5", "item_uid": "310-000022"}, {"qty": "1", "name": "Cauliflower ", "price": "3.5", "item_uid": "310-000024"}]\
+}
 
 
