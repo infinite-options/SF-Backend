@@ -1539,6 +1539,34 @@ class AppleLogin (Resource):
         except:
             raise BadRequest("Request failed, please try again later.")
 
+class access_refresh_update(Resource):
+
+    def post(self):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            query = """
+                    UPDATE sf.customers SET user_access_token = \'""" + data['access_token'] + """\', user_refresh_token = \'""" + data['refresh_token'] + """\' WHERE (customer_uid = \'""" + data['uid'] + """\'); ;
+                    """
+            print(query)
+            items = execute(query, 'post', conn)
+            if items['code'] == 281:
+                items['message'] = 'Access and refresh token updated successfully'
+                print(items['code'])
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+                items['code'] = 400
+
+
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
@@ -2252,13 +2280,12 @@ class addItems(Resource):
                 favorite = request.form.get('favorite')
                 item_photo = request.files.get('item_photo')
                 exp_date = request.form.get('exp_date')
-                image_category = request.form.get('image_category')
                 print('IN')
 
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
-                key =  NewID
+                key =  NewID + "_" + item_name
                 print(key)
                 item_photo_url = helper_upload_meal_img(item_photo, key)
                 print(item_photo_url)
@@ -2475,7 +2502,10 @@ class business_details_update(Resource):
                         item['code'] = 490
                     return item
                 else:
-                    print('IN ELSE')
+                    print("IN ELSE")
+                    print(data)
+                    print('IN')
+
                     query = """
                                UPDATE sf.businesses
                                SET 
@@ -2483,14 +2513,15 @@ class business_details_update(Resource):
                                business_name = \'""" + data["business_name"] + """\',
                                business_type = \'""" + data["business_type"] + """\',
                                business_desc = \'""" + data["business_desc"] + """\',
+                               business_association = \'""" + str(data["business_association"]) + """\',
                                business_contact_first_name = \'""" + data["business_contact_first_name"] + """\',
                                business_contact_last_name = \'""" + data["business_contact_last_name"] + """\',
                                business_phone_num = \'""" + data["business_phone_num"] + """\',
                                business_phone_num2 = \'""" + data["business_phone_num2"] + """\',
                                business_email = \'""" + data["business_email"] + """\',
-                               business_hours = \'""" + data["business_hours"] + """\',
-                               business_accepting_hours = \'""" + data["business_accepting_hours"] + """\',
-                               business_delivery_hours = \'""" + data["business_delivery_hours"] + """\',
+                               business_hours = \'""" + str(data["business_hours"]) + """\',
+                               business_accepting_hours = \'""" + str(data["business_accepting_hours"]) + """\',
+                               business_delivery_hours = \'""" + str(data["business_delivery_hours"]) + """\',
                                business_address = \'""" + data["business_address"] + """\',
                                business_unit = \'""" + data["business_unit"] + """\',
                                business_city = \'""" + data["business_city"] + """\',
@@ -2565,6 +2596,7 @@ class orders_info(Resource):
 
         try:
             conn = connect()
+
             query = """
                     SELECT pur.*, pay.amount_due, pay.amount_paid  
                     FROM sf.purchases as pur, sf.payments as pay
@@ -2577,6 +2609,43 @@ class orders_info(Resource):
             else:
                 items['message'] = 'Check sql query'
             return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+class order_actions(Resource):
+
+    def post(self, action):
+
+        try:
+            conn = connect()
+
+            if action == 'Delete':
+
+                query_pur = """
+                        DELETE FROM sf.purchases WHERE (purchase_uid = '400-000001');
+                        """
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Orders view loaded successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+
+                query_pay = """
+                        DELETE FROM sf.purchases WHERE (purchase_uid = '400-000001');
+                        """
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Orders view loaded successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -2763,6 +2832,7 @@ api.add_resource(SignUp, '/api/v2/SignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
+api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
