@@ -2876,7 +2876,6 @@ api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 # Farmer Endpoints
 
 api.add_resource(addItems, '/api/v2/addItems/<string:action>')
-api.add_resource(delivery_status, '/api/v2/delivery_status/<string:purchase_uid>')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
