@@ -1028,6 +1028,7 @@ class SignUp(Resource):
             longitude = data['longitude']
             referral = data['referral_source']
             role = data['role']
+            social_timestamp = data['social_timestamp']
             cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
 
             if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
@@ -1102,7 +1103,8 @@ class SignUp(Resource):
                                     password_algorithm = \'''' + algorithm + '''\',
                                     referral_source = \'''' + referral + '''\',
                                     role = \'''' + role + '''\',
-                                    user_social_media = \'''' + user_social_signup + '''\'
+                                    user_social_media = \'''' + user_social_signup + '''\',
+                                    social_timestamp  =  \'''' + social_timestamp + '''\'
                                     WHERE customer_uid = \'''' + cust_id + '''\';
                                     ''']
 
@@ -1155,6 +1157,7 @@ class SignUp(Resource):
                                             role,
                                             user_social_media,
                                             user_access_token,
+                                            social_timestamp,
                                             user_refresh_token
                                         )
                                         VALUES
@@ -1180,6 +1183,7 @@ class SignUp(Resource):
                                             \'""" + role + """\',
                                             \'""" + user_social_signup + """\',
                                             \'""" + access_token + """\',
+                                            \'""" + social_timestamp + """\',
                                             \'""" + refresh_token + """\');"""]
 
             items = execute(customer_insert_query[0], 'post', conn)
@@ -1547,7 +1551,7 @@ class access_refresh_update(Resource):
             conn = connect()
             data = request.get_json(force=True)
             query = """
-                    UPDATE sf.customers SET user_access_token = \'""" + data['access_token'] + """\', user_refresh_token = \'""" + data['refresh_token'] + """\' WHERE (customer_uid = \'""" + data['uid'] + """\'); ;
+                    UPDATE sf.customers SET user_access_token = \'""" + data['access_token'] + """\', user_refresh_token = \'""" + data['refresh_token'] + """\', social_timestamp =  \'""" + data['social_timestamp'] + """\' WHERE (customer_uid = \'""" + data['uid'] + """\'); ;
                     """
             print(query)
             items = execute(query, 'post', conn)
@@ -2622,29 +2626,91 @@ class order_actions(Resource):
 
         try:
             conn = connect()
-
+            data = request.get_json(force=True)
+            purchase_uid = data['purchase_uid'] if data.get('purchase_uid') is not None else 'NULL'
             if action == 'Delete':
+                print('IN DELETE')
+
+                purchase_uid = data['purchase_uid'] if data.get('purchase_uid') is not None else 'NULL'
+
+                if purchase_uid == 'NULL':
+                    return 'UID Incorrect'
 
                 query_pur = """
-                        DELETE FROM sf.purchases WHERE (purchase_uid = '400-000001');
+                        DELETE FROM sf.purchases WHERE (purchase_uid = \'""" + purchase_uid + """\');
                         """
-                items = execute(query, 'get', conn)
-                if items['code'] == 280:
-                    items['message'] = 'Orders view loaded successful'
+                items = execute(query_pur, 'post', conn)
+                if items['code'] == 281:
+                    items['message'] = 'Order deleted'
                     items['code'] = 200
                 else:
                     items['message'] = 'Check sql query'
 
                 query_pay = """
-                        DELETE FROM sf.purchases WHERE (purchase_uid = '400-000001');
+                        DELETE FROM sf.payments WHERE (pay_purchase_uid = \'""" + purchase_uid + """\');
                         """
-                items = execute(query, 'get', conn)
-                if items['code'] == 280:
-                    items['message'] = 'Orders view loaded successful'
+                items = execute(query_pay, 'post', conn)
+                if items['code'] == 281:
+                    items['message'] = 'order deleted successful'
                     items['code'] = 200
                 else:
                     items['message'] = 'Check sql query'
-                return items
+
+            elif action == 'delivery_status_YES':
+                print('DELIVERY_YES')
+
+                query = """
+                        UPDATE sf.purchases 
+                        SET delivery_status = 'Yes' 
+                        WHERE purchase_uid = \'""" + purchase_uid + """\';
+                        """
+                print(query)
+                item = execute(query, 'post', conn)
+                print(items)
+
+                if item['code'] == 281:
+                    item['code'] = 200
+                    item['message'] = 'Delivery Status updated'
+                else:
+                    item['message'] = 'check sql query'
+                    item['code'] = 490
+
+            elif action == 'delivery_status_NO':
+
+                print('DELIVERY_NO')
+                query = """
+                        UPDATE sf.purchases 
+                        SET delivery_status = 'No' 
+                        WHERE purchase_uid = \'""" + purchase_uid + """\';
+                        """
+
+                item = execute(query, 'post', conn)
+
+                if item['code'] == 281:
+                    item['code'] = 200
+                    item['message'] = 'Delivery Status updated'
+                else:
+                    item['message'] = 'check sql query'
+                    item['code'] = 490
+
+            elif action == 'item_delete':
+                print('item_delete')
+                item_data = data['item_data']
+                query = """UPDATE sf.purchases SET items = \'""" + item_data + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');"""
+
+                item = execute(query, 'post', conn)
+
+                if item['code'] == 281:
+                    item['code'] = 200
+                    item['message'] = 'items deleted updated'
+                else:
+                    item['message'] = 'check sql query'
+                    item['code'] = 490
+
+            else:
+                return 'Select proper option'
+
+            return items
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -2853,6 +2919,7 @@ api.add_resource(delivery_status, '/api/v2/delivery_status/<string:purchase_uid>
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
+api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 
 
 
