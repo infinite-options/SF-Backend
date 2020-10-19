@@ -117,6 +117,34 @@ Error Codes:
 200 - Successful login
 
 
+### AppleLogin
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/AppleLogin
+
+input : use form-urlencoded for input
+
+id_token = token from apple
+
+return: redirect to signup/farms/admin
+
+
+### access_refresh_update
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/access_refresh_update
+
+input:
+
+{\
+"access_token": "",\
+"refresh_token": "",\
+"social_timestamp": "",\
+"uid": ""\
+}
+
 ### Profile
 
 [Get]
@@ -962,6 +990,72 @@ inputs:
 {\
 "purchase_uid":"400-000001",\
 "item_data" : [{"qty": "5", "name": "Broccoli ", "price": "3.5", "item_uid": "310-000023"}, {"qty": "1", "name": "Iceberg Lettuce ", "price": "2.5", "item_uid": "310-000025"}, {"qty": "1", "name": "Collards ", "price": "2.5", "item_uid": "310-000022"}, {"qty": "1", "name": "Cauliflower ", "price": "3.5", "item_uid": "310-000024"}]\
+}
+
+
+### admin_report
+
+[Get]
+
+endpoint : https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/admin_report/<business_uid>
+
+example: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/admin_report/200-000006
+
+NOTE: Amount value represent total amount for that order
+
+return:
+
+{\
+"purchase_uid": "400-000320",\
+"purchase_date": "2020-09-21",\
+"purchase_id": "400-000320",\
+"purchase_status": "ACTIVE",\
+"pur_customer_uid": "100-000098",\
+"pur_business_uid": "",\
+"items": "[{\"qty\": \"8\", \"name\": \"Eggplant\", \"price\": \"3\", \"item_uid\": \"310-000135\", \"itm_business_uid\": \"200-000006\"}, {\"qty\": \"3\", \"name\": \"Yellow Bell Pepper (Certified Organic)\", \"price\": \"3\", \"item_uid\": \"310-000145\", \"itm_business_uid\": \"200-000006\"}, {\"qty\": \"1\", \"name\": \"Plum Jam\", \"price\": \"12\", \"item_uid\": \"310-000146\", \"itm_business_uid\": \"200-000007\"}, {\"qty\": \"1\", \"name\": \"Ghee\", \"price\": \"12\", \"item_uid\": \"310-000147\", \"itm_business_uid\": \"200-000007\"}]",\
+"order_instructions": "fast",\
+"delivery_instructions": "",\
+"order_type": "meal",\
+"delivery_first_name": "Zach",\
+"delivery_last_name": "Lind",\
+"delivery_phone_num": "9259840473",\
+"delivery_email": "zlind@ucsc.edu",
+"delivery_address": "19550 McKean Rd",\
+"delivery_unit": "1",\
+"delivery_city": "San Jose",\
+"delivery_state": "CA",\
+"delivery_zip": "95120",\
+"delivery_latitude": "37.199152",\
+"delivery_longitude": "-121.832979",\
+"purchase_notes": "purchase_notes",\
+"delivery_status": null,\
+"feedback_rating": 0,\
+"feedback_notes": null,\
+"qty": "1",\
+"name": "Plum Jam",\
+"price": "12",\
+"item_uid": "310-000146",\
+"itm_business_uid": "200-000007",\
+"deconstruct.qty": "1",\
+"deconstruct.name": "Plum Jam",\
+"deconstruct.price": "12",\
+"deconstruct.item_uid": "310-000146",\
+"deconstruct.itm_business_uid": "200-000007",\
+"Amount": 24\
+ }
+
+
+### Send_Twilio_SMS
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Send_Twilio_SMS
+
+input:
+
+{
+	"numbers": "4898999999,9999999999",\
+	"message": "Welcome to Serving Fresh"\
 }
 
 
