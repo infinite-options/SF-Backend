@@ -42,9 +42,10 @@ from werkzeug.security import generate_password_hash, \
 
 # Twilio settings
 from twilio.rest import Client
-account_sid = 'AC3a9ae29f36f0f6f79a878e6b9f5e8c49'
-auth_token = 'c8c55e679c73523948b587a061019846'
-client = Client(account_sid, auth_token)
+
+#TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+#TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+#client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
 
 
 
@@ -1463,7 +1464,10 @@ class AppleLogin (Resource):
 
 
                     # new customer
+
+
                     if not items['result']:
+                        print('New customer')
                         items['message'] = "Email doesn't exists Please go to the signup page"
                         get_user_id_query = "CALL new_customer_uid();"
                         NewUserIDresponse = execute(get_user_id_query, 'get', conn)
@@ -1507,7 +1511,7 @@ class AppleLogin (Resource):
                         if item['code'] != 281:
                             item['message'] = 'Check insert sql query'
                             return item
-
+                        print('successful redirect to signup')
                         return redirect("http://localhost:3000/socialsignup?id=" + NewUserID)
 
                     # Existing customer
@@ -1526,7 +1530,9 @@ class AppleLogin (Resource):
                             return redirect("http://localhost:3000/")
 
                         else:
+                            print('successful redirect to farms')
                             return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
+
 
                 else:
                     items['message'] = "Email not returned by Apple LOGIN"
@@ -1562,8 +1568,6 @@ class access_refresh_update(Resource):
             else:
                 items['message'] = 'Check sql query'
                 items['code'] = 400
-
-
             return items
 
         except:
@@ -2684,7 +2688,69 @@ class order_actions(Resource):
 # -- Farmers Queries End here -------------------------------------------------------------------------------
 
 
-#UPDATE sf.businesses SET business_hours = '{\"Friday\": [\"00:01:00\", \"23:59:00\"], \"Monday\": [\"00:00:00\", \"23:59:00\"], \"Sunday\": [\"00:00:00\", \"23:59:00\"], \"Tuesday\": [\"00:00:00\", \"23:59:00\"], \"Saturday\": [\"00:00:00\", \"23:59:00\"], \"Thursday\": [\"00:00:00\", \"23:59:00\"], \"Wednesday\": [\"00:00:00\", \"23:59:00\"]}' WHERE (business_uid = '200-000030');
+# -- Admin Queries Start here -------------------------------------------------------------------------------
+
+
+class admin_report(Resource):
+
+    def get(self, uid):
+
+        try:
+            conn = connect()
+
+            query = """
+                    SELECT *,deconstruct.*, sum(price) as Amount  
+                    FROM sf.purchases, 
+                         JSON_TABLE(items, '$[*]' COLUMNS (
+                                    qty VARCHAR(255)  PATH '$.qty',
+                                    name VARCHAR(255)  PATH '$.name',
+                                    price VARCHAR(255)  PATH '$.price',
+                                    item_uid VARCHAR(255)  PATH '$.item_uid',
+                                    itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                         ) AS deconstruct
+                    WHERE itm_business_uid = \'""" + uid + """\'
+                    GROUP BY purchase_uid;
+                    """
+
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Report data successful'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+'''
+class Send_Twilio_SMS(Resource):
+
+    def post(self):
+        items = {}
+        data = request.get_json(force=True)
+        numbers = data['numbers']
+        message = data['message']
+        if not numbers:
+            raise BadRequest('Request failed. Please provide the recipients field.')
+        if not message:
+            raise BadRequest('Request failed. Please provide the message field.')
+        for destination in numbers.split(','):
+            client.messages.create(
+                body = message,
+                from_= '+18659786905',
+                to = "+1" + destination
+            )
+        items['code'] = 200
+        items['Message'] = 'SMS sent successfully to all recipients'
+        return items
+'''
+
+
+
+# -- Admin Queries End here -------------------------------------------------------------------------------
 
 
 # -- Queries end here -------------------------------------------------------------------------------
@@ -2836,11 +2902,6 @@ class Update_Registration_With_GUID_Android(Resource):
 
 # -- END NOTIFICATIONS INFO -------------------------------------------------------------------------------
 
-#--- Exprimentation -----
-
-
-#------
-
 
 # Define API routes
 
@@ -2881,7 +2942,10 @@ api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 
+# Admin Endpoints
 
+api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
+#api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 
 
 # Run on below IP address and port
