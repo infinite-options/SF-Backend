@@ -37,15 +37,15 @@ from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadTimeSignat
 
 from werkzeug.exceptions import BadRequest, NotFound
 from werkzeug.datastructures import ImmutableMultiDict
-from werkzeug.security import generate_password_hash, \
-     check_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Twilio settings
 from twilio.rest import Client
 
-#TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
-#TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
-#client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+
+
 
 
 
@@ -2725,7 +2725,7 @@ class admin_report(Resource):
         finally:
             disconnect(conn)
 
-'''
+
 class Send_Twilio_SMS(Resource):
 
     def post(self):
@@ -2737,16 +2737,19 @@ class Send_Twilio_SMS(Resource):
             raise BadRequest('Request failed. Please provide the recipients field.')
         if not message:
             raise BadRequest('Request failed. Please provide the message field.')
+        print('IN SMS----')
+        print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         for destination in numbers.split(','):
             client.messages.create(
                 body = message,
-                from_= '+18659786905',
+                from_= '+19254815757',
                 to = "+1" + destination
             )
         items['code'] = 200
         items['Message'] = 'SMS sent successfully to all recipients'
         return items
-'''
+
 
 
 
@@ -2945,7 +2948,7 @@ api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
-#api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
+api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 
 
 # Run on below IP address and port
