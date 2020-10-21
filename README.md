@@ -28,6 +28,7 @@ input -- update
 	"mobile_refresh_token" : "5" \
 }
 
+NOTE: Insert values for fileds which wll not be updated using data returned in get action. DO NOT leave any field NULL.
 
 ### SIGNUP
 
