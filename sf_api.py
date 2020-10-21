@@ -1008,10 +1008,9 @@ class MSPurchaseData(Resource):
 
 # -- Customer Queries Start here -------------------------------------------------------------------------------
 
-class token_fetch_update(Resource):
+class token_fetch_update (Resource):
 
     def post(self, action):
-
         items = {}
         try:
             conn = connect()
