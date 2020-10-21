@@ -1,5 +1,34 @@
 # Information about all the endpoints
 
+### token_fetch_update
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/<action>
+
+example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/get
+
+example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/update
+
+input -- get
+
+{\
+    "email" : "sdsd@gmail.com"\
+}
+
+returns all customer info
+
+input -- update
+
+{\
+	"email" : "sdsd@gmail.com",\
+	"user_access_token" : "5", \
+	"user_refresh_token" : "5",\
+	"mobile_access_token" : "5",\
+	"mobile_refresh_token" : "5" \
+}
+
+
 ### SIGNUP
 
 [Post]
