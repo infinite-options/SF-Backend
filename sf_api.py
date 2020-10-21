@@ -1008,6 +1008,74 @@ class MSPurchaseData(Resource):
 
 # -- Customer Queries Start here -------------------------------------------------------------------------------
 
+class token_fetch_update(Resource):
+
+    def post(self, action):
+
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            email = data['email']
+            print(data)
+
+            if action == 'get':
+                query = """
+                        SELECT *
+                        FROM sf.customers c
+                        WHERE customer_email = \'""" + email + """\';
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['result']:
+
+                    items['message'] = 'Tokens recieved successful'
+                    items['result'] = items['result']
+                    items['code'] = 200
+                    return items
+                else:
+                    items['message'] = "Email doesn't exists"
+                    items['result'] = items['result']
+                    items['code'] = 404
+                    return items
+            elif action == 'update':
+                query = """
+                        UPDATE sf.customers 
+                        SET  
+                        user_access_token = \'""" + data['user_access_token'] + """\', 
+                        user_refresh_token = \'""" + data['user_refresh_token'] + """\',
+                        mobile_access_token = \'""" + data['mobile_access_token'] + """\', 
+                        mobile_refresh_token = \'""" + data['mobile_refresh_token'] + """\', 
+                        social_timestamp = DATE_ADD(social_timestamp , INTERVAL 14 DAY)
+                        WHERE customer_email = \'""" + email + """\';
+                        """
+                print(query)
+                items = execute(query, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+
+                    items['message'] = 'Tokens and timestamp updated successful'
+                    items['result'] = items['result']
+                    items['code'] = 200
+                    return items
+                else:
+                    items['message'] = "Email doesn't exists"
+                    items['result'] = items['result']
+                    items['code'] = 404
+                    return items
+
+            else:
+                items['code'] = 400
+                items['message'] = 'Select proper option'
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class SignUp(Resource):
     def post(self):
         response = {}
@@ -1029,7 +1097,6 @@ class SignUp(Resource):
             longitude = data['longitude']
             referral = data['referral_source']
             role = data['role']
-            social_timestamp = data['social_timestamp'] if data.get('social_timestamp') is not None else 'NULL'
             cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
 
             if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
@@ -1105,7 +1172,7 @@ class SignUp(Resource):
                                     referral_source = \'''' + referral + '''\',
                                     role = \'''' + role + '''\',
                                     user_social_media = \'''' + user_social_signup + '''\',
-                                    social_timestamp  =  \'''' + social_timestamp + '''\'
+                                    social_timestamp  =  DATE_ADD(now() , INTERVAL 14 DAY)
                                     WHERE customer_uid = \'''' + cust_id + '''\';
                                     ''']
 
@@ -1184,7 +1251,7 @@ class SignUp(Resource):
                                             \'""" + role + """\',
                                             \'""" + user_social_signup + """\',
                                             \'""" + access_token + """\',
-                                            \'""" + social_timestamp + """\',
+                                            DATE_ADD(now() , INTERVAL 14 DAY),
                                             \'""" + refresh_token + """\');"""]
 
             items = execute(customer_insert_query[0], 'post', conn)
@@ -2225,8 +2292,7 @@ class history(Resource):
                     SELECT * 
                     FROM sf.purchases as pur, sf.payments as pay
                     WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.delivery_email = \'""" + email + """\'
-                    ORDER BY pur.purchase_date DESC
-                    LIMIT 5; 
+                    ORDER BY pur.purchase_date DESC; 
                     """
             items = execute(query, 'get', conn)
 
@@ -2918,7 +2984,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 
 # Customer Endpoints
 
-
+api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
 api.add_resource(SignUp, '/api/v2/SignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
