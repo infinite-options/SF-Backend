@@ -1641,6 +1641,7 @@ class AppleLogin (Resource):
                         print('successful redirect to signup')
                         return redirect("http://localhost:3000/socialsignup?id=" + NewUserID)
 
+
                     # Existing customer
 
                     print('existing-------')
@@ -1651,17 +1652,18 @@ class AppleLogin (Resource):
                         print('1-----')
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['code'] = 400
-                        return redirect("http://localhost:3000/?media=" + items['result'][0]['user_social_media'])
+                        return redirect("http://localhost:3000/adminlogin?media=" + items['result'][0]['user_social_media'])
 
                     elif items['result'][0]['social_id'] != sub:
                         print('20-----')
                         items['message'] = "social_id mismatch"
                         items['code'] = 400
-                        return redirect("http://localhost:3000/")
+                        return redirect("http://localhost:3000/adminlogin")
 
                     else:
                         print('successful redirect to farms')
-                        return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
+                        return redirect("http://localhost:3000/adminlogin?id=" + items['result'][0]['customer_uid'])
+
 
 
                 else:
