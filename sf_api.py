@@ -1550,6 +1550,7 @@ class AppleLogin (Resource):
         try:
             conn = connect()
             token = request.form.get('id_token')
+            access_token = request.form.get('code')
             print(token)
             if token:
                 print('INN')
@@ -1569,9 +1570,10 @@ class AppleLogin (Resource):
                         email_verified,
                         user_social_media,
                         user_access_token,
-                        user_refresh_token
+                        user_refresh_token,
+                        social_id
                     FROM sf.customers c
-                    WHERE customer_email = \'""" + email + """\';
+                    WHERE social_id = \'""" + sub + """\';
                     """
                     items = execute(query, 'get', conn)
                     print(items)
@@ -1586,7 +1588,7 @@ class AppleLogin (Resource):
 
                     if not items['result']:
                         print('New customer')
-                        items['message'] = "Email doesn't exists Please go to the signup page"
+                        items['message'] = "Social_id doesn't exists Please go to the signup page"
                         get_user_id_query = "CALL new_customer_uid();"
                         NewUserIDresponse = execute(get_user_id_query, 'get', conn)
 
@@ -1601,7 +1603,6 @@ class AppleLogin (Resource):
 
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
-                        text = 'FALSE'
                         print('NewUserID', NewUserID)
 
 
@@ -1614,8 +1615,8 @@ class AppleLogin (Resource):
                                         user_social_media,
                                         user_refresh_token,
                                         user_access_token,
-                                        mobile_refresh_token,
-                                        mobile_access_token
+                                        social_id,
+                                        social_timestamp
                                     )
                                     VALUES
                                     (
@@ -1624,11 +1625,10 @@ class AppleLogin (Resource):
                                         \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
                                         \'""" + email + """\',
                                         \'""" + user_social_signup + """\',
+                                        \'""" + access_token + """\',
+                                        \'""" + access_token + """\',
                                         \'""" + sub + """\',
-                                        \'""" + sub + """\',
-                                        \'""" + text + """\',
-                                        \'""" + text + """\'
-                                        
+                                        DATE_ADD(now() , INTERVAL 1 DAY)
                                     );"""
 
                         item = execute(customer_insert_query, 'post', conn)
@@ -1643,26 +1643,29 @@ class AppleLogin (Resource):
 
                     # Existing customer
 
-                    if items['result'][0]['user_refresh_token'] != 'FALSE':
-                        print(items['result'][0]['user_social_media'], items['result'][0]['user_refresh_token'])
+                    print('existing-------')
+                    print(items['result'][0]['user_social_media'])
+                    print(items['result'][0]['social_id'])
 
-                        if items['result'][0]['user_social_media'] != "APPLE":
-                            items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
-                            items['code'] = 400
-                            return redirect("http://localhost:3000/?media=" + items['result'][0]['user_social_media'])
+                    if items['result'][0]['user_social_media'] != "APPLE":
+                        print('1-----')
+                        items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
+                        items['code'] = 400
+                        return redirect("http://localhost:3000/?media=" + items['result'][0]['user_social_media'])
 
-                        elif items['result'][0]['user_refresh_token'] != sub:
-                            items['message'] = "Token mismatch"
-                            items['code'] = 400
-                            return redirect("http://localhost:3000/")
+                    elif items['result'][0]['social_id'] != sub:
+                        print('20-----')
+                        items['message'] = "social_id mismatch"
+                        items['code'] = 400
+                        return redirect("http://localhost:3000/")
 
-                        else:
-                            print('successful redirect to farms')
-                            return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
+                    else:
+                        print('successful redirect to farms')
+                        return redirect("http://localhost:3000/farms?id=" + items['result'][0]['customer_uid'])
 
 
                 else:
-                    items['message'] = "Email not returned by Apple LOGIN"
+                    items['message'] = "Social_id not returned by Apple LOGIN"
                     items['code'] = 400
                     return items
 
