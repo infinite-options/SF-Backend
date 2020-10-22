@@ -1015,14 +1015,14 @@ class token_fetch_update (Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            email = data['email']
+            uid = data['uid']
             print(data)
 
             if action == 'get':
                 query = """
                         SELECT *
                         FROM sf.customers c
-                        WHERE customer_email = \'""" + email + """\';
+                        WHERE customer_uid = \'""" + uid + """\';
                         """
                 items = execute(query, 'get', conn)
 
@@ -1033,33 +1033,57 @@ class token_fetch_update (Resource):
                     items['code'] = 200
                     return items
                 else:
-                    items['message'] = "Email doesn't exists"
+                    items['message'] = "UID doesn't exists"
                     items['result'] = items['result']
                     items['code'] = 404
                     return items
-            elif action == 'update':
+
+            elif action == 'update_mobile':
+                query = """
+                        UPDATE sf.customers 
+                        SET  
+                        mobile_access_token = \'""" + data['mobile_access_token'] + """\', 
+                        mobile_refresh_token = \'""" + data['mobile_refresh_token'] + """\', 
+                        social_timestamp = DATE_ADD(social_timestamp , INTERVAL 14 DAY)
+                        WHERE customer_uid = \'""" + uid + """\';
+                        """
+                print(query)
+                items = execute(query, 'post', conn)
+                print(items)
+                print('code------', items['code'])
+
+                if items['code'] == 281:
+
+                    items['message'] = 'Tokens and timestamp updated successful'
+                    items['code'] = 200
+                    return items
+                else:
+                    items['message'] = "UID doesn't exists"
+                    items['result'] = items['result']
+                    items['code'] = 404
+                    return items
+
+            elif action == 'update_web':
                 query = """
                         UPDATE sf.customers 
                         SET  
                         user_access_token = \'""" + data['user_access_token'] + """\', 
                         user_refresh_token = \'""" + data['user_refresh_token'] + """\',
-                        mobile_access_token = \'""" + data['mobile_access_token'] + """\', 
-                        mobile_refresh_token = \'""" + data['mobile_refresh_token'] + """\', 
                         social_timestamp = DATE_ADD(social_timestamp , INTERVAL 14 DAY)
-                        WHERE customer_email = \'""" + email + """\';
+                        WHERE customer_uid = \'""" + uid + """\';
                         """
                 print(query)
                 items = execute(query, 'post', conn)
                 print(items)
+                print('code------', items['code'])
 
                 if items['code'] == 281:
 
                     items['message'] = 'Tokens and timestamp updated successful'
-                    items['result'] = items['result']
                     items['code'] = 200
                     return items
                 else:
-                    items['message'] = "Email doesn't exists"
+                    items['message'] = "UID doesn't exists"
                     items['result'] = items['result']
                     items['code'] = 404
                     return items
@@ -1089,6 +1113,7 @@ class SignUp(Resource):
             phone = data['phone_number']
             address = data['address']
             unit = data['unit'] if data.get('unit') is not None else 'NULL'
+            social_id = data['social_id'] if data.get('social_id') is not None else 'NULL'
             city = data['city']
             state = data['state']
             zip_code = data['zip_code']
@@ -1103,7 +1128,7 @@ class SignUp(Resource):
             else:
                 social_signup = True
 
-
+            print(social_signup)
             get_user_id_query = "CALL new_customer_uid();"
             NewUserIDresponse = execute(get_user_id_query, 'get', conn)
 
@@ -1123,33 +1148,47 @@ class SignUp(Resource):
                 password = sha512((data['password'] + salt).encode()).hexdigest()
                 print('password------', password)
                 algorithm = "SHA512"
-                access_token = 'NULL'
-                refresh_token = 'NULL'
+                mobile_access_token = 'NULL'
+                mobile_refresh_token = 'NULL'
+                user_access_token = 'NULL'
+                user_refresh_token = 'NULL'
                 user_social_signup = 'NULL'
             else:
 
-                access_token = data['access_token']
-                refresh_token = data['refresh_token']
+                mobile_access_token = data['mobile_access_token']
+                mobile_refresh_token = data['mobile_refresh_token']
+                user_access_token = data['user_access_token']
+                user_refresh_token = data['user_refresh_token']
                 salt = 'NULL'
                 password = 'NULL'
                 algorithm = 'NULL'
                 user_social_signup = data['social']
+
+                print('ELSE- OUT')
 
             if cust_id != 'NULL' and cust_id:
 
                 NewUserID = cust_id
 
                 query = '''
-                            SELECT user_access_token, user_refresh_token
+                            SELECT user_access_token, user_refresh_token, mobile_access_token, mobile_refresh_token 
                             FROM sf.customers
                             WHERE customer_uid = \'''' + cust_id + '''\';
                        '''
                 it = execute(query, 'get', conn)
                 print('it-------', it)
 
-                access_token = it['result'][0]['user_access_token']
-                refresh_token = it['result'][0]['user_refresh_token']
+                if it['result'][0]['user_access_token'] != 'FALSE':
+                    user_access_token = it['result'][0]['user_access_token']
 
+                if it['result'][0]['user_refresh_token'] != 'FALSE':
+                    user_refresh_token = it['result'][0]['user_refresh_token']
+
+                if it['result'][0]['mobile_access_token'] != 'FALSE':
+                    mobile_access_token = it['result'][0]['mobile_access_token']
+
+                if it['result'][0]['mobile_refresh_token'] != 'FALSE':
+                    mobile_refresh_token = it['result'][0]['mobile_refresh_token']
 
                 customer_insert_query =  ['''
                                     UPDATE sf.customers 
@@ -1225,7 +1264,10 @@ class SignUp(Resource):
                                             user_social_media,
                                             user_access_token,
                                             social_timestamp,
-                                            user_refresh_token
+                                            user_refresh_token,
+                                            mobile_access_token,
+                                            mobile_refresh_token,
+                                            social_id
                                         )
                                         VALUES
                                         (
@@ -1249,10 +1291,13 @@ class SignUp(Resource):
                                             \'""" + referral + """\',
                                             \'""" + role + """\',
                                             \'""" + user_social_signup + """\',
-                                            \'""" + access_token + """\',
+                                            \'""" + user_access_token + """\',
                                             DATE_ADD(now() , INTERVAL 14 DAY),
-                                            \'""" + refresh_token + """\');"""]
-
+                                            \'""" + user_refresh_token + """\',
+                                            \'""" + mobile_access_token + """\',
+                                            \'""" + mobile_refresh_token + """\',
+                                            \'""" + social_id + """\');"""]
+            print(customer_insert_query[0])
             items = execute(customer_insert_query[0], 'post', conn)
 
             if items['code'] != 281:
@@ -1267,8 +1312,13 @@ class SignUp(Resource):
                 'first_name': firstName,
                 'last_name': lastName,
                 'customer_uid': NewUserID,
-                'access_token': access_token,
-                'refresh_token': refresh_token
+                'access_token': user_access_token,
+                'refresh_token': user_refresh_token,
+                'access_token': mobile_access_token,
+                'refresh_token': mobile_refresh_token,
+                'social_id': social_id
+
+
             }
             items['message'] = 'Signup successful'
             items['code'] = 200
@@ -1549,7 +1599,9 @@ class AppleLogin (Resource):
 
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
+                        text = 'FALSE'
                         print('NewUserID', NewUserID)
+
 
                         customer_insert_query = """
                                     INSERT INTO sf.customers 
@@ -1558,7 +1610,10 @@ class AppleLogin (Resource):
                                         customer_created_at,
                                         customer_email,
                                         user_social_media,
-                                        user_refresh_token
+                                        user_refresh_token,
+                                        user_access_token,
+                                        mobile_refresh_token,
+                                        mobile_access_token
                                     )
                                     VALUES
                                     (
@@ -1567,7 +1622,11 @@ class AppleLogin (Resource):
                                         \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
                                         \'""" + email + """\',
                                         \'""" + user_social_signup + """\',
-                                        \'""" + sub + """\'
+                                        \'""" + sub + """\',
+                                        \'""" + sub + """\',
+                                        \'""" + text + """\',
+                                        \'""" + text + """\'
+                                        
                                     );"""
 
                         item = execute(customer_insert_query, 'post', conn)
@@ -1582,7 +1641,7 @@ class AppleLogin (Resource):
 
                     # Existing customer
 
-                    if items['result'][0]['user_refresh_token']:
+                    if items['result'][0]['user_refresh_token'] != 'FALSE':
                         print(items['result'][0]['user_social_media'], items['result'][0]['user_refresh_token'])
 
                         if items['result'][0]['user_social_media'] != "APPLE":
@@ -2968,6 +3027,23 @@ class Update_Registration_With_GUID_Android(Resource):
         response = hub.create_or_update_registration_android(registration_id, gcm_registration_id, new_tags)
         return response.status
 
+class Get_Tags_With_GUID_iOS(Resource):
+    def get(self, tag):
+        hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        guid = tag
+        if guid is None:
+            raise BadRequest('Request failed. Please provide the guid field.')
+        response = hub.get_all_registrations_with_a_tag(guid)
+        print(response)
+        xml_response = str(response.read())[2:-1]
+        # root = ET.fromstring(xml_response)
+        xml_response_soup = BeautifulSoup(xml_response,features="html.parser")
+        appleregistrationdescription = xml_response_soup.feed.entry.content.appleregistrationdescription
+        registration_id = appleregistrationdescription.registrationid.get_text()
+        device_token = appleregistrationdescription.devicetoken.get_text()
+        old_tags = appleregistrationdescription.tags.get_text().split(",")
+        return old_tags
+
 # -- END NOTIFICATIONS INFO -------------------------------------------------------------------------------
 
 
@@ -3015,6 +3091,19 @@ api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 
+
+# Notification Endpoints
+
+api.add_resource(Send_Notification, '/api/v2/Send_Notification')
+api.add_resource(Get_Registrations_From_Tag, '/api/v2/Get_Registrations_From_Tag/<string:tag>')
+api.add_resource(Update_Registration_With_GUID_iOS, '/api/v2/Update_Registration_With_GUID_iOS')
+api.add_resource(Update_Registration_With_GUID_Android, '/api/v2/Update_Registration_With_GUID_Android')
+api.add_resource(Get_Tags_With_GUID_iOS, '/api/v2/Get_Tags_With_GUID_iOS/<string:tag>')
+
+
+
+#Create_or_Update_Registration_iOS
+#Update_Registration_With_GUID_Android
 
 # Run on below IP address and port
 # Make sure port number is unused (i.e. don't use numbers 0-1023)
