@@ -1423,7 +1423,7 @@ class AccountSalt(Resource):
                 items['message'] = "Email doesn't exists"
                 items['code'] = 404
                 return items
-            if items['result'][0]['user_social_media'] != 'FALSE':
+            if items['result'][0]['user_social_media'] != 'NULL':
                 items['message'] = 'Social Signup exists'
                 items['code'] = 401
                 return items
