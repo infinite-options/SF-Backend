@@ -140,15 +140,15 @@ Example 1:\
 {\
 "email" : "annrupp22@gmail.com",\
 "password" : "4178980d28dcec5b36521c1a9beeef791db4e6674aa77",\
-"token" : "",\
+"social_id" : "",\
 "signup_platform" : ""\
 }
 
 Example 2:\
 {\
-"email" : "llshen@scu.edu",\
+"email" : "prashant@preptoyourdoor.com",\
 "password" : "",\
-"token" : "114258941436931104766",\
+"social_id" : "117726651050760794529",\
 "signup_platform" : "GOOGLE"\
 }
 
