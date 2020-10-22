@@ -1438,8 +1438,8 @@ class Login(Resource):
             data = request.get_json(force=True)
             email = data['email']
             password = data.get('password')
-            refresh_token = data.get('token')
-            #signup_platform = data.get('signup_platform')
+            social_id = data.get('social_id')
+            signup_platform = data.get('signup_platform')
             query = """
                     # CUSTOMER QUERY 1: LOGIN
                     SELECT customer_uid,
@@ -1450,7 +1450,10 @@ class Login(Resource):
                         email_verified,
                         user_social_media,
                         user_access_token,
-                        user_refresh_token
+                        user_refresh_token,
+                        user_access_token,
+                        user_refresh_token,
+                        social_id
                     FROM sf.customers c
                     -- WHERE customer_email = "1m4kfun@gmail.com";
                     WHERE customer_email = \'""" + email + """\';
@@ -1480,7 +1483,7 @@ class Login(Resource):
                     return response
 
                # nothing to check
-                elif (password is None and refresh_token is None) or (password is None and items['result'][0]['user_social_media'] == 'NULL'):
+                elif (password is None and social_id is None) or (password is None and items['result'][0]['user_social_media'] == 'NULL'):
                     response['message'] = "Enter password else login from social media"
                     response['code'] = 405
                     return response
@@ -1499,26 +1502,25 @@ class Login(Resource):
                         response['code'] = 407
                         return response
 
-                # compare the refresh token because it never expire.
+                # compare the social_id because it never expire.
                 elif (items['result'][0]['user_social_media']) != 'NULL':
-                    '''
-                    keep
+
                     if signup_platform != items['result'][0]['user_social_media']:
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['result'] = ''
-                        items['code'] = 401
+                        items['code'] = 411
                         return items
-                    '''
-                    if (items['result'][0]['user_refresh_token'] != refresh_token):
-                        print(items['result'][0]['user_refresh_token'])
 
-                        items['message'] = "Cannot Authenticated. Token is invalid"
+                    if (items['result'][0]['social_id'] != social_id):
+                        print(items['result'][0]['social_id'])
+
+                        items['message'] = "Cannot Authenticated. Social_id is invalid"
                         items['result'] = ''
                         items['code'] = 408
                         return items
 
                 else:
-                    string = " Cannot compare the password or refresh token while log in. "
+                    string = " Cannot compare the password or social_id while log in. "
                     print("*" * (len(string) + 10))
                     print(string.center(len(string) + 10, "*"))
                     print("*" * (len(string) + 10))
