@@ -13,7 +13,7 @@ example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/tok
 input -- get
 
 {\
-    "email" : "sdsd@gmail.com"\
+    "uid" : "100-000290"\
 }
 
 returns all customer info
@@ -21,7 +21,7 @@ returns all customer info
 input -- update
 
 {\
-	"email" : "sdsd@gmail.com",\
+	"uid" : "100-000290",\
 	"user_access_token" : "5", \
 	"user_refresh_token" : "5",\
 	"mobile_access_token" : "5",\
@@ -37,8 +37,9 @@ NOTE: Insert values for fileds which wll not be updated using data returned in g
 endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp
 
 input:
-
-{"email" : "xyz@gmail.com",\
+------ Social signup\
+{\
+"email" : "d5d@gmail.com",\
 "first_name" : "xyz",\
 "last_name" : "abc",\
 "phone_number" : "9876549879",\
@@ -51,11 +52,39 @@ input:
 "longitude" : "94.3",\
 "referral_source" : "WEB",\
 "role" : "CUSTOMER",\
-"access_token" : "NULL",\
-"refresh_token": "NULL",\
-"social" : "FALSE",----- \
-"password": "work123",\
-"cust_id": "100-000236" ----- optional [if you are using APPLE login (WEBSITE ONLY not mobile) then only use this variable else don't include it in json]
+"social" : "GOOGLE",\
+"password": "",\
+"mobile_access_token" : "i_am_mobile_access_token",\
+"mobile_refresh_token" : "i_am_mobile_refresh_token",\
+"user_access_token" : "FALSE",\
+"user_refresh_token" : "FALSE",\
+"social_id": "abc_GOOGLE",\
+"cust_id": "100-000236" ----- optional [if you are using APPLE login (WEBSITE ONLY not mobile) then only use this variable else don't include it in json]\
+}
+
+------ direct \ email password signup\
+{\
+"email" : "d5d@gmail.com",\
+"first_name" : "xyz",\
+"last_name" : "abc",\
+"phone_number" : "9876549879",\
+"address" : "955 W President",\
+"unit" : "3452",\
+"city" : "Dallas",\
+"state" : "TX",\
+"zip_code" : "75980",\
+"latitude" : "-14.3",\
+"longitude" : "94.3",\
+"referral_source" : "WEB",\
+"role" : "CUSTOMER",\
+"social" : "GOOGLE",\
+"password": "abc@123",\
+"mobile_access_token" : "FALSE",\
+"mobile_refresh_token" : "FALSE",\
+"user_access_token" : "FALSE",\
+"user_refresh_token" : "FALSE",\
+"social_id": "NULL", ----- VERY important to set it to NULL\
+"cust_id": "100-000236" ----- optional [if you are using APPLE login (WEBSITE ONLY not mobile) then only use this variable else don't include it in json]\
 }
 
 NOTE:
@@ -139,6 +168,7 @@ Error Codes:
 500 - internal server error -- Try again\
 404 - Email not found -- Redirect to signup page\
 401 - Need to login by social media\
+411 - Wrong social media used to login\
 405 - Password not entered and no refresh token available in database -- Redirect to signup page\
 406 - Wrong password\
 407 - Account not verified\
