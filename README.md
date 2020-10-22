@@ -8,7 +8,10 @@ endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/toke
 
 example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/get
 
-example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/update
+example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/update_mobile
+
+example 3: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/token_fetch_update/update_web
+
 
 input -- get
 
@@ -18,17 +21,21 @@ input -- get
 
 returns all customer info
 
-input -- update
+input -- update_mobile
 
 {\
 	"uid" : "100-000290",\
-	"user_access_token" : "5", \
-	"user_refresh_token" : "5",\
 	"mobile_access_token" : "5",\
 	"mobile_refresh_token" : "5" \
 }
 
-NOTE: Insert values for fileds which wll not be updated using data returned in get action. DO NOT leave any field NULL.
+input -- update_web
+
+{\
+	"uid" : "100-000290",\
+	"user_access_token" : "5",\
+	"user_refresh_token" : "5"\
+}
 
 ### SIGNUP
 
