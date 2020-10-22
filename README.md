@@ -192,7 +192,7 @@ endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Appl
 
 input : use form-urlencoded for input
 
-id_token = token from apple
+id_token = token from apple\
 code = access_token from apple
 
 return: redirect to signup/farms/admin
