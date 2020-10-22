@@ -1413,7 +1413,8 @@ class AccountSalt(Resource):
             email = data['email']
             query = """
                     SELECT password_algorithm, 
-                            password_salt 
+                            password_salt,
+                            user_social_media 
                     FROM sf.customers cus
                     WHERE customer_email = \'""" + email + """\';
                     """
@@ -1421,7 +1422,11 @@ class AccountSalt(Resource):
             if not items['result']:
                 items['message'] = "Email doesn't exists"
                 items['code'] = 404
-            return items
+                return items
+            if items['result'][0]['user_social_media'] != 'FALSE':
+                items['message'] = 'Social Signup exists'
+                items['code'] = 401
+                return items
             items['message'] = 'SALT sent successfully'
             items['code'] = 200
             return items
