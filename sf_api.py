@@ -1424,7 +1424,7 @@ class AccountSalt(Resource):
                 items['code'] = 404
                 return items
             if items['result'][0]['user_social_media'] != 'NULL':
-                items['message'] = 'Social Signup exists'
+                items['message'] = """Social Signup exists. Use \'""" + items['result'][0]['user_social_media'] + """\' """
                 items['code'] = 401
                 return items
             items['message'] = 'SALT sent successfully'
@@ -1979,32 +1979,91 @@ class available_Coupons(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
+'''
 class update_Coupons(Resource):
-    def post(self, coupon_uid):
+    def post(self, action):
             response = {}
             items = []
             try:
+                #coupon_uid
                 conn = connect()
-                query = """
+                data = request.get_json(force=True)
+
+                if action == 'create':
+
+                    query = ["CALL sf.new_coupons_uid;"]
+                    couponIDresponse = execute(query[0], 'get', conn)
+                    couponID = couponIDresponse['result'][0]['new_id']
+
+                    query = """
+                    INSERT INTO sf.coupons 
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid) 
+                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\');
+                    """
+
+                    items = execute(query, 'post', conn)
+                    if items['code'] != 281:
+                        items['message'] = "check sql query"
+                        items['code'] = 400
+                        return items
+
+
+                    items['message'] = 'Coupon info created'
+                    items['code'] = 200
+                    return items
+
+                elif action == 'update':
+
+                     query = """
                     SELECT *
                     FROM sf.coupons
                     WHERE coupon_uid = \'""" + coupon_uid + """\';
                     """
 
-                items = execute(query, 'get', conn)
-                if not items['result']:
-                    items['message'] = "Coupon uid doesn't exists"
-                    items['code'] = 404
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
                     return items
 
-                query = """
-                        UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
-                        """
-                items = execute(query, 'post', conn)
-                items['message'] = 'Coupon info updated'
-                items['code'] = 200
-                return items
+                elif action == 'subtract':
+
+                     query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + coupon_uid + """\';
+                    """
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
+                    return items
+
+                else:
+
+                    items['message'] = 'Choose correct option'
+                    items['code'] = 500
+                    return items
+
+
+
 
             except:
                 print("Error happened while updating coupon table")
@@ -2013,7 +2072,7 @@ class update_Coupons(Resource):
                 disconnect(conn)
                 print('process completed')
 
-
+'''
 class purchase(Resource):
     def post(self):
             response = {}
@@ -3084,7 +3143,7 @@ api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
-api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
+#api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
