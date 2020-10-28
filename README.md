@@ -84,7 +84,7 @@ input:
 "longitude" : "94.3",\
 "referral_source" : "WEB",\
 "role" : "CUSTOMER",\
-"social" : "GOOGLE",\
+"social" : "NULL",\
 "password": "abc@123",\
 "mobile_access_token" : "FALSE",\
 "mobile_refresh_token" : "FALSE",\
@@ -297,7 +297,12 @@ return: information of all businesses and type of food category available in tha
 
 endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Refund
 
-input: {"image_url":"http://servingnow.me","email":"abc@gmail.com","note":"Please issue a refund for eggplant" }
+input:
+
+--form input\
+ email (text)= abc@gmail.com\
+ note (text)= don't like this product\
+ item_photo (file) = select file
 
 return: code either 200 or 400. If 200 refund ticket generated else email doesn't exists
 
@@ -408,12 +413,55 @@ return: json object with all general available coupons and coupons associated wi
 
 [Post]
 
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/coupon_uid
+endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/<action>
 
-example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/600-000001
+example 1:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/create
 
-return : code 200 if successful else 404 if coupon_uid doesn't exists
+example 2:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/update
 
+example 3:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Coupons/subtract
+
+input:
+
+---create
+
+{\
+"valid" : "TRUE",\
+"discount_percent" : "80",\
+"discount_amount" : "222",\
+"discount_shipping": "34",\
+"expire_date" : "2021-05-31 10:10:12",\
+"limits": "98",\
+"notes": "tttte",\
+"num_used" : "2",\
+"recurring" : "T",\
+"email_id" : "test@gmail.com",\
+"cup_business_uid" : "200-000010"\
+}
+
+
+
+---update
+{\
+"valid" : "FALSE",\
+"discount_percent" : "80",\
+"discount_amount" : "222",\
+"discount_shipping": "34",\
+"expire_date" : "2021-05-31 00:00:02",\
+"limits": "98",\
+"notes": "tttte",\
+"num_used" : "2",\
+"recurring" : "T",\
+"email_id" : "test@gmail.com",\
+"cup_business_uid" : "200-000001",\
+"coupon_uid" : "600-000030"\
+}
+
+----subtract
+
+{
+"coupon_uid" : "600-000030"
+}
 
 ### purchase
 
@@ -810,19 +858,6 @@ For Status ---
 }
 
 return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
-
-
-
-### delivery_status
-
-[Post]
-
-This endpoint helps in changing delivery status of a purchase from not delivered to delivered
-
-
-endpoint:   https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/purchase_uid
-
-example:    https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/addItems/400-000001
 
 
 ### business_details_update
