@@ -1889,13 +1889,12 @@ class Refund(Resource):
         response = {}
         items = []
         try:
-
+            #dtdt
             conn = connect()
-            data = request.get_json(force=True)
-            print(data)
-            image_url = data['image_url']
-            email = data['email']
-            note = data['note']
+
+            email = request.form.get('email')
+            note = request.form.get('note')
+            item_photo = request.files.get('item_photo')
             timeStamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
             query = ["CALL new_refund_uid;"]
 
@@ -1911,6 +1910,13 @@ class Refund(Resource):
                 items['code'] = 400
 
                 return items
+
+            ## add photo
+
+            key = "REFUND" + "_" + NewRefundID
+            print(key)
+            item_photo_url = helper_upload_meal_img(item_photo, key)
+            print(item_photo_url)
 
             phone = customer_phone['result'][0]['customer_phone_num']
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
@@ -1929,16 +1935,21 @@ class Refund(Resource):
                             , \'""" + timeStamp + """\'
                             , \'""" + email + """\'
                             , \'""" + phone + """\'
-                            , \'""" + image_url + """\'
-                            , \'""" + note + """\');"""
+                            , \'""" + item_photo_url + """\'
+                            , \'""" + note.replace("'", "") + """\');"""
                             ]
 
             emailExists = execute(query_email[0], 'get', conn)
             print('email_exists', emailExists)
             items = execute(query_insert[0], 'post', conn)
-            items['code'] = 200
-            items['message'] = 'Refund info generated'
-            return items
+            print(items)
+            if items['code'] != 281:
+                items['message'] = 'check sql query and input'
+                return items
+            else:
+                items['code'] = 200
+                items['message'] = 'Refund info generated'
+                return items
 
         except:
             print("Error happened while generating refund ticket")
@@ -1979,7 +1990,7 @@ class available_Coupons(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-'''
+
 class update_Coupons(Resource):
     def post(self, action):
             response = {}
@@ -2000,7 +2011,7 @@ class update_Coupons(Resource):
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid) 
                     VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\');
                     """
-
+                    print(query)
                     items = execute(query, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = "check sql query"
@@ -2013,11 +2024,11 @@ class update_Coupons(Resource):
                     return items
 
                 elif action == 'update':
-
-                     query = """
+                    print(data)
+                    query = """
                     SELECT *
                     FROM sf.coupons
-                    WHERE coupon_uid = \'""" + coupon_uid + """\';
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
                     """
 
                     items = execute(query, 'get', conn)
@@ -2027,19 +2038,40 @@ class update_Coupons(Resource):
                         return items
 
                     query = """
-                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
-                            """
+                    UPDATE sf.coupons 
+                    SET 
+                    coupon_id = \'""" + data['coupon_uid'] + """\', 
+                    valid = \'""" + data['valid'] + """\', 
+                    discount_percent = \'""" + data['discount_percent'] + """\', 
+                    discount_amount = \'""" + data['discount_amount'] + """\', 
+                    discount_shipping = \'""" + data['discount_shipping'] + """\', 
+                    expire_date = \'""" + data['expire_date'] + """\', 
+                    limits = \'""" + data['limits'] + """\', 
+                    notes = \'""" + data['notes'] + """\', 
+                    num_used = \'""" + data['num_used'] + """\', 
+                    recurring = \'""" + data['recurring'] + """\', 
+                    email_id = \'""" + data['email_id'] + """\', 
+                    cup_business_uid = \'""" + data['cup_business_uid'] + """\' 
+                    WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
+                    """
+
                     items = execute(query, 'post', conn)
+                    print(items)
+                    if items['code'] != 281:
+                        items['message'] = "check sql query"
+                        items['code'] = 400
+                        return items
+
                     items['message'] = 'Coupon info updated'
                     items['code'] = 200
                     return items
 
                 elif action == 'subtract':
 
-                     query = """
+                    query = """
                     SELECT *
                     FROM sf.coupons
-                    WHERE coupon_uid = \'""" + coupon_uid + """\';
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
                     """
 
                     items = execute(query, 'get', conn)
@@ -2049,7 +2081,7 @@ class update_Coupons(Resource):
                         return items
 
                     query = """
-                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + coupon_uid + """\');
+                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
                             """
                     items = execute(query, 'post', conn)
                     items['message'] = 'Coupon info updated'
@@ -2063,8 +2095,6 @@ class update_Coupons(Resource):
                     return items
 
 
-
-
             except:
                 print("Error happened while updating coupon table")
                 raise BadRequest('Request failed, please try again later.')
@@ -2072,7 +2102,7 @@ class update_Coupons(Resource):
                 disconnect(conn)
                 print('process completed')
 
-'''
+
 class purchase(Resource):
     def post(self):
             response = {}
@@ -3143,7 +3173,7 @@ api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
-#api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:coupon_uid>')
+api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
