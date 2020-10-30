@@ -1148,6 +1148,39 @@ return:
  }
 
 
+### customer_info
+
+[Get]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/customer_info
+
+return:
+
+ {\
+            "customer_first_name": "xyz",\
+            "customer_last_name": "abc",\
+            "customer_email": "xz@gmail.com",\
+            "customer_phone_num": "9876549879",\
+            "customer_address": "955 W President",\
+            "customer_unit": "3452",\
+            "customer_city": "Dallas",\
+            "customer_zip": "75980",\
+            "customer_created_at": "2020-09-22",\
+            "notification_approval": null,\
+            "SMS_freq_preference": null,\
+            "notification_device_id": null,\
+            "SMS_last_notification": null,\
+            "business_name": "Nitya Ayurveda",\
+            "qty": "1",\
+            "name": "Plum Jam",\
+            "price": "12",\
+            "item_uid": "310-000146",\
+            "itm_business_uid": "200-000007",\
+            "number_of_orders": 4,\
+            "latest_order_date": "2020-12-29"\
+  }
+
+
 ### Send_Twilio_SMS
 
 [Post]

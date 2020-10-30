@@ -1814,6 +1814,62 @@ class getItems(Resource):
         finally:
             disconnect(conn)
 
+class customer_info(Resource):
+
+    def get(self):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT  cust.customer_first_name,
+                    cust.customer_last_name,
+                    cust.customer_email,
+                    cust.customer_phone_num,
+                    cust.customer_address,
+                    cust.customer_unit,
+                    cust.customer_city,
+                    cust.customer_zip,
+                    cust.customer_created_at,
+                    cust.notification_approval,
+                    cust.SMS_freq_preference,
+                    cust.notification_device_id, 
+                    cust.SMS_last_notification,
+                    (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
+                    deconstruct.*, 
+                    count(deconstruct.itm_business_uid) AS number_of_orders, 
+                    max(pay.payment_time_stamp) AS latest_order_date
+                                FROM sf.purchases , 
+                                     JSON_TABLE(items, '$[*]' COLUMNS (
+                                                qty VARCHAR(255)  PATH '$.qty',
+                                                name VARCHAR(255)  PATH '$.name',
+                                                price VARCHAR(255)  PATH '$.price',
+                                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                                     ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
+                    WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid
+                    GROUP BY deconstruct.itm_business_uid, pur_customer_uid
+                    ; 
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] == 280:
+
+                items['message'] = 'Customer info Loaded successful'
+                items['result'] = items['result']
+                items['code'] = 200
+                return items
+            else:
+                items['message'] = "check sql query"
+                items['result'] = items['result']
+                items['code'] = 404
+                return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 class Categorical_Options(Resource):
     def get(self, long, lat):
@@ -3190,6 +3246,7 @@ api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
+api.add_resource(customer_info, '/api/v2/customer_info')
 api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 
 
