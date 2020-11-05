@@ -50,8 +50,8 @@ TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 
 
 #  NEED TO SOLVE THIS
-# from NotificationHub import Notification
-# from NotificationHub import NotificationHub
+from NotificationHub import Notification
+from NotificationHub import NotificationHub
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 
@@ -1747,6 +1747,80 @@ class Profile(Resource):
             disconnect(conn)
 
 
+class update_guid_device_id(Resource):
+
+    def post(self, role):
+        response = {}
+        items = {}
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            if role == 'customer':
+                uid = data['uid']
+                guid = data['guid'] + ","
+                device_id = data['device_id'] + ","
+                query = """
+                        SELECT *
+                        FROM sf.customers c
+                        WHERE customer_uid = \'""" + uid + """\'
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['result']:
+                    data
+                    query = """
+                            UPDATE sf.customers SET guid = CONCAT(guid,\'""" + guid + """\'), cust_notification_device_id = CONCAT(cust_notification_device_id,\'""" + device_id + """\') WHERE (customer_uid = \'""" + uid + """\');
+                            """
+
+                    items = execute(query, 'post', conn)
+
+                    if items['code'] == 281:
+                        items['code'] = 200
+                        items['message'] = 'Device_id and GUID updated'
+                    else:
+                        items['message'] = 'check sql query'
+
+                    return items
+
+            elif role == 'business':
+                uid = data['uid']
+                guid = data['guid'] + ","
+                device_id = data['device_id'] + ","
+                query = """
+                        SELECT *
+                        FROM sf.businesses b
+                        WHERE business_uid = \'""" + uid + """\'
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['result']:
+                    data
+                    query = """
+                            UPDATE sf.businesses SET business_guid = CONCAT(business_guid,\'""" + guid + """\'), bus_notification_device_id = CONCAT(bus_notification_device_id,\'""" + device_id + """\') WHERE (business_uid = \'""" + uid + """\');
+                            """
+
+                    items = execute(query, 'post', conn)
+
+                    if items['code'] == 281:
+                        items['code'] = 200
+                        items['message'] = 'Device_id and GUID updated'
+                    else:
+                        items['message'] = 'check sql query'
+
+                    return items
+
+            else:
+                return 'choose correct option'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
 
 class getItems(Resource):
     def post(self):
@@ -2716,8 +2790,8 @@ class business_details_update(Resource):
                                business_WAUBI = \'""" + data["business_WAUBI"] + """\',
                                business_license = \'""" + data["business_license"] + """\',
                                business_USDOT = \'""" + data["business_USDOT"] + """\',
-                               notification_approval = \'""" + data["notification_approval"] + """\',
-                               notification_device_id = \'""" + data["notification_device_id"] + """\',
+                               bus_notification_approval = \'""" + data["bus_notification_approval"] + """\',
+                               bus_notification_device_id = \'""" + data["bus_notification_device_id"] + """\',
                                can_cancel = \'""" + data["can_cancel"] + """\',
                                delivery = \'""" + data["delivery"] + """\',
                                reusable = \'""" + data["reusable"] + """\',
@@ -2970,7 +3044,7 @@ class customer_info(Resource):
                     cust.customer_city,
                     cust.customer_zip,
                     cust.customer_created_at,
-                    cust.notification_approval,
+                    cust.cust_notification_approval,
                     cust.SMS_freq_preference,
                     cust.notification_device_id, 
                     cust.SMS_last_notification,
@@ -3073,6 +3147,7 @@ class TemplateApi(Resource):
 class Send_Notification(Resource):
     def post(self):
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
+        print(hub)
         tags = request.form.get('tags')
         message = request.form.get('message')
 
@@ -3088,12 +3163,16 @@ class Send_Notification(Resource):
                 },
             }
             # hub.send_apple_notification(alert_payload, tags = "default")
+            print('IN_apple')
             hub.send_apple_notification(alert_payload, tags = tag)
+            print('OUT_apple')
             fcm_payload = {
                 "data":{"message": message}
             }
             # hub.send_gcm_notification(fcm_payload, tags = "default")
+            print('IN_android')
             hub.send_gcm_notification(fcm_payload, tags = tag)
+            print('out_android')
         return 200
 
 class Get_Registrations_From_Tag(Resource):
@@ -3227,6 +3306,7 @@ api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
+api.add_resource(update_guid_device_id, '/api/v2/update_guid_device_id/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
