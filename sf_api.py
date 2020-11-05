@@ -1770,7 +1770,7 @@ class update_guid_device_id(Resource):
                 if items['result']:
                     data
                     query = """
-                            UPDATE sf.customers SET guid = CONCAT(guid,\'""" + guid + """\'), cust_notification_device_id = CONCAT(cust_notification_device_id,\'""" + device_id + """\') WHERE (customer_uid = \'""" + uid + """\');
+                            UPDATE sf.customers SET cust_guid = CONCAT(cust_guid,\'""" + guid + """\'), cust_notification_device_id = CONCAT(cust_notification_device_id,\'""" + device_id + """\') WHERE (customer_uid = \'""" + uid + """\');
                             """
 
                     items = execute(query, 'post', conn)
