@@ -224,6 +224,34 @@ example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Prof
 
 return: all the details about customer
 
+### update_guid_device_id
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/<role>
+
+example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/customer
+
+example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/business
+
+Input:
+
+--- customer
+
+{\
+	"uid" : "100-000003",\
+	"guid" : "22",\
+	"device_id" : "22"\
+}
+
+--- business
+
+{\
+	"uid" : "200-000001",\
+	"guid" : "22",\
+	"device_id" : "22"\
+}
+
 
 ### getItems
 
@@ -911,8 +939,8 @@ INPUT:
   "business_WAUBI" : "",\
   "business_license" : "",\
   "business_USDOT" : "",\
-  "notification_approval" : "",\
-  "notification_device_id" : "",\
+  "bus_notification_approval" : "",\
+  "bus_notification_device_id" : "",\
   "can_cancel" : "0",\
   "delivery" : "0",\
   "reusable" : "0",\
