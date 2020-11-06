@@ -1460,7 +1460,6 @@ class Login(Resource):
                         user_refresh_token,
                         social_id
                     FROM sf.customers c
-                    -- WHERE customer_email = "1m4kfun@gmail.com";
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
@@ -1747,7 +1746,7 @@ class Profile(Resource):
             disconnect(conn)
 
 
-class update_guid_device_id_notification(Resource):
+class update_guid_notification(Resource):
 
     def post(self, role):
         response = {}
@@ -1761,7 +1760,6 @@ class update_guid_device_id_notification(Resource):
             if role == 'customer':
                 uid = data['uid']
                 guid = data['guid']
-                device_id = data['device_id']
                 notification = data['notification']
                 query = """
                         SELECT *
@@ -1798,8 +1796,7 @@ class update_guid_device_id_notification(Resource):
 
             elif role == 'business':
                 uid = data['uid']
-                guid = data['guid'] + ","
-                device_id = data['device_id'] + ","
+                guid = data['guid']
                 query = """
                         SELECT *
                         FROM sf.businesses b
@@ -3329,7 +3326,7 @@ api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
-api.add_resource(update_guid_device_id_notification, '/api/v2/update_guid_device_id_notification/<string:role>')
+api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
