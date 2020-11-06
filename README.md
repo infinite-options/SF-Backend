@@ -224,32 +224,34 @@ example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Prof
 
 return: all the details about customer
 
-### update_guid_device_id
+### update_guid_device_id_notification
 
 [Post]
 
-endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/<role>
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/<role>
 
-example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/customer
+example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/customer
 
-example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id/business
+example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/business
 
 Input:
 
 --- customer
 
 {\
-	"uid" : "100-000003",\
-	"guid" : "22",\
-	"device_id" : "22"\
+	"uid" : "100-000001",\
+	"guid" : "my_guid",\
+	"device_id" : "my_device_id",\
+	"notification": "TRUE"\
 }
 
 --- business
 
 {\
-	"uid" : "200-000001",\
-	"guid" : "22",\
-	"device_id" : "22"\
+	"uid" : "200-000002",\
+	"guid" : "my_guid",\
+	"device_id" : "my_device_id",\
+	"notification": "TRUE"\
 }
 
 
