@@ -224,15 +224,15 @@ example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Prof
 
 return: all the details about customer
 
-### update_guid_device_id_notification
+### update_guid_notification
 
 [Post]
 
-endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/<role>
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_notification/<role>
 
-example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/customer
+example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_notification/customer
 
-example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_device_id_notification/business
+example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_guid_notification/business
 
 Input:
 
@@ -241,7 +241,6 @@ Input:
 {\
 	"uid" : "100-000001",\
 	"guid" : "my_guid",\
-	"device_id" : "my_device_id",\
 	"notification": "TRUE"\
 }
 
@@ -250,8 +249,7 @@ Input:
 {\
 	"uid" : "200-000002",\
 	"guid" : "my_guid",\
-	"device_id" : "my_device_id",\
-	"notification": "TRUE"\
+	"notification": "FALSE"\
 }
 
 
