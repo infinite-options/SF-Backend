@@ -1747,7 +1747,7 @@ class Profile(Resource):
             disconnect(conn)
 
 
-class update_guid_device_id(Resource):
+class update_guid_device_id_notification(Resource):
 
     def post(self, role):
         response = {}
@@ -1756,32 +1756,45 @@ class update_guid_device_id(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
+
+            print(data)
             if role == 'customer':
                 uid = data['uid']
-                guid = data['guid'] + ","
-                device_id = data['device_id'] + ","
+                guid = data['guid']
+                device_id = data['device_id']
+                notification = data['notification']
                 query = """
                         SELECT *
                         FROM sf.customers c
                         WHERE customer_uid = \'""" + uid + """\'
                         """
                 items = execute(query, 'get', conn)
+                del data['uid']
+                test = str(data).replace("'", "\"")
+                print('test---------', test)
+                data = "'" + test + "'"
 
+                print(data)
                 if items['result']:
-                    data
-                    query = """
-                            UPDATE sf.customers SET cust_guid = CONCAT(cust_guid,\'""" + guid + """\'), cust_notification_device_id = CONCAT(cust_notification_device_id,\'""" + device_id + """\') WHERE (customer_uid = \'""" + uid + """\');
-                            """
+
+                    query = " " \
+                            "UPDATE sf.customers " \
+                            "SET cust_guid_device_id_notification  = (SELECT JSON_MERGE_PRESERVE(cust_guid_device_id_notification," + data + ")) " \
+                            "WHERE customer_uid = '" + str(uid) + "';" \
+                            ""
 
                     items = execute(query, 'post', conn)
-
+                    print(items)
                     if items['code'] == 281:
                         items['code'] = 200
-                        items['message'] = 'Device_id and GUID updated'
+                        items['message'] = 'Device_id notification and GUID updated'
                     else:
                         items['message'] = 'check sql query'
 
-                    return items
+                else:
+                    items['message'] = "UID doesn't exists"
+
+                return items
 
             elif role == 'business':
                 uid = data['uid']
@@ -1794,21 +1807,31 @@ class update_guid_device_id(Resource):
                         """
                 items = execute(query, 'get', conn)
 
+                del data['uid']
+                test = str(data).replace("'", "\"")
+                print('test---------', test)
+                data = "'" + test + "'"
+
                 if items['result']:
                     data
-                    query = """
-                            UPDATE sf.businesses SET business_guid = CONCAT(business_guid,\'""" + guid + """\'), bus_notification_device_id = CONCAT(bus_notification_device_id,\'""" + device_id + """\') WHERE (business_uid = \'""" + uid + """\');
-                            """
+                    query = " " \
+                            "UPDATE sf.businesses " \
+                            "SET bus_guid_device_id_notification  = (SELECT JSON_MERGE_PRESERVE(bus_guid_device_id_notification," + data + ")) " \
+                            "WHERE business_uid = '" + str(uid) + "';" \
+                            ""
 
                     items = execute(query, 'post', conn)
 
                     if items['code'] == 281:
                         items['code'] = 200
-                        items['message'] = 'Device_id and GUID updated'
+                        items['message'] = 'Device_id notification and GUID updated'
                     else:
                         items['message'] = 'check sql query'
 
-                    return items
+                else:
+                    items['message'] = "UID doesn't exists"
+
+                return items
 
             else:
                 return 'choose correct option'
@@ -3306,7 +3329,7 @@ api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
-api.add_resource(update_guid_device_id, '/api/v2/update_guid_device_id/<string:role>')
+api.add_resource(update_guid_device_id_notification, '/api/v2/update_guid_device_id_notification/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
