@@ -3210,9 +3210,10 @@ class Send_Notification(Resource):
                         print('notification---', vals['notification'])
                         if vals['notification'] == 'TRUE':
                             output.append('guid_' + vals['guid'])
+            output = ",".join(output)
 
             print('output-----', output)
-            return str(output)
+            return output
 
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
         print(hub)
@@ -3222,13 +3223,15 @@ class Send_Notification(Resource):
         print('uids', uids)
         print('role', role)
         tags = deconstruct(uids, role)
-
+        #tags = uids
         if tags is None:
             raise BadRequest('Request failed. Please provide the tag field.')
         if message is None:
             raise BadRequest('Request failed. Please provide the message field.')
         tags = tags.split(',')
         for tag in tags:
+            print('tag-----', tag)
+            print(type(tag))
             alert_payload = {
                 "aps" : {
                     "alert" : message,
