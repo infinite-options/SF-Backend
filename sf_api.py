@@ -3089,12 +3089,10 @@ class customer_info(Resource):
             if items['code'] == 280:
 
                 items['message'] = 'Customer info Loaded successful'
-                items['result'] = items['result']
                 items['code'] = 200
                 return items
             else:
                 items['message'] = "check sql query"
-                items['result'] = items['result']
                 items['code'] = 404
                 return items
 
@@ -3165,11 +3163,65 @@ class TemplateApi(Resource):
 
 # -- START NOTIFICATIONS INFO -------------------------------------------------------------------------------
 class Send_Notification(Resource):
-    def post(self):
+
+    def post(self, role):
+
+        def deconstruct(uids, role):
+
+            conn = connect()
+            uids_array = uids.split(',')
+            output = []
+            for uid in uids_array:
+                if role == 'customer':
+                    query = """SELECT cust_guid_device_id_notification FROM sf.customers WHERE customer_uid = \'""" + uid + """\';"""
+                    items = execute(query, 'get', conn)
+
+                    if items['code'] != 280:
+                        items['message'] = "check sql query"
+                        items['code'] = 404
+                        return items
+
+                    json_val = items['result'][0]['cust_guid_device_id_notification']
+
+                else:
+
+                    query = """SELECT bus_guid_device_id_notification FROM sf.businesses WHERE business_uid = \'""" + uid + """\';"""
+                    items = execute(query, 'get', conn)
+
+                    if items['code'] != 280:
+                        items['message'] = "check sql query"
+                        items['code'] = 404
+                        return items
+
+                    json_val = items['result'][0]['bus_guid_device_id_notification']
+
+                if json_val != 'null':
+                    print(type(json_val))
+                    print(json_val)
+                    input = json.loads(json_val)
+                    print(type(input))
+                    print(input)
+                    for vals in input:
+                        print('vals--', vals)
+                        print(type(vals))
+                        if vals == None:
+                            continue
+                        print('guid--', vals['guid'])
+                        print('notification---', vals['notification'])
+                        if vals['notification'] == 'TRUE':
+                            output.append('guid_' + vals['guid'])
+
+            print('output-----', output)
+            return str(output)
+
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
         print(hub)
-        tags = request.form.get('tags')
+        print('role----', role)
+        uids = request.form.get('uids')
         message = request.form.get('message')
+        print('uids', uids)
+        print('role', role)
+        tags = deconstruct(uids, role)
 
         if tags is None:
             raise BadRequest('Request failed. Please provide the tag field.')
@@ -3194,6 +3246,10 @@ class Send_Notification(Resource):
             hub.send_gcm_notification(fcm_payload, tags = tag)
             print('out_android')
         return 200
+
+
+
+
 
 class Get_Registrations_From_Tag(Resource):
     def get(self, tag):
@@ -3356,7 +3412,7 @@ api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 
 # Notification Endpoints
 
-api.add_resource(Send_Notification, '/api/v2/Send_Notification')
+api.add_resource(Send_Notification, '/api/v2/Send_Notification/<string:role>')
 api.add_resource(Get_Registrations_From_Tag, '/api/v2/Get_Registrations_From_Tag/<string:tag>')
 api.add_resource(Update_Registration_With_GUID_iOS, '/api/v2/Update_Registration_With_GUID_iOS')
 api.add_resource(Update_Registration_With_GUID_Android, '/api/v2/Update_Registration_With_GUID_Android')
