@@ -32,6 +32,11 @@ class NotificationHub:
     def __init__(self, connection_string=None, hub_name=None, debug=0):
         self.HubName = hub_name
         self.Debug = debug
+        #connection_string =
+        #self.HubName =
+
+        connection_string = "Endpoint=sb://serving-fresh-notification-namespace.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=Yy/PhzWba6vmrM8geyHmKTVQPocwrDVcVlqAiokvHe4="
+        self.HubName = "Serving-Fresh-Notification-Hub"
 
         # Parse connection string
         parts = connection_string.split(';')
