@@ -1223,3 +1223,28 @@ input:
 }
 
 
+### Send_Twilio_SMS
+
+[Post]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Send_Notification/<string:role>
+
+example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Send_Notification/customer
+
+example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Send_Notification/business
+
+
+input:
+
+form input --
+
+customer ----
+
+uids = 100-000001,100-000002,\
+message = Welcome to Serving Fresh
+
+business ----
+
+uids =  200-000001,200-000002,\
+message = Welcome to Serving Fresh
+
