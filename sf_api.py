@@ -3198,10 +3198,10 @@ class Send_Notification(Resource):
                 if json_val != 'null':
                     print(type(json_val))
                     print(json_val)
-                    input = json.loads(json_val)
-                    print(type(input))
-                    print(input)
-                    for vals in input:
+                    input_val = json.loads(json_val)
+                    print(type(input_val))
+                    print(input_val)
+                    for vals in input_val:
                         print('vals--', vals)
                         print(type(vals))
                         if vals == None:
@@ -3211,7 +3211,6 @@ class Send_Notification(Resource):
                         if vals['notification'] == 'TRUE':
                             output.append('guid_' + vals['guid'])
             output = ",".join(output)
-
             print('output-----', output)
             return output
 
@@ -3223,6 +3222,8 @@ class Send_Notification(Resource):
         print('uids', uids)
         print('role', role)
         tags = deconstruct(uids, role)
+        if tags == []:
+            return 'No GUIDs found for the UIDs provided'
         #tags = uids
         if tags is None:
             raise BadRequest('Request failed. Please provide the tag field.')
@@ -3237,21 +3238,14 @@ class Send_Notification(Resource):
                     "alert" : message,
                 },
             }
-            # hub.send_apple_notification(alert_payload, tags = "default")
-            print('IN_apple')
             hub.send_apple_notification(alert_payload, tags = tag)
-            print('OUT_apple')
+
             fcm_payload = {
                 "data":{"message": message}
             }
-            # hub.send_gcm_notification(fcm_payload, tags = "default")
-            print('IN_android')
             hub.send_gcm_notification(fcm_payload, tags = tag)
-            print('out_android')
+
         return 200
-
-
-
 
 
 class Get_Registrations_From_Tag(Resource):
