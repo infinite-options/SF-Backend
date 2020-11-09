@@ -1419,6 +1419,7 @@ class AccountSalt(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
+            print(items)
             if not items['result']:
                 items['message'] = "Email doesn't exists"
                 items['code'] = 404
@@ -3066,7 +3067,6 @@ class customer_info(Resource):
                     cust.customer_created_at,
                     cust.cust_notification_approval,
                     cust.SMS_freq_preference,
-                    cust.notification_device_id, 
                     cust.SMS_last_notification,
                     (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
                     deconstruct.*, 
