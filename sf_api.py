@@ -1100,7 +1100,7 @@ class token_fetch_update (Resource):
 
 
 class SignUp(Resource):
-    def post(self):
+    def post(self, platform):
         response = {}
         items = []
         try:
@@ -1123,7 +1123,7 @@ class SignUp(Resource):
             role = data['role']
             cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
 
-            if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
+            if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False or data.get('social') == 'NULL':
                 social_signup = False
             else:
                 social_signup = True
@@ -1323,17 +1323,9 @@ class SignUp(Resource):
             items['message'] = 'Signup successful'
             items['code'] = 200
 
-            # Twilio sms service
-
-            #resp = url_for('sms_service', phone_num='+17327818408', _external=True)
-            #resp = sms_service('+1'+phone, firstName)
-            #print("resp --------", resp)
-
-
-
             print('sss-----', social_signup)
 
-            if social_signup == False:
+            if social_signup == False and platform == 'website':
                 token = s.dumps(email)
                 msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
 
@@ -1345,9 +1337,8 @@ class SignUp(Resource):
                 print('msg-bd----', msg.body)
                 mail.send(msg)
 
-
-
             return items
+
         except:
             print("Error happened while Sign Up")
             if "NewUserID" in locals():
@@ -3373,7 +3364,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 # Customer Endpoints
 
 api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
-api.add_resource(SignUp, '/api/v2/SignUp/')
+api.add_resource(SignUp, '/api/v2/SignUp/<string:platform>')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
