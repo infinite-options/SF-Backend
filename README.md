@@ -904,6 +904,16 @@ For Status ---
 return: code 200 for successful insertion of data in purchase and payments table else 400 for error.
 
 
+### all_businesses
+
+[Get]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/all_businesses
+
+return business uids and names
+
+
+
 ### business_details_update
 
 [Post]
@@ -1138,6 +1148,16 @@ inputs:
 "purchase_uid":"400-000001",\
 "item_data" : [{"qty": "5", "name": "Broccoli ", "price": "3.5", "item_uid": "310-000023"}, {"qty": "1", "name": "Iceberg Lettuce ", "price": "2.5", "item_uid": "310-000025"}, {"qty": "1", "name": "Collards ", "price": "2.5", "item_uid": "310-000022"}, {"qty": "1", "name": "Cauliflower ", "price": "3.5", "item_uid": "310-000024"}]\
 }
+
+
+### update_all_items
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_all_items/<uid>
+
+example: http://127.0.0.1:4000//api/v2/update_all_items/200-000070
+
+
+
 
 
 ### admin_report
