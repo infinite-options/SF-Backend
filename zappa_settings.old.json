@@ -1,0 +1,23 @@
+{
+    "dev": {
+        "app_function": "sf_api.app",
+        "aws_region": "us-west-1",
+        "profile_name": "default",
+        "project_name": "sf",
+        "runtime": "python3.7",
+        "s3_bucket": "zappa-sf",
+        "environment_variables": {
+            "MEAL_IMAGES_BUCKET": "servingnow",
+            "EMAIL": "orders@servingnow.me",
+            "PASSWORD": "NewOrders1",
+
+            "STRIPE_SECRET_KEY": "sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j",
+
+            "NOTIFICATION_HUB_KEY": "Endpoint=sb://serving-now-notifications-namespace.servicebus.windows.net/;SharedAccessKeyName=DefaultFullSharedAccessSignature;SharedAccessKey=52/qoOQFkz7uoIObIBSnw0P9y5cWzPo9FZ2IsbV36To=",
+            "NOTIFICATION_HUB_NAME": "Serving-Now-Notifications",
+            
+            "TWILIO_ACCOUNT_SID": "AC075d24b60b84d71d3849efb0b860d815",
+            "TWILIO_AUTH_TOKEN": "7ea41845515ec3a9c8faae3f3614f54d"
+        }    
+    }
+}

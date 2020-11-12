@@ -1400,6 +1400,314 @@ def sms_service(phone, name):
 
 
 
+# New class created to test if redirect affects Mobile 
+class MobileSignUp(Resource):
+    def post(self):
+        response = {}
+        items = []
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            print(data)
+            email = data['email']
+            firstName = data['first_name']
+            lastName = data['last_name']
+            phone = data['phone_number']
+            address = data['address']
+            unit = data['unit'] if data.get('unit') is not None else 'NULL'
+            social_id = data['social_id'] if data.get('social_id') is not None else 'NULL'
+            city = data['city']
+            state = data['state']
+            zip_code = data['zip_code']
+            latitude = data['latitude']
+            longitude = data['longitude']
+            referral = data['referral_source']
+            role = data['role']
+            cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
+
+            if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False:
+                social_signup = False
+            else:
+                social_signup = True
+
+            print(social_signup)
+            get_user_id_query = "CALL new_customer_uid();"
+            NewUserIDresponse = execute(get_user_id_query, 'get', conn)
+
+            if NewUserIDresponse['code'] == 490:
+                string = " Cannot get new User id. "
+                print("*" * (len(string) + 10))
+                print(string.center(len(string) + 10, "*"))
+                print("*" * (len(string) + 10))
+                response['message'] = "Internal Server Error."
+                return response, 500
+            NewUserID = NewUserIDresponse['result'][0]['new_id']
+
+            if social_signup == False:
+
+                salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+
+                password = sha512((data['password'] + salt).encode()).hexdigest()
+                print('password------', password)
+                algorithm = "SHA512"
+                mobile_access_token = 'NULL'
+                mobile_refresh_token = 'NULL'
+                user_access_token = 'NULL'
+                user_refresh_token = 'NULL'
+                user_social_signup = 'NULL'
+            else:
+
+                mobile_access_token = data['mobile_access_token']
+                mobile_refresh_token = data['mobile_refresh_token']
+                user_access_token = data['user_access_token']
+                user_refresh_token = data['user_refresh_token']
+                salt = 'NULL'
+                password = 'NULL'
+                algorithm = 'NULL'
+                user_social_signup = data['social']
+
+                print('ELSE- OUT')
+
+            if cust_id != 'NULL' and cust_id:
+
+                NewUserID = cust_id
+
+                query = '''
+                            SELECT user_access_token, user_refresh_token, mobile_access_token, mobile_refresh_token 
+                            FROM sf.customers
+                            WHERE customer_uid = \'''' + cust_id + '''\';
+                       '''
+                it = execute(query, 'get', conn)
+                print('it-------', it)
+
+                if it['result'][0]['user_access_token'] != 'FALSE':
+                    user_access_token = it['result'][0]['user_access_token']
+
+                if it['result'][0]['user_refresh_token'] != 'FALSE':
+                    user_refresh_token = it['result'][0]['user_refresh_token']
+
+                if it['result'][0]['mobile_access_token'] != 'FALSE':
+                    mobile_access_token = it['result'][0]['mobile_access_token']
+
+                if it['result'][0]['mobile_refresh_token'] != 'FALSE':
+                    mobile_refresh_token = it['result'][0]['mobile_refresh_token']
+
+                customer_insert_query =  ['''
+                                    UPDATE sf.customers 
+                                    SET 
+                                    customer_created_at = \'''' + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + '''\',
+                                    customer_first_name = \'''' + firstName + '''\',
+                                    customer_last_name = \'''' + lastName + '''\',
+                                    customer_phone_num = \'''' + phone + '''\',
+                                    customer_address = \'''' + address + '''\',
+                                    customer_unit = \'''' + unit + '''\',
+                                    customer_city = \'''' + city + '''\',
+                                    customer_state = \'''' + state + '''\',
+                                    customer_zip = \'''' + zip_code + '''\',
+                                    customer_lat = \'''' + latitude + '''\',
+                                    customer_long = \'''' + longitude + '''\',
+                                    password_salt = \'''' + salt + '''\',
+                                    password_hashed = \'''' + password + '''\',
+                                    password_algorithm = \'''' + algorithm + '''\',
+                                    referral_source = \'''' + referral + '''\',
+                                    role = \'''' + role + '''\',
+                                    user_social_media = \'''' + user_social_signup + '''\',
+                                    social_timestamp  =  DATE_ADD(now() , INTERVAL 14 DAY)
+                                    WHERE customer_uid = \'''' + cust_id + '''\';
+                                    ''']
+
+
+            else:
+
+                # check if there is a same customer_id existing
+                query = """
+                        SELECT customer_email FROM sf.customers
+                        WHERE customer_email = \'""" + email + "\';"
+                print('email---------')
+                items = execute(query, 'get', conn)
+                if items['result']:
+
+                    items['result'] = ""
+                    items['code'] = 409
+                    items['message'] = "Email address has already been taken."
+
+                    return items
+
+                if items['code'] == 480:
+
+                    items['result'] = ""
+                    items['code'] = 480
+                    items['message'] = "Internal Server Error."
+                    return items
+
+
+                # write everything to database
+                customer_insert_query = ["""
+                                        INSERT INTO sf.customers 
+                                        (
+                                            customer_uid,
+                                            customer_created_at,
+                                            customer_first_name,
+                                            customer_last_name,
+                                            customer_phone_num,
+                                            customer_email,
+                                            customer_address,
+                                            customer_unit,
+                                            customer_city,
+                                            customer_state,
+                                            customer_zip,
+                                            customer_lat,
+                                            customer_long,
+                                            password_salt,
+                                            password_hashed,
+                                            password_algorithm,
+                                            referral_source,
+                                            role,
+                                            user_social_media,
+                                            user_access_token,
+                                            social_timestamp,
+                                            user_refresh_token,
+                                            mobile_access_token,
+                                            mobile_refresh_token,
+                                            social_id
+                                        )
+                                        VALUES
+                                        (
+                                        
+                                            \'""" + NewUserID + """\',
+                                            \'""" + (datetime.now()).strftime("%Y-%m-%d %H:%M:%S") + """\',
+                                            \'""" + firstName + """\',
+                                            \'""" + lastName + """\',
+                                            \'""" + phone + """\',
+                                            \'""" + email + """\',
+                                            \'""" + address + """\',
+                                            \'""" + unit + """\',
+                                            \'""" + city + """\',
+                                            \'""" + state + """\',
+                                            \'""" + zip_code + """\',
+                                            \'""" + latitude + """\',
+                                            \'""" + longitude + """\',
+                                            \'""" + salt + """\',
+                                            \'""" + password + """\',
+                                            \'""" + algorithm + """\',
+                                            \'""" + referral + """\',
+                                            \'""" + role + """\',
+                                            \'""" + user_social_signup + """\',
+                                            \'""" + user_access_token + """\',
+                                            DATE_ADD(now() , INTERVAL 14 DAY),
+                                            \'""" + user_refresh_token + """\',
+                                            \'""" + mobile_access_token + """\',
+                                            \'""" + mobile_refresh_token + """\',
+                                            \'""" + social_id + """\');"""]
+            print(customer_insert_query[0])
+            items = execute(customer_insert_query[0], 'post', conn)
+
+            if items['code'] != 281:
+                items['result'] = ""
+                items['code'] = 480
+                items['message'] = "Error while inserting values in database"
+
+                return items
+
+
+            items['result'] = {
+                'first_name': firstName,
+                'last_name': lastName,
+                'customer_uid': NewUserID,
+                'access_token': user_access_token,
+                'refresh_token': user_refresh_token,
+                'access_token': mobile_access_token,
+                'refresh_token': mobile_refresh_token,
+                'social_id': social_id
+
+
+            }
+            items['message'] = 'Signup successful'
+            items['code'] = 200
+
+            # Twilio sms service
+
+            #resp = url_for('sms_service', phone_num='+17327818408', _external=True)
+            #resp = sms_service('+1'+phone, firstName)
+            #print("resp --------", resp)
+
+
+
+            print('sss-----', social_signup)
+
+            # if social_signup == False:
+            #     token = s.dumps(email)
+            #     msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
+
+            #     print('MESSAGE----', msg)
+            #     print('message complete')
+            #     link = url_for('confirm', token=token, hashed=password, _external=True)
+            #     print('link---', link)
+            #     msg.body = "Click on the link {} to verify your email address.".format(link)
+            #     print('msg-bd----', msg.body)
+            #     mail.send(msg)
+
+
+
+            return items
+        except:
+            print("Error happened while Sign Up")
+            if "NewUserID" in locals():
+                execute("""DELETE FROM customers WHERE customer_uid = '""" + NewUserID + """';""", 'post', conn)
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+# confirmation page
+# @app.route('/api/v2/confirm', methods=['GET'])
+# def confirm():
+#     try:
+#         token = request.args['token']
+#         hashed = request.args['hashed']
+#         print("hased: ", hashed)
+#         email = s.loads(token)  # max_age = 86400 = 1 day
+
+#         # marking email confirmed in database, then...
+#         conn = connect()
+#         query = """UPDATE customers SET email_verified = 1 WHERE customer_email = \'""" + email + """\';"""
+#         update = execute(query, 'post', conn)
+#         if update.get('code') == 281:
+#             # redirect to login page
+#             # only for testing on localhost
+#             #return redirect('http://localhost:3000/login?email={}&hashed={}'.format(email, hashed))
+#             return redirect('https://servingfresh.me/login?email={}&hashed={}'.format(email, hashed))
+#         else:
+#             print("Error happened while confirming an email address.")
+#             error = "Confirm error."
+#             err_code = 401  # Verification code is incorrect
+#             return error, err_code
+#     except (SignatureExpired, BadTimeSignature) as err:
+#         status = 403  # forbidden
+#         return str(err), status
+#     finally:
+#         disconnect(conn)
+
+def sms_service(phone, name):
+    print(phone)
+
+    message = client.messages \
+                    .create(
+                         body="Hi " +name+ " thanks for signing up with Serving Fresh",
+                         from_='+18659786905',
+                         to=phone
+                     )
+    print(message.sid)
+
+    return "Sent"
+
+
+
+
+
+
+
+
+
 
 class AccountSalt(Resource):
     def post(self):
@@ -3374,6 +3682,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 
 api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
 api.add_resource(SignUp, '/api/v2/SignUp/')
+api.add_resource(MobileSignUp, '/api/v2/MobileSignUp/')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
