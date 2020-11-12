@@ -35,7 +35,6 @@ class NotificationHub:
         #connection_string =
         #self.HubName =
 
-        
 
         # Parse connection string
         parts = connection_string.split(';')
