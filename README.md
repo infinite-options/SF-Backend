@@ -41,7 +41,12 @@ input -- update_web
 
 [Post]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/<platform>
+
+example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/website
+
+example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/mobile
+
 
 input:
 ------ Social signup\
@@ -799,7 +804,7 @@ Input :
 {\
 "pur_customer_uid" : "100-000009",\
 "pur_business_uid" : "200-000001",\
-"items" : [{"qty": "1", "name": "5 Meal Plan - Weekly", "price": "59.99", "item_uid": "320-000002"},{"qty": "1", "name": "oranges", "price": "59.99", "item_uid": "320-000002"}],\
+"items" : [{"qty": "1", "name": "5 Meal Plan - Weekly", "price": "59.99", "item_uid": "320-000002",  "itm_business_uid": "200-000003"},{"qty": "1", "name": "oranges", "price": "59.99", "item_uid": "320-000002",  "itm_business_uid": "200-000003"}],\
 "order_instructions" : "fast",\
 "delivery_instructions" : "Keep Fresh",\
 "order_type" : "meal",\
