@@ -3062,6 +3062,32 @@ class order_actions(Resource):
 
 
 
+class update_all_items(Resource):
+
+    def post(self, uid):
+
+        try:
+            conn = connect()
+            query = """
+                    UPDATE sf.items
+                    SET item_status = 'Active'
+                    WHERE itm_business_uid = \'""" + uid + """\';
+                    """
+            items = execute(query, 'post', conn)
+            if items['code'] == 281:
+                items['message'] = 'items status updated successfully'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
 
 
 
@@ -3460,6 +3486,7 @@ api.add_resource(business_details_update, '/api/v2/business_details_update/<stri
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
+api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 
 # Admin Endpoints
 
