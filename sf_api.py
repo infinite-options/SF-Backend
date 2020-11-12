@@ -1100,7 +1100,7 @@ class token_fetch_update (Resource):
 
 
 class SignUp(Resource):
-    def post(self, platform):
+    def post(self):
         response = {}
         items = []
         try:
@@ -1324,8 +1324,8 @@ class SignUp(Resource):
             items['code'] = 200
 
             print('sss-----', social_signup)
-
-            if social_signup == False and platform == 'website':
+            '''
+            if social_signup == False:
                 token = s.dumps(email)
                 msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
 
@@ -1336,6 +1336,7 @@ class SignUp(Resource):
                 msg.body = "Click on the link {} to verify your email address.".format(link)
                 print('msg-bd----', msg.body)
                 mail.send(msg)
+            '''
 
             return items
 
@@ -1346,6 +1347,50 @@ class SignUp(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+class email_verification(Resource):
+    def post(self):
+
+        try:
+            conn = connect()
+
+            data = request.get_json(force=True)
+            print(data)
+            email = data['email']
+            query = """
+                    SELECT password_hashed
+                    FROM sf.customers c
+                    WHERE customer_email = \'""" + email + """\'
+                    """
+            items = execute(query, 'get', conn)
+            print(items)
+            if not items['result']:
+
+                items['message'] = "Customer email doesn't exists"
+                items['result'] = items['result']
+                items['code'] = 404
+                return items
+
+            token = s.dumps(email)
+            print(token)
+            password = items['result'][0]['password_hashed']
+            print(password)
+            msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
+
+            print('MESSAGE----', msg)
+            print('message complete')
+            link = url_for('confirm', token=token, hashed=password, _external=True)
+            print('link---', link)
+            msg.body = "Click on the link {} to verify your email address.".format(link)
+            print('msg-bd----', msg.body)
+            mail.send(msg)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
 
 # confirmation page
 @app.route('/api/v2/confirm', methods=['GET'])
@@ -2741,6 +2786,29 @@ class addItems(Resource):
         finally:
             disconnect(conn)
 
+class all_businesses(Resource):
+
+    def get(self):
+        try:
+            conn = connect()
+
+            query = """
+                    SELECT business_uid, business_name FROM sf.businesses; 
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Business data returned successfully'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class business_details_update(Resource):
     def post(self, action):
             try:
@@ -3365,6 +3433,7 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 
 api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
 api.add_resource(SignUp, '/api/v2/SignUp/<string:platform>')
+api.add_resource(email_verification, '/api/v2/email_verification')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
@@ -3386,6 +3455,7 @@ api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 # Farmer Endpoints
 
 api.add_resource(addItems, '/api/v2/addItems/<string:action>')
+api.add_resource(all_businesses, '/api/v2/all_businesses')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
