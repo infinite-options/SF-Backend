@@ -41,11 +41,8 @@ input -- update_web
 
 [Post]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/<platform>
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp
 
-example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/website
-
-example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp/mobile
 
 
 input:
@@ -119,6 +116,20 @@ return:
         "refresh_token": "NULL"\
         }\
 }
+
+
+### email_verification
+
+[Post]
+
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/email_verification
+
+input:
+
+{\
+	"email" : "annrupp22@gmail.com"\
+}
+
 
 
 
