@@ -1633,7 +1633,7 @@ class MobileSignUp(Resource):
 
 
 
-            print('sss-----', social_signup)
+            # print('sss-----', social_signup)
 
             # if social_signup == False:
             #     token = s.dumps(email)
@@ -1650,11 +1650,11 @@ class MobileSignUp(Resource):
 
 
             return items
-        except:
-            print("Error happened while Sign Up")
-            if "NewUserID" in locals():
-                execute("""DELETE FROM customers WHERE customer_uid = '""" + NewUserID + """';""", 'post', conn)
-            raise BadRequest('Request failed, please try again later.')
+        # except:
+        #     print("Error happened while Sign Up")
+        #     if "NewUserID" in locals():
+        #         execute("""DELETE FROM customers WHERE customer_uid = '""" + NewUserID + """';""", 'post', conn)
+        #     raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
 
@@ -1687,18 +1687,18 @@ class MobileSignUp(Resource):
 #     finally:
 #         disconnect(conn)
 
-def sms_service(phone, name):
-    print(phone)
+# def sms_service(phone, name):
+#     print(phone)
 
-    message = client.messages \
-                    .create(
-                         body="Hi " +name+ " thanks for signing up with Serving Fresh",
-                         from_='+18659786905',
-                         to=phone
-                     )
-    print(message.sid)
+#     message = client.messages \
+#                     .create(
+#                          body="Hi " +name+ " thanks for signing up with Serving Fresh",
+#                          from_='+18659786905',
+#                          to=phone
+#                      )
+#     print(message.sid)
 
-    return "Sent"
+#     return "Sent"
 
 
 
