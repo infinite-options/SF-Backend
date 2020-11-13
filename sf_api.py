@@ -2018,14 +2018,20 @@ class Refund(Resource):
             note = request.form.get('note')
             item_photo = request.files.get('item_photo')
             timeStamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+
             query = ["CALL new_refund_uid;"]
 
             NewRefundIDresponse = execute(query[0], 'get', conn)
             NewRefundID = NewRefundIDresponse['result'][0]['new_id']
             print('INN')
-            customer_phone = execute("""SELECT customer_phone_num FROM sf.customers WHERE customer_email = \'""" + email + "\';", 'get', conn)
-            print('customer_phone---', customer_phone, '--dd')
-            if not customer_phone['result']:
+            query = """
+                    SELECT customer_phone_num FROM sf.customers 
+                    WHERE customer_email = \'""" + str(email) + """\';
+                    """
+            items = execute(query, 'get', conn)
+            print(items)
+
+            if not items['result']:
 
                 items['result'] = email
                 items['message'] = 'Email does not exists'
@@ -2035,12 +2041,12 @@ class Refund(Resource):
 
             ## add photo
 
-            key = "REFUND" + "_" + NewRefundID
+            key = "refund/" + NewRefundID
             print(key)
             item_photo_url = helper_upload_meal_img(item_photo, key)
             print(item_photo_url)
 
-            phone = customer_phone['result'][0]['customer_phone_num']
+            phone = items['result'][0]['customer_phone_num']
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
             query_insert = [""" INSERT INTO sf.refunds
                             (
@@ -2642,7 +2648,7 @@ class addItems(Resource):
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
-                key =  NewID + "_" + item_name
+                key = "items/" + NewID
                 print(key)
                 item_photo_url = helper_upload_meal_img(item_photo, key)
                 print(item_photo_url)
@@ -2696,7 +2702,8 @@ class addItems(Resource):
                 item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
                 print('oout')
                 exp_date = request.form.get('exp_date')
-                key = str(item_uid)
+                key = "items/" + str(item_uid)
+
 
                 if item_photo == 'NULL':
                     print('IFFFFF------')
