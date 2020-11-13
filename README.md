@@ -862,6 +862,7 @@ example:
 
 INPUT:
 
+ALL INPUTS ARE FORM INPUT NOT JSON ------
 For Insert ---
 
 {\
@@ -890,6 +891,7 @@ For Update ---
 "item_price" : "5.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
+"item_photo" : file, \ --- upload image file\
 "exp_date" : "",\
 "item_uid" : "310-000208"\
 }
