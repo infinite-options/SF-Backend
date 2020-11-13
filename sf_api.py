@@ -1324,20 +1324,6 @@ class SignUp(Resource):
             items['code'] = 200
 
             print('sss-----', social_signup)
-            '''
-            if social_signup == False:
-                token = s.dumps(email)
-                msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
-
-                print('MESSAGE----', msg)
-                print('message complete')
-                link = url_for('confirm', token=token, hashed=password, _external=True)
-                print('link---', link)
-                msg.body = "Click on the link {} to verify your email address.".format(link)
-                print('msg-bd----', msg.body)
-                mail.send(msg)
-            '''
-
             return items
 
         except:
@@ -1367,8 +1353,11 @@ class email_verification(Resource):
             if not items['result']:
 
                 items['message'] = "Customer email doesn't exists"
-                items['result'] = items['result']
                 items['code'] = 404
+                return items
+            if items['result'][0]['password_hashed'] == '':
+                items['message'] = "Customer password doesn't exists"
+                items['code'] = 405
                 return items
 
             token = s.dumps(email)
