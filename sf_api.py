@@ -1099,7 +1099,7 @@ class token_fetch_update (Resource):
             disconnect(conn)
 
 
-class SignUp(Resource):
+class abc(Resource):
     def post(self):
         response = {}
         items = []
@@ -3447,7 +3447,8 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 # Customer Endpoints
 
 api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
-api.add_resource(SignUp, '/api/v2/SignUp')
+#api.add_resource(SignUp, '/api/v2/SignUp')
+api.add_resource(abc, '/api/v2/abc')
 api.add_resource(email_verification, '/api/v2/email_verification')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
