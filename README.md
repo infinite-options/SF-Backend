@@ -37,11 +37,11 @@ input -- update_web
 	"user_refresh_token" : "5"\
 }
 
-### SIGNUP
+### createAccount
 
 [Post]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/SignUp
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/createAccount
 
 
 
