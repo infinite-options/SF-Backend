@@ -1159,6 +1159,22 @@ endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/upda
 example: http://127.0.0.1:4000//api/v2/update_all_items/200-000070
 
 
+### get_item_photos
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/get_item_photos/<category>
+
+example 1: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/get_item_photos/item
+
+example 2: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/get_item_photos/business
+
+input:
+
+{\
+	"uid" : "310-000001"\
+}
+
+returns all photos related to provided uid
+
 
 
 
