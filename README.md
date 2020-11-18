@@ -480,7 +480,8 @@ input:
 "num_used" : "2",\
 "recurring" : "T",\
 "email_id" : "test@gmail.com",\
-"cup_business_uid" : "200-000010"\
+"cup_business_uid" : "200-000010",\
+"threshold" : "50"\
 }
 
 
@@ -498,6 +499,7 @@ input:
 "recurring" : "T",\
 "email_id" : "test@gmail.com",\
 "cup_business_uid" : "200-000001",\
+"threshold" : "50",\
 "coupon_uid" : "600-000030"\
 }
 
