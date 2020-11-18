@@ -1682,17 +1682,17 @@ class AppleLogin (Resource):
                         print('1-----')
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['code'] = 400
-                        return redirect("https://servingfresh.me/adminlogin?media=" + items['result'][0]['user_social_media'])
+                        return redirect("https://servingfresh.me/?media=" + items['result'][0]['user_social_media'])
 
                     elif items['result'][0]['social_id'] != sub:
                         print('20-----')
                         items['message'] = "social_id mismatch"
                         items['code'] = 400
-                        return redirect("https://servingfresh.me/adminlogin")
+                        return redirect("https://servingfresh.me/")
 
                     else:
                         print('successful redirect to farms')
-                        return redirect("https://servingfresh.me/adminlogin?id=" + items['result'][0]['customer_uid'])
+                        return redirect("https://servingfresh.me/?id=" + items['result'][0]['customer_uid'])
 
 
 
@@ -2136,8 +2136,8 @@ class update_Coupons(Resource):
 
                     query = """
                     INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid) 
-                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\');
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
                     """
                     print(query)
                     items = execute(query, 'post', conn)
@@ -2178,7 +2178,8 @@ class update_Coupons(Resource):
                     notes = \'""" + data['notes'] + """\', 
                     num_used = \'""" + data['num_used'] + """\', 
                     recurring = \'""" + data['recurring'] + """\', 
-                    email_id = \'""" + data['email_id'] + """\', 
+                    email_id = \'""" + data['email_id'] + """\',
+                    threshold = \'""" + data['threshold'] + """\', 
                     cup_business_uid = \'""" + data['cup_business_uid'] + """\' 
                     WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
                     """
