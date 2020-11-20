@@ -1727,94 +1727,100 @@ class access_refresh_update(Resource):
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
-    def post(self, action):
+    def get(self, id):
         response = {}
         items = {}
         try:
             conn = connect()
+            query = """
+                    SELECT *
+                    FROM sf.customers c
+                    WHERE customer_uid = \'""" + id + """\'
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['result']:
+
+                items['message'] = 'Profile Loaded successful'
+                items['result'] = items['result']
+                items['code'] = 200
+                return items
+            else:
+                items['message'] = "Customer UID doesn't exists"
+                items['result'] = items['result']
+                items['code'] = 404
+                return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class update_Profile(Resource):
+
+    def post(self):
+        response = {}
+        items = {}
+        try:
             data = request.get_json(force=True)
-            if action == 'get':
+            conn = connect()
+            print(data['guid'])
+            if data['guid']:
+                print('IN')
                 query = """
-                        SELECT *
-                        FROM sf.customers c
-                        WHERE customer_uid = \'""" + data['customer_uid'] + """\'
-                        """
+                    SELECT cust_guid_device_id_notification
+                    FROM sf.customers c
+                    WHERE customer_uid = \'""" + data['customer_uid'] + """\';
+                    """
                 items = execute(query, 'get', conn)
+                json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
+                for i, vals in enumerate(json_guid):
+                    print(i, vals)
+                    if vals == None or vals == 'null':
+                        continue
+                    if vals['guid'] == data['guid']:
+                        print(vals)
+                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                        break
+                if json_guid[0] == None:
+                    json_guid[0] = 'null'
 
-                if items['result']:
-
-                    items['message'] = 'Profile Loaded successful'
-                    items['result'] = items['result']
-                    items['code'] = 200
-                    return items
-                else:
-                    items['message'] = "Customer UID doesn't exists"
-                    items['result'] = items['result']
-                    items['code'] = 404
-                    return items
-            elif action == 'post':
-                print('In post')
-                print(data['guid'])
-                if data['guid']:
-                    print('IN')
-                    query = """
-                        SELECT cust_guid_device_id_notification
-                        FROM sf.customers c
-                        WHERE customer_uid = \'""" + data['customer_uid'] + """\';
-                        """
-                    items = execute(query, 'get', conn)
-                    json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
-                    for i, vals in enumerate(json_guid):
-                        print(i, vals)
-                        if vals == None or vals == 'null':
-                            continue
-                        if vals['guid'] == data['guid']:
-                            print(vals)
-                            json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
-                            break
-                    if json_guid[0] == None:
-                        json_guid[0] = 'null'
-
-                    guid = str(json_guid)
-                    guid = guid.replace("'", '"')
-                    print(guid)
-                    query = """
-                            UPDATE  sf.customers  
-                            SET
-                            cust_guid_device_id_notification = \'""" + guid + """\'
-                            WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
-                            """
-                    items = execute(query, 'post', conn)
-                    if items['code'] != 281:
-                        items['message'] = 'guid not updated check sql query and data'
-                        return items
-
+                guid = str(json_guid)
+                guid = guid.replace("'", '"')
+                print(guid)
                 query = """
                         UPDATE  sf.customers  
-                        SET  
-                        customer_first_name  = \'""" + data['customer_first_name'] + """\',  
-                        customer_last_name  =  '""" + data['customer_last_name'] + """',  
-                        customer_phone_num  =  '""" + data['customer_phone_num'] + """',  
-                        customer_email  =  '""" + data['customer_email'] + """',  
-                        customer_address  =  '""" + data['customer_address'] + """',  
-                        customer_unit  =  '""" + data['customer_unit'] + """',  
-                        customer_city  =  '""" + data['customer_city'] + """',  
-                        customer_state  =  '""" + data['customer_state'] + """',  
-                        customer_zip  =  '""" + data['customer_zip'] + """',  
-                        customer_lat  =  '""" + data['customer_lat'] + """',  
-                        customer_long  =  '""" + data['customer_long'] + """' 
+                        SET
+                        cust_guid_device_id_notification = \'""" + guid + """\'
                         WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
                         """
                 items = execute(query, 'post', conn)
-                if items['code'] == 281:
-                    items['message'] = 'customer info updated successfully'
-                    return items
-                else:
-                    items['message'] = 'check sql query'
+                if items['code'] != 281:
+                    items['message'] = 'guid not updated check sql query and data'
                     return items
 
+            query = """
+                    UPDATE  sf.customers  
+                    SET  
+                    customer_first_name  = \'""" + data['customer_first_name'] + """\',  
+                    customer_last_name  =  '""" + data['customer_last_name'] + """',  
+                    customer_phone_num  =  '""" + data['customer_phone_num'] + """',  
+                    customer_email  =  '""" + data['customer_email'] + """',  
+                    customer_address  =  '""" + data['customer_address'] + """',  
+                    customer_unit  =  '""" + data['customer_unit'] + """',  
+                    customer_city  =  '""" + data['customer_city'] + """',  
+                    customer_state  =  '""" + data['customer_state'] + """',  
+                    customer_zip  =  '""" + data['customer_zip'] + """',  
+                    customer_lat  =  '""" + data['customer_lat'] + """',  
+                    customer_long  =  '""" + data['customer_long'] + """' 
+                    WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
+                    """
+            items = execute(query, 'post', conn)
+            if items['code'] == 281:
+                items['message'] = 'customer info updated successfully'
+                return items
             else:
-                return "select correct option get or post"
+                items['message'] = 'check sql query'
+                return items
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -3628,7 +3634,8 @@ api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
-api.add_resource(Profile, '/api/v2/Profile/<string:action>')
+api.add_resource(Profile, '/api/v2/Profile/<string:id>')
+api.add_resource(update_Profile, '/api/v2/update_Profile')
 api.add_resource(update_email_password, '/api/v2/update_email_password')
 api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
