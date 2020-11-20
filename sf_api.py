@@ -26,6 +26,7 @@ from pytz import timezone
 import random
 import string
 import stripe
+import pandas as pd
 
 from flask import Flask, request, render_template, redirect, url_for
 from flask_restful import Resource, Api
@@ -1410,21 +1411,6 @@ def confirm():
     finally:
         disconnect(conn)
 
-def sms_service(phone, name):
-    print(phone)
-
-    message = client.messages \
-                    .create(
-                         body="Hi " +name+ " thanks for signing up with Serving Fresh",
-                         from_='+18659786905',
-                         to=phone
-                     )
-    print(message.sid)
-
-    return "Sent"
-
-
-
 
 class AccountSalt(Resource):
     def post(self):
@@ -1741,36 +1727,147 @@ class access_refresh_update(Resource):
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
-    def get(self, id):
+    def post(self, action):
         response = {}
         items = {}
-        print("user_id: ", id)
         try:
             conn = connect()
-            query = """
-                    SELECT *
-                    FROM sf.customers c
-                    WHERE customer_uid = \'""" + id + """\'
-                    """
-            items = execute(query, 'get', conn)
+            data = request.get_json(force=True)
+            if action == 'get':
+                query = """
+                        SELECT *
+                        FROM sf.customers c
+                        WHERE customer_uid = \'""" + data['customer_uid'] + """\'
+                        """
+                items = execute(query, 'get', conn)
 
-            if items['result']:
+                if items['result']:
 
-                items['message'] = 'Profile Loaded successful'
-                items['result'] = items['result']
-                items['code'] = 200
-                return items
+                    items['message'] = 'Profile Loaded successful'
+                    items['result'] = items['result']
+                    items['code'] = 200
+                    return items
+                else:
+                    items['message'] = "Customer UID doesn't exists"
+                    items['result'] = items['result']
+                    items['code'] = 404
+                    return items
+            elif action == 'post':
+                print('In post')
+                print(data['guid'])
+                if data['guid']:
+                    print('IN')
+                    query = """
+                        SELECT cust_guid_device_id_notification
+                        FROM sf.customers c
+                        WHERE customer_uid = \'""" + data['customer_uid'] + """\';
+                        """
+                    items = execute(query, 'get', conn)
+                    json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
+                    for i, vals in enumerate(json_guid):
+                        print(i, vals)
+                        if vals == None or vals == 'null':
+                            continue
+                        if vals['guid'] == data['guid']:
+                            print(vals)
+                            json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                            break
+                    if json_guid[0] == None:
+                        json_guid[0] = 'null'
+
+                    guid = str(json_guid)
+                    guid = guid.replace("'", '"')
+                    print(guid)
+                    query = """
+                            UPDATE  sf.customers  
+                            SET
+                            cust_guid_device_id_notification = \'""" + guid + """\'
+                            WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
+                            """
+                    items = execute(query, 'post', conn)
+                    if items['code'] != 281:
+                        items['message'] = 'guid not updated check sql query and data'
+                        return items
+
+                query = """
+                        UPDATE  sf.customers  
+                        SET  
+                        customer_first_name  = \'""" + data['customer_first_name'] + """\',  
+                        customer_last_name  =  '""" + data['customer_last_name'] + """',  
+                        customer_phone_num  =  '""" + data['customer_phone_num'] + """',  
+                        customer_email  =  '""" + data['customer_email'] + """',  
+                        customer_address  =  '""" + data['customer_address'] + """',  
+                        customer_unit  =  '""" + data['customer_unit'] + """',  
+                        customer_city  =  '""" + data['customer_city'] + """',  
+                        customer_state  =  '""" + data['customer_state'] + """',  
+                        customer_zip  =  '""" + data['customer_zip'] + """',  
+                        customer_lat  =  '""" + data['customer_lat'] + """',  
+                        customer_long  =  '""" + data['customer_long'] + """' 
+                        WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
+                        """
+                items = execute(query, 'post', conn)
+                if items['code'] == 281:
+                    items['message'] = 'customer info updated successfully'
+                    return items
+                else:
+                    items['message'] = 'check sql query'
+                    return items
+
             else:
-                items['message'] = "Customer UID doesn't exists"
-                items['result'] = items['result']
-                items['code'] = 404
-                return items
+                return "select correct option get or post"
 
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
 
+class update_email_password(Resource):
+
+    def post(self):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            query = """
+                    SELECT *
+                    FROM sf.customers c
+                    WHERE customer_uid = \'""" + data['customer_uid'] + """\'
+                    """
+            items = execute(query, 'get', conn)
+
+            if not items['result']:
+
+                items['message'] = "Customer UID doesn't exists"
+                items['result'] = items['result']
+                items['code'] = 404
+                return items
+
+            salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+            password = sha512((data['password'] + salt).encode()).hexdigest()
+
+            query = """
+                        UPDATE  sf.customers  
+                        SET  
+                        customer_email  =  '""" + data['customer_email'] + """',  
+                        password_salt  =  '""" + salt + """',  
+                        password_hashed  =  '""" + password + """'
+                        WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
+                        """
+
+            items = execute(query, 'post', conn)
+            if items['code'] == 281:
+                items['message'] = 'customer email and password updated successfully'
+                return items
+            else:
+                items['message'] = 'check sql query'
+                return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 class update_guid_notification(Resource):
 
@@ -2644,6 +2741,7 @@ class addItems(Resource):
                 favorite = request.form.get('favorite')
                 item_photo = request.files.get('item_photo')
                 exp_date = request.form.get('exp_date')
+                taxable = request.form.get('taxable')
                 print('IN')
 
                 query = ["CALL sf.new_items_uid;"]
@@ -2673,6 +2771,7 @@ class addItems(Resource):
                                 item_photo = \'''' + item_photo_url + '''\',
                                 exp_date = \'''' + exp_date + '''\',
                                 created_at = \'''' + TimeStamp + '''\',
+                                taxable = \'''' + taxable + '''\',
                                 item_uid = \'''' + NewID + '''\';
                                 '''
                 items = execute(query_insert, 'post', conn)
@@ -2699,6 +2798,7 @@ class addItems(Resource):
                 item_price = request.form.get('item_price')
                 item_sizes = request.form.get('item_sizes')
                 favorite = request.form.get('favorite')
+                taxable = request.form.get('taxable')
                 print('In')
                 item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
                 print('oout')
@@ -2721,6 +2821,7 @@ class addItems(Resource):
                                     item_price = \'''' + item_price + '''\',
                                     item_sizes = \'''' + item_sizes + '''\',
                                     favorite = \'''' + favorite + '''\',
+                                    taxable = \'''' + taxable + '''\',
                                     exp_date = \'''' + exp_date + '''\'
                                     WHERE item_uid = \'''' + item_uid + '''\';
                                 '''
@@ -2739,6 +2840,7 @@ class addItems(Resource):
                                     item_price = \'''' + item_price + '''\',
                                     item_sizes = \'''' + item_sizes + '''\',
                                     favorite = \'''' + favorite + '''\',
+                                    taxable = \'''' + taxable + '''\',
                                     item_photo = \'''' + item_photo_url + '''\',
                                     exp_date = \'''' + exp_date + '''\'
                                     WHERE item_uid = \'''' + item_uid + '''\';
@@ -2798,6 +2900,7 @@ class all_businesses(Resource):
                 items['code'] = 200
             else:
                 items['message'] = 'Check sql query'
+            print(items)
             return items
 
         except:
@@ -2901,15 +3004,7 @@ class orders_by_farm(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT *,deconstruct.* 
-                    FROM sf.purchases, 
-                         JSON_TABLE(items, '$[*]' COLUMNS (
-                                    qty VARCHAR(255)  PATH '$.qty',
-                                    name VARCHAR(255)  PATH '$.name',
-                                    price VARCHAR(255)  PATH '$.price',
-                                    item_uid VARCHAR(255)  PATH '$.item_uid',
-                                    itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
-                         ) AS deconstruct; 
+                    SELECT * FROM sf.orders_by_farm; 
                     """
             items = execute(query, 'get', conn)
             if items['code'] == 280:
@@ -2917,6 +3012,41 @@ class orders_by_farm(Resource):
                 items['code'] = 200
             else:
                 items['message'] = 'Check sql query'
+
+
+            df = pd.DataFrame.from_dict(items['result'])
+
+            query = """
+                    SELECT business_uid, business_name FROM sf.businesses; 
+                    """
+            items_bus = execute(query, 'get', conn)
+            if items_bus['code'] == 280:
+                items_bus['message'] = 'Business data returned successfully'
+                items_bus['code'] = 200
+            else:
+                items_bus['message'] = 'Check sql query'
+            print(items_bus)
+            data = items_bus['result']
+            bus_dict = {}
+            for vals in data:
+                bus_dict[vals["business_uid"]] = vals["business_name"]
+
+
+            print(df.itm_business_uid.unique())
+            bus_uids = df.itm_business_uid.unique()
+            for ids in bus_uids:
+                print(ids)
+                if ids == None:
+                    continue
+                df_bus = df[df.itm_business_uid == ids]
+                df_bus.sort_values(by=['name'], inplace=True)
+
+                if ids in bus_dict:
+                    path = "business_" + bus_dict[ids] + "_" + ids + ".csv"
+                else:
+                    path = "business_uid_" + ids + ".csv"
+                df_bus.to_csv(path)
+            #df.to_csv ('export_dataframe.csv', index = False, header=True)
             return items
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -3498,7 +3628,8 @@ api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
-api.add_resource(Profile, '/api/v2/Profile/<string:id>')
+api.add_resource(Profile, '/api/v2/Profile/<string:action>')
+api.add_resource(update_email_password, '/api/v2/update_email_password')
 api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(getItems, '/api/v2/getItems')
@@ -3506,7 +3637,6 @@ api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
-api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
@@ -3522,6 +3652,7 @@ api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 api.add_resource(get_item_photos, '/api/v2/get_item_photos/<string:category>')
+api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 
 # Admin Endpoints
 
