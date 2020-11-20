@@ -231,25 +231,21 @@ input:
 
 ### Profile
 
+[Get]
+
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/id
+
+example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/100-000003
+
+
+### update_Profile
+
 [Post]
 
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/update_Profile
 
-endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/action
-
-example 1:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/get
-
-example 2:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Profile/post
-
-
-INPUT:
-
---- get:
-
-{\
-	"uid" : "100-000229"\
-}
-
---- post:
+Input
 
 {
 	"customer_first_name"  : "1",\
@@ -267,8 +263,6 @@ INPUT:
 	"guid" : "0e8eee58-865a-4c44-a3be-6d8aa959bbb3"\
 }
 
-
-return: all the details about customer
 
 ### update_email_password
 
