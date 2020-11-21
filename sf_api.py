@@ -2737,17 +2737,17 @@ class addItems(Resource):
 
             if action == 'Insert':
                 itm_business_uid = request.form.get('itm_business_uid')
-                item_name = request.form.get('item_name')
-                item_status = request.form.get('item_status')
-                item_type = request.form.get('item_type')
-                item_desc = request.form.get('item_desc')
-                item_unit = request.form.get('item_unit')
-                item_price = request.form.get('item_price')
-                item_sizes = request.form.get('item_sizes')
-                favorite = request.form.get('favorite')
+                item_name = request.form.get('item_name') if request.form.get('item_name') is not None else 'NULL'
+                item_status = request.form.get('item_status') if request.form.get('item_status') is not None else 'NULL'
+                item_type = request.form.get('item_type') if request.form.get('item_type') is not None else 'NULL'
+                item_desc = request.form.get('item_desc') if request.form.get('item_desc') is not None else 'NULL'
+                item_unit = request.form.get('item_unit') if request.form.get('item_unit') is not None else 'NULL'
+                item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
+                item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
+                favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
                 item_photo = request.files.get('item_photo')
-                exp_date = request.form.get('exp_date')
-                taxable = request.form.get('taxable')
+                exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
+                taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
                 print('IN')
 
                 query = ["CALL sf.new_items_uid;"]
