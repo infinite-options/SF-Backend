@@ -2077,11 +2077,36 @@ class Categorical_Options(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-
+            #print(items)
             ids = []
             for vals in items['result']:
                 ids.append(vals['z_business_uid'])
             print(ids)
+            print(tuple(ids))
+            query = """
+                    SELECT business_association 
+                    FROM sf.businesses
+                    WHERE business_uid IN """ + str(tuple(ids)) + """;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            print('ITEMS--------------------')
+            print(items)
+
+            bus_asc = []
+            for vals in items['result']:
+                if vals['business_association']:
+                    print(vals['business_association'])
+                    res = vals['business_association'].strip('][').split(', ')
+                    res = [id.strip('"') for id in res]
+                    print(res)
+                    bus_asc.extend(res)
+            print(bus_asc)
+            ids.extend(bus_asc)
+
 
             #query for getting categorical data
             query = """
@@ -2093,6 +2118,7 @@ class Categorical_Options(Resource):
                     WHERE bus.business_uid = itm.itm_business_uid AND bus.business_uid IN """ + str(tuple(ids)) + """;
                     """
             items = execute(query, 'get', conn)
+            print(items)
 
             if items['code'] != 280:
                 items['message'] = 'check sql query'
