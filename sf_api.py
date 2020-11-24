@@ -1968,6 +1968,83 @@ class update_guid_notification(Resource):
             disconnect(conn)
 
 
+class categoricalOptions(Resource):
+    def get(self, long, lat):
+        response = {}
+        items = {}
+
+        try:
+            conn = connect()
+
+            # query for businesses serving in customer's zone
+            query = """
+                    SELECT z_businesses, z_delivery_day
+                    FROM
+                    (SELECT *,  
+                    IF (
+                    IF ((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) <= 0,
+                    \'""" + lat + """\' >=  (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),
+                    \'""" + lat + """\' <=   (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long)) AND
+                           
+                    \'""" + lat + """\' <= (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) * \'""" + long + """\' + z.RT_lat - z.RT_long * (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) AND
+                           
+                    IF ((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) >= 0,  
+                    \'""" + lat + """\' >= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),
+                    \'""" + lat + """\' <= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long)) AND
+                           
+                    \'""" + lat + """\' >= (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long) * \'""" + long + """\' + z.LB_lat - z.LB_long * (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long), "TRUE", "FALSE") AS "In_Zone",
+                     
+                    FORMAT((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),3) AS "LEFT_SLOPE",
+                    FORMAT((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),3) AS "RIGHT_SLOPE"
+                    FROM sf.zones z) AS DD
+                    WHERE In_Zone = 'True'
+                    ;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            bus_asc = []
+            bus_dict = {}
+            for vals in items['result']:
+                if vals['z_businesses']:
+
+                    res = vals['z_businesses'].strip('][').split(', ')
+                    res = [id.strip('"') for id in res]
+                    print(res)
+                    for ids in res:
+                        if ids in bus_dict:
+                            if vals['z_delivery_day'] not in bus_dict[ids]:
+                                bus_dict[ids].append(vals['z_delivery_day'])
+                        else:
+                            bus_dict[ids] = [vals['z_delivery_day']]
+                    bus_asc.extend(res)
+            print('result-----')
+            print(bus_asc)
+            print(bus_dict)
+
+
+            query = """
+                    SELECT * FROM sf.businesses
+                    WHERE business_uid IN """ + str(tuple(bus_asc)) + """;
+                    """
+
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            items['dictionary'] = bus_dict
+            return items
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 
@@ -1979,35 +2056,6 @@ class getItems(Resource):
         try:
             conn = connect()
 
-            #OLD QUERY
-            '''
-            query = """
-                    SELECT business_delivery_hours,business_uid
-                    FROM sf.businesses;
-                    """
-            items = execute(query, 'get', conn)
-
-            uids = []
-            for vals in items['result']:
-                open_days = json.loads(vals['business_delivery_hours'])
-                print(open_days[day][1])
-                if open_days[day][1] == '00:00:00':
-                    continue
-                uids.append(vals['business_uid'])
-
-            query = """
-                    SELECT it.*, bs.business_delivery_hours
-                    FROM sf.items AS it, sf.businesses AS bs
-                    WHERE it.itm_business_uid = bs.business_uid
-                    AND bs.business_uid IN """ + str(tuple(uids)) + """;
-                    """
-
-            print(query)
-            items = execute(query, 'get', conn)
-            items['message'] = 'Items sent successfully'
-            items['code'] = 200
-            return items
-            '''
             data = request.get_json(force=True)
             ids = data['ids']
             type = data['type']
@@ -2094,7 +2142,7 @@ class Categorical_Options(Resource):
                 items['message'] = 'check sql query'
                 return items
             print('ITEMS--------------------')
-            print(items)
+            #print(items)
 
             bus_asc = []
             for vals in items['result']:
@@ -3111,6 +3159,27 @@ class orders_info(Resource):
         finally:
             disconnect(conn)
 
+class orderSummary(Resource):
+
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT obf.*, SUM(obf.qty) AS total_qty, SUM(obf.price) AS total_price, pay.start_delivery_date, pay.payment_uid 
+                    FROM sf.orders_by_farm AS obf, sf.payments AS pay
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date >= CURDATE()
+                    GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 class order_actions(Resource):
 
@@ -3665,6 +3734,7 @@ api.add_resource(update_Profile, '/api/v2/update_Profile')
 api.add_resource(update_email_password, '/api/v2/update_email_password')
 api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>')
 api.add_resource(Refund, '/api/v2/Refund')
+api.add_resource(categoricalOptions, '/api/v2/categoricalOptions/<string:long>,<string:lat>')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
 api.add_resource(purchase, '/api/v2/purchase')
@@ -3682,6 +3752,7 @@ api.add_resource(all_businesses, '/api/v2/all_businesses')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
+api.add_resource(orderSummary, '/api/v2/orderSummary')
 api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 api.add_resource(get_item_photos, '/api/v2/get_item_photos/<string:category>')
