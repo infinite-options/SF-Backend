@@ -871,7 +871,7 @@ Input :
 "delivery_latitude" : "37.2271302",\
 "delivery_longitude" : "-121.8891617",\
 "purchase_notes" : "purchase_notes",\
-"start_delivery_date" : "2020-08-02 00:00:00",\
+"start_delivery_date" : "2020-08-02",\
 "pay_coupon_id" : "",\
 "amount_due" : "53.75",\
 "amount_discount" : "0",\
@@ -1010,7 +1010,6 @@ INPUT:
   "business_license" : "",\
   "business_USDOT" : "",\
   "bus_notification_approval" : "",\
-  "bus_notification_device_id" : "",\
   "can_cancel" : "0",\
   "delivery" : "0",\
   "reusable" : "0",\
@@ -1150,6 +1149,14 @@ return:
             "amount_paid": 21.2\
         }
 
+
+### orderSummary
+
+[Get]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/orderSummary
+
+returns all order info item wise and ordered on and after current date. Total quantity and total price should be considered rather that qty and price.
 
 
 ### order_actions
