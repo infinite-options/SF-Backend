@@ -3022,7 +3022,7 @@ class business_details_update(Resource):
                     business_accepting_hours = "'" + business_accepting_hours.replace("'", "\"") + "'"
                     business_delivery_hours = str(data['business_delivery_hours'])
                     business_delivery_hours = "'" + business_delivery_hours.replace("'", "\"") + "'"
-
+                    print('OUT')
                     query = """
                                UPDATE sf.businesses
                                SET 
@@ -3051,7 +3051,6 @@ class business_details_update(Resource):
                                business_license = \'""" + data["business_license"] + """\',
                                business_USDOT = \'""" + data["business_USDOT"] + """\',
                                bus_notification_approval = \'""" + data["bus_notification_approval"] + """\',
-                               bus_notification_device_id = \'""" + data["bus_notification_device_id"] + """\',
                                can_cancel = \'""" + data["can_cancel"] + """\',
                                delivery = \'""" + data["delivery"] + """\',
                                reusable = \'""" + data["reusable"] + """\',
