@@ -2036,8 +2036,13 @@ class categoricalOptions(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
+            arr = []
+            for key, val in bus_dict.items():
+                arr.append({key:val})
 
-            items['dictionary'] = bus_dict
+            print(arr)
+
+            items['dictionary'] = arr
             return items
 
 
