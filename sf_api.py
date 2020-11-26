@@ -1978,7 +1978,7 @@ class categoricalOptions(Resource):
 
             # query for businesses serving in customer's zone
             query = """
-                    SELECT z_businesses, z_delivery_day
+                    SELECT zone
                     FROM
                     (SELECT *,  
                     IF (
@@ -2001,57 +2001,46 @@ class categoricalOptions(Resource):
                     ;
                     """
             items = execute(query, 'get', conn)
-
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-
-            bus_asc = []
-            bus_dict = {}
+            zones = []
             for vals in items['result']:
-                if vals['z_businesses']:
-
-                    res = vals['z_businesses'].strip('][').split(', ')
-                    res = [id.strip('"') for id in res]
-                    print(res)
-                    for ids in res:
-                        if ids in bus_dict:
-                            if vals['z_delivery_day'] not in bus_dict[ids]:
-                                bus_dict[ids].append(vals['z_delivery_day'])
-                        else:
-                            bus_dict[ids] = [vals['z_delivery_day']]
-                    bus_asc.extend(res)
-            print('result-----')
-            print(bus_asc)
-            print(bus_dict)
-
-
+                zones.append(vals['zone'])
+            print('ZONES-----', zones)
             query = """
-                    SELECT * FROM sf.businesses
-                    WHERE business_uid IN """ + str(tuple(bus_asc)) + """;
+                    SELECT      
+                        
+                        rjzjt.z_id,
+                        rjzjt.z_biz_id,
+                        b.business_name,
+                        rjzjt.z_delivery_day,
+                        rjzjt.z_delivery_time,
+                        b.business_type,
+                        b.business_image
+                    FROM sf.businesses b
+                    RIGHT JOIN
+                    (SELECT *
+                         FROM sf.zones AS z,
+                         json_table(z_businesses, '$[*]'
+                             COLUMNS (
+                                    z_id FOR ORDINALITY,
+                                    z_biz_id VARCHAR(255) PATH '$')
+                                                 ) as zjt) as rjzjt
+                    ON b.business_uid = rjzjt.z_biz_id
+                    WHERE z_id IN """ + str(tuple(zones)) + """;
+                    
                     """
-
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
                 items['message'] = 'check sql query'
-                return items
-            arr = []
-            for key, val in bus_dict.items():
-                arr.append({key:val})
-
-            print(arr)
-
-            items['dictionary'] = arr
             return items
-
 
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
-
 
 class getItems(Resource):
     def post(self):
@@ -2587,6 +2576,29 @@ class payment(Resource):
             finally:
                 disconnect(conn)
                 print('process completed')
+
+
+class get_Fee_Tax(Resource):
+    def get(self, id):
+        try:
+            conn = connect()
+            query = """
+                    SELECT service_fee, tax_rate, delivery_fee
+                    FROM sf.zones
+                    WHERE zone = """ + id + """;
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'Check sql query'
+                return items
+            items['result'] = items['result'][0]
+            return items
+        except:
+                print("Error happened while getting taxes")
+                raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+            print('process completed')
 
 
 class purchase_Data_SF(Resource):
@@ -3750,6 +3762,7 @@ api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(history, '/api/v2/history/<string:email>')
+api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:id>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 
