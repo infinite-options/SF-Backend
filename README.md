@@ -323,52 +323,81 @@ input:
 return: information of all items available filtered by business ids and type of item.
 
 
-### Categorical_Options
+### categoricalOptions
 
 [Get]
 
-endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Categorical_Options/longitude,latitude
+endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/categoricalOptions/longitude,latitude
 
-example: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/Categorical_Options/-121.928472,37.24370
+example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/categoricalOptions/-121.886943,37.227124
 
 
-return: information of all businesses and type of food category available in that business within field item_type
+return: information of all businesses and a dictionary with days all businesses deliver
 
-{\
-"business_uid": "200-000001",\
-"business_created_at": "2020-01-09T17:34:48",\
-"business_name": "PTYD",\
-"business_type": "toomuch",\
-"business_desc": "Vegan Delivery Service",\
-"business_association": null,\
-"business_contact_first_name": "Heather",\
-"business_contact_last_name": "Faiez",\
-"business_phone_num": "(512) 555-1234",\
-"business_phone_num2": "(512) 555-1200",\
-"business_email": "heather@ptyd.com",\
-"business_hours": "{"Friday": ["00:00:00", "23:59:00"], "Monday": ["00:00:00", "23:59:00"], "Sunday": ["00:00:00", "23:59:00"], "Tuesday": ["00:00:00", "23:59:00"], "Saturday": ["00:00:00", "23:59:00"], "Thursday": ["00:00:00", "23:59:00"], "Wednesday": ["00:00:00", "23:59:00"]}",\
-"business_accepting_hours": "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["09:00:00", "23:59:59"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
-"business_delivery_hours": "{"Friday": ["09:00:00", "23:59:59"], "Monday": ["00:00:00", "00:00:00"], "Sunday": ["09:00:00", "23:59:59"], "Tuesday": ["09:00:00", "23:59:59"], "Saturday": ["09:00:00", "21:00:00"], "Thursday": ["09:00:00", "23:59:59"], "Wednesday": ["09:00:00", "23:00:00"]}",\
-"business_address": "360 Cowden Road",\
-"business_unit": "",\
-"business_city": "Hollister",\
-"business_state": "CA",\
-"business_zip": "95135",\
-"business_longitude": "-121.9141246",\
-"business_latitude": "37.3316565",\
-"business_EIN": "",\
-"business_WAUBI": "",\
-"business_license": "",\
-"business_USDOT": "",\
-"notification_approval": "",\
-"notification_device_id": "",\
-"can_cancel": 0,\
-"delivery": 0,\
-"reusable": 0,\
-"business_image": "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png",\
-"business_password": "pbkdf2:sha256:150000$zMHfn0jt$29cef351d84456b5f6b665bc2bbab8ae3c6e42bd0e4a4e8967041a9455a24798",\
-"itm_business_uid": "200-000001",\
-"item_type": "dessert,fruit,other,vegetable"\
+{
+    "message": "Successfully executed SQL query.",
+    "code": 280,
+    "result": [
+        {
+            "business_uid": "200-000016",
+            "business_created_at": "2020-09-26T11:45:00",
+            "business_name": "Royal Greens Farms",
+            "business_type": "Farm",
+            "business_desc": "Certified Organic Farm",
+            "business_association": "[\"200-000011\"]",
+            "business_contact_first_name": "Cesar",
+            "business_contact_last_name": null,
+            "business_phone_num": null,
+            "business_phone_num2": null,
+            "business_email": "prashant@servingnow.me",
+            "business_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"08:00:00\", \"12:59:00\"]}",
+            "business_accepting_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"08:00:00\", \"12:59:00\"]}",
+            "business_delivery_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"00:00:00\", \"00:00:00\"]}",
+            "business_address": null,
+            "business_unit": null,
+            "business_city": null,
+            "business_state": null,
+            "business_zip": null,
+            "business_longitude": "-121.9141246",
+            "business_latitude": "37.3316565",
+            "business_EIN": null,
+            "business_WAUBI": null,
+            "business_license": null,
+            "business_USDOT": null,
+            "bus_notification_approval": null,
+            "can_cancel": null,
+            "delivery": null,
+            "reusable": null,
+            "business_image": "https://servingfresh.s3-us-west-1.amazonaws.com/West+Coast+Farmers+Market+Assoc.png",
+            "business_password": null,
+            "bus_guid_device_id_notification": "null",
+            "platform_fee": 0,
+            "transaction_fee": 0,
+            "revenue_sharing": 0,
+            "profit_sharing": 0
+        }
+    ],
+    "dictionary": {
+        "200-000016": [
+            "SUNDAY",
+            "WEDNESDAY"
+        ],
+        "200-000017": [
+            "SUNDAY",
+            "WEDNESDAY"
+        ],
+        "200-000018": [
+            "SUNDAY",
+            "WEDNESDAY"
+        ],
+        "200-000019": [
+            "SUNDAY",
+            "FRIDAY"
+        ],
+        "200-000020": [
+            "SUNDAY"
+        ]
+    }
 }
 
 
@@ -913,6 +942,7 @@ For Insert ---
 "item_desc" : "[organic,red,seedless]",\
 "item_unit" : "lbs",\
 "item_price" : "5.99",\
+"business_price":"4.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
 "item_photo" : file, \ --- upload image file\
@@ -930,6 +960,7 @@ For Update ---
 "item_desc" : "[organic,red,seedless]",\
 "item_unit" : "lbs",\
 "item_price" : "5.99",\
+"business_price":"4.99",\
 "item_sizes" : "M",\
 "favorite" : "FALSE",\
 "item_photo" : file, \ --- upload image file\
