@@ -2822,6 +2822,7 @@ class addItems(Resource):
                 item_desc = request.form.get('item_desc') if request.form.get('item_desc') is not None else 'NULL'
                 item_unit = request.form.get('item_unit') if request.form.get('item_unit') is not None else 'NULL'
                 item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
+                business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
                 item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
                 favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
                 item_photo = request.files.get('item_photo')
@@ -2851,6 +2852,7 @@ class addItems(Resource):
                                 item_desc = \'''' + item_desc + '''\',
                                 item_unit = \'''' + item_unit + '''\',
                                 item_price = \'''' + item_price + '''\',
+                                business_price = \'''' + business_price + '''\',
                                 item_sizes = \'''' + item_sizes + '''\',
                                 favorite = \'''' + favorite + '''\',
                                 item_photo = \'''' + item_photo_url + '''\',
@@ -2884,6 +2886,7 @@ class addItems(Resource):
                 item_sizes = request.form.get('item_sizes')
                 favorite = request.form.get('favorite')
                 taxable = request.form.get('taxable')
+                business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
                 print('In')
                 item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
                 print('oout')
@@ -2904,6 +2907,7 @@ class addItems(Resource):
                                     item_desc = \'''' + item_desc + '''\',
                                     item_unit = \'''' + item_unit + '''\',
                                     item_price = \'''' + item_price + '''\',
+                                    business_price = \'''' + business_price + '''\',
                                     item_sizes = \'''' + item_sizes + '''\',
                                     favorite = \'''' + favorite + '''\',
                                     taxable = \'''' + taxable + '''\',
@@ -2923,6 +2927,7 @@ class addItems(Resource):
                                     item_desc = \'''' + item_desc + '''\',
                                     item_unit = \'''' + item_unit + '''\',
                                     item_price = \'''' + item_price + '''\',
+                                    business_price = \'''' + business_price + '''\',
                                     item_sizes = \'''' + item_sizes + '''\',
                                     favorite = \'''' + favorite + '''\',
                                     taxable = \'''' + taxable + '''\',
