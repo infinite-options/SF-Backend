@@ -2579,13 +2579,13 @@ class payment(Resource):
 
 
 class get_Fee_Tax(Resource):
-    def get(self, id):
+    def get(self, z_id, day):
         try:
             conn = connect()
             query = """
-                    SELECT service_fee, tax_rate, delivery_fee
+                    SELECT service_fee, tax_rate, delivery_fee, z_delivery_time AS delivery_time
                     FROM sf.zones
-                    WHERE zone = """ + id + """;
+                    WHERE zone = \'""" + z_id + """\' AND z_delivery_day = \'""" + day + """\';
                     """
             items = execute(query, 'get', conn)
             if items['code'] != 280:
@@ -3762,7 +3762,7 @@ api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(history, '/api/v2/history/<string:email>')
-api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:id>')
+api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 
