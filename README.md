@@ -332,73 +332,46 @@ endpoint:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/cat
 example:  https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/categoricalOptions/-121.886943,37.227124
 
 
-return: information of all businesses and a dictionary with days all businesses deliver
+return: information of all businesses serving in that location
 
-{
-    "message": "Successfully executed SQL query.",
-    "code": 280,
-    "result": [
-        {
-            "business_uid": "200-000016",
-            "business_created_at": "2020-09-26T11:45:00",
-            "business_name": "Royal Greens Farms",
-            "business_type": "Farm",
-            "business_desc": "Certified Organic Farm",
-            "business_association": "[\"200-000011\"]",
-            "business_contact_first_name": "Cesar",
-            "business_contact_last_name": null,
-            "business_phone_num": null,
-            "business_phone_num2": null,
-            "business_email": "prashant@servingnow.me",
-            "business_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"08:00:00\", \"12:59:00\"]}",
-            "business_accepting_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"08:00:00\", \"12:59:00\"]}",
-            "business_delivery_hours": "{\"Friday\": [\"00:00:00\", \"00:00:00\"], \"Monday\": [\"00:00:00\", \"00:00:00\"], \"Sunday\": [\"08:00:00\", \"12:59:00\"], \"Tuesday\": [\"00:00:00\", \"00:00:00\"], \"Saturday\": [\"00:00:00\", \"00:00:00\"], \"Thursday\": [\"00:00:00\", \"00:00:00\"], \"Wednesday\": [\"00:00:00\", \"00:00:00\"]}",
-            "business_address": null,
-            "business_unit": null,
-            "business_city": null,
-            "business_state": null,
-            "business_zip": null,
-            "business_longitude": "-121.9141246",
-            "business_latitude": "37.3316565",
-            "business_EIN": null,
-            "business_WAUBI": null,
-            "business_license": null,
-            "business_USDOT": null,
-            "bus_notification_approval": null,
-            "can_cancel": null,
-            "delivery": null,
-            "reusable": null,
-            "business_image": "https://servingfresh.s3-us-west-1.amazonaws.com/West+Coast+Farmers+Market+Assoc.png",
-            "business_password": null,
-            "bus_guid_device_id_notification": "null",
-            "platform_fee": 0,
-            "transaction_fee": 0,
-            "revenue_sharing": 0,
-            "profit_sharing": 0
-        }
-    ],
-    "dictionary": {
-        "200-000016": [
-            "SUNDAY",
-            "WEDNESDAY"
-        ],
-        "200-000017": [
-            "SUNDAY",
-            "WEDNESDAY"
-        ],
-        "200-000018": [
-            "SUNDAY",
-            "WEDNESDAY"
-        ],
-        "200-000019": [
-            "SUNDAY",
-            "FRIDAY"
-        ],
-        "200-000020": [
-            "SUNDAY"
-        ]
-    }
-}
+[\
+        {\
+            "z_id": 1,\
+            "z_biz_id": "200-000016",\
+            "business_name": "Royal Greens Farms",\
+            "z_delivery_day": "SUNDAY",\
+            "z_delivery_time": "10am - 12pm",\
+            "business_type": "Farm",\
+            "business_image": "https://servingfresh.s3-us-west-1.amazonaws.com/West+Coast+Farmers+Market+Assoc.png"\
+        },\
+        {\
+            "z_id": 1,\
+            "z_biz_id": "200-000016",\
+            "business_name": "Royal Greens Farms",\
+            "z_delivery_day": "WEDNESDAY",\
+            "z_delivery_time": "6pm - 8pm",\
+            "business_type": "Farm",\
+            "business_image": "https://servingfresh.s3-us-west-1.amazonaws.com/West+Coast+Farmers+Market+Assoc.png"\
+        },\
+        {\
+            "z_id": 1,\
+            "z_biz_id": "200-000005",\
+            "business_name": "Xiong Farms",\
+            "z_delivery_day": "THURSDAY",\
+            "z_delivery_time": "10am - 12pm",\
+            "business_type": "Farm",\
+            "business_image": "https://servingnow.s3-us-west-1.amazonaws.com/kitchen_imgs/landing-logo.png"\
+        },\
+        {\
+            "z_id": 1,\
+            "z_biz_id": "200-000019",\
+            "business_name": "KEM Farms - Berries",\
+            "z_delivery_day": "FRIDAY",\
+            "z_delivery_time": "10am - 12pm",\
+            "business_type": "Farm",\
+            "business_image": "https://servingfresh.s3-us-west-1.amazonaws.com/West+Coast+Farmers+Market+Assoc.png
+        }\
+    ]
 
 
 
@@ -872,6 +845,24 @@ return: lastest 5 purchases by the user
 
 
 
+### get_Fee_Tax
+
+[Get]
+
+endpoint: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/get_Fee_Tax/z_id,day
+
+example: https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/get_Fee_Tax/1,SUNDAY
+
+Returns service fee, tax rate, delivery fees and delivery time
+
+return:
+
+{\
+        "service_fee": 1.5,\
+        "tax_rate": 8.75,\
+        "delivery_fee": 5,\
+        "delivery_time": "10am - 12pm"\
+}
 
 ### purchase_Data_SF
 
