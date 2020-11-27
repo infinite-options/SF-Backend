@@ -927,7 +927,7 @@ class MSPurchaseData(Resource):
             query = '''
                     INSERT INTO  sf.purchases
                     SET purchase_uid = new_purchase_id(),
-                        purchase_date = \'''' + DateStamp + '''\',
+                        purchase_date = \'''' + TimeStamp + '''\',
                         purchase_id = \'''' + NewPurID + '''\',
                         customer_id = \'''' + customer_id + '''\',
                         business_id = \'''' + business_id + '''\',
@@ -3424,8 +3424,30 @@ class customer_info(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT  
-                    cust.customer_uid,
+                    SELECT 
+
+                        custom.customer_uid,
+                        custom.customer_first_name,
+                        custom.customer_last_name,
+                        custom.customer_email,
+                        custom.customer_phone_num,
+                        custom.customer_address,
+                        custom.customer_unit,
+                        custom.customer_city,
+                        custom.customer_zip,
+                        custom.cust_notification_approval,
+                        custom.SMS_freq_preference,
+                        custom.SMS_last_notification,
+                        custom.cust_guid_device_id_notification,
+                        DS.business_name,
+                        DS.price,
+                        DS.itm_business_uid,
+                        DS.number_of_orders,
+                        DS.latest_order_date
+                    
+                    FROM
+                    (SELECT  
+                    cust.customer_uid AS c_uid,
                     cust.customer_first_name,
                     cust.customer_last_name,
                     cust.customer_email,
@@ -3438,9 +3460,11 @@ class customer_info(Resource):
                     cust.cust_notification_approval,
                     cust.SMS_freq_preference,
                     cust.SMS_last_notification,
+                    cust.cust_guid_device_id_notification,
+                    pay.pay_purchase_uid,
                     (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
-                    deconstruct.*, 
-                    count(deconstruct.itm_business_uid) AS number_of_orders, 
+                    deconstruct.*,
+                    count(DISTINCT pay_purchase_uid) AS number_of_orders, 
                     max(pay.payment_time_stamp) AS latest_order_date
                                 FROM sf.purchases , 
                                      JSON_TABLE(items, '$[*]' COLUMNS (
@@ -3451,8 +3475,11 @@ class customer_info(Resource):
                                                 itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                      ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
                     WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid
-                    GROUP BY deconstruct.itm_business_uid, pur_customer_uid
-                    ; 
+                    GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
+					RIGHT JOIN sf.customers AS custom
+                    ON DS.c_uid = custom.customer_uid 
+                    WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON)
+                    ;
                     """
             items = execute(query, 'get', conn)
 
@@ -3583,7 +3610,7 @@ class Send_Notification(Resource):
             output = ",".join(output)
             print('output-----', output)
             return output
-
+        print('IN---')
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
         print(hub)
         print('role----', role)
@@ -3592,6 +3619,7 @@ class Send_Notification(Resource):
         print('uids', uids)
         print('role', role)
         tags = deconstruct(uids, role)
+        print('tags-----', tags)
         if tags == []:
             return 'No GUIDs found for the UIDs provided'
         #tags = uids
