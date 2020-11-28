@@ -2010,27 +2010,31 @@ class categoricalOptions(Resource):
             print('ZONES-----', zones)
             query = """
                     SELECT      
-                        
-                        rjzjt.z_id,
-                        rjzjt.z_biz_id,
-                        b.business_name,
-                        rjzjt.z_delivery_day,
-                        rjzjt.z_delivery_time,
-                        b.business_type,
-                        b.business_image
-                    FROM sf.businesses b
-                    RIGHT JOIN
-                    (SELECT *
-                         FROM sf.zones AS z,
-                         json_table(z_businesses, '$[*]'
-                             COLUMNS (
-                                    z_id FOR ORDINALITY,
-                                    z_biz_id VARCHAR(255) PATH '$')
-                                                 ) as zjt) as rjzjt
-                    ON b.business_uid = rjzjt.z_biz_id
-                    WHERE z_id IN """ + str(tuple(zones)) + """;
-                    
-                    """
+                    rjzjt.zone_uid,
+                    rjzjt.zone,
+                    rjzjt.zone_name,
+                    rjzjt.z_id,
+                    rjzjt.z_biz_id,
+                    rjzjt.z_delivery_day,
+                    b.business_name,
+                    rjzjt.z_delivery_day,
+                    rjzjt.z_delivery_time,
+                    rjzjt.LB_long,rjzjt.LB_lat,rjzjt.LT_long,rjzjt.LT_lat,rjzjt.RT_long,rjzjt.RT_lat,rjzjt.RB_long,rjzjt.RB_lat,
+                    b.business_type,
+                    b.business_image
+                   
+                FROM sf.businesses b
+                RIGHT JOIN
+                (SELECT *
+                     FROM sf.zones AS z,
+                     json_table(z_businesses, '$[*]'
+                         COLUMNS (
+                                z_id FOR ORDINALITY,
+                                z_biz_id VARCHAR(255) PATH '$')
+                                             ) as zjt) as rjzjt
+                ON b.business_uid = rjzjt.z_biz_id
+                WHERE zone IN """ + str(tuple(zones)) + """;
+                """
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
