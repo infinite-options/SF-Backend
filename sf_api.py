@@ -27,8 +27,10 @@ import random
 import string
 import stripe
 import pandas as pd
+import io
+import csv
 
-from flask import Flask, request, render_template, redirect, url_for
+from flask import Flask, request, render_template, redirect, url_for, make_response
 from flask_restful import Resource, Api
 from flask_cors import CORS
 from flask_mail import Mail, Message
@@ -3150,9 +3152,17 @@ class orders_by_farm(Resource):
                     path = "business_" + bus_dict[ids] + "_" + ids + ".csv"
                 else:
                     path = "business_uid_" + ids + ".csv"
-                df_bus.to_csv(path)
+                #df_bus.to_csv(path)
+                slider_output = df_bus.to_csv()
+
             #df.to_csv ('export_dataframe.csv', index = False, header=True)
-            return items
+
+
+
+            output = make_response(slider_output)
+            output.headers["Content-Disposition"] = "attachment; filename=orders.csv"
+            output.headers["Content-type"] = "text/csv"
+            return output
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -3421,6 +3431,103 @@ class admin_report(Resource):
         finally:
             disconnect(conn)
 
+
+class report_order_customer_pivot_detail(Resource):
+
+    def get(self, report, uid):
+
+        try:
+            conn = connect()
+
+            query = """
+                    SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                    FROM sf.purchases, sf.payments,
+                         JSON_TABLE(items, '$[*]' COLUMNS (
+                                    qty VARCHAR(255)  PATH '$.qty',
+                                    name VARCHAR(255)  PATH '$.name',
+                                    price VARCHAR(255)  PATH '$.price',
+                                    item_uid VARCHAR(255)  PATH '$.item_uid',
+                                    itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                         ) AS deconstruct
+                    WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
+                    """
+
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'Check sql query'
+                return items
+            else:
+
+                items['message'] = 'Report data successful'
+                items['code'] = 200
+                result = items['result']
+                dict = {}
+                for vals in result:
+                    if vals['purchase_uid'] in dict:
+                        dict[vals['purchase_uid']].append(vals)
+                    else:
+                        dict[vals['purchase_uid']] = [vals]
+
+                data = []
+
+                for key, vals in dict.items():
+
+                    tmp = vals[0]
+                    print('tmp----', tmp)
+                    data.append([tmp['purchase_date'],
+                                 tmp['delivery_first_name'],
+                                 tmp['delivery_last_name'],
+                                 tmp['delivery_phone_num'],
+                                 tmp['delivery_email'],
+                                 tmp['delivery_address'],
+                                 tmp['delivery_unit'],
+                                 tmp['delivery_city'],
+                                 tmp['delivery_state'],
+                                 tmp['delivery_zip'],
+                                 tmp['amount_paid']
+                                 ])
+                    for items in vals:
+                        data.append([items['name'],
+                                    items['qty'],
+                                    items['price']
+                                    ])
+
+
+                si = io.StringIO()
+                cw = csv.writer(si)
+                cw.writerow(['Open Orders'])
+                for item in data:
+                    cw.writerow(item)
+
+                orders = si.getvalue()
+                output = make_response(orders)
+                output.headers["Content-Disposition"] = "attachment; filename=order_details.csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
+# -- Admin Queries End here -------------------------------------------------------------------------------
+
+
+# -- Queries end here -------------------------------------------------------------------------------
+
+
+
+
+
+
+
+# -- NOTIFICATIONS Queries Start here -------------------------------------------------------------------------------
+
 class customer_info(Resource):
 
     def get(self):
@@ -3531,38 +3638,9 @@ class Send_Twilio_SMS(Resource):
 
 
 
-# -- Admin Queries End here -------------------------------------------------------------------------------
-
-
-# -- Queries end here -------------------------------------------------------------------------------
 
 
 
-
-
-# Add Comment Here ie Shows All Meal Plan Info
-class TemplateApi(Resource):
-    def get(self):
-        response = {}
-        items = {}
-        try:
-            conn = connect()
-
-            items = execute(""" SELECT
-                                *
-                                FROM
-                                ptyd_meal_plans;""", 'get', conn)
-
-            response['message'] = 'successful'
-            response['result'] = items
-
-            return response, 200
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
-
-# -- START NOTIFICATIONS INFO -------------------------------------------------------------------------------
 class Send_Notification(Resource):
 
     def post(self, role):
@@ -3759,7 +3837,7 @@ class Get_Tags_With_GUID_iOS(Resource):
         old_tags = appleregistrationdescription.tags.get_text().split(",")
         return old_tags
 
-# -- END NOTIFICATIONS INFO -------------------------------------------------------------------------------
+# -- NOTIFICATIONS Queries End here -------------------------------------------------------------------------------
 
 
 # Define API routes
@@ -3815,12 +3893,13 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
-api.add_resource(customer_info, '/api/v2/customer_info')
-api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
+api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
 
 
 # Notification Endpoints
 
+api.add_resource(customer_info, '/api/v2/customer_info')
+api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 api.add_resource(Send_Notification, '/api/v2/Send_Notification/<string:role>')
 api.add_resource(Get_Registrations_From_Tag, '/api/v2/Get_Registrations_From_Tag/<string:tag>')
 api.add_resource(Update_Registration_With_GUID_iOS, '/api/v2/Update_Registration_With_GUID_iOS')
