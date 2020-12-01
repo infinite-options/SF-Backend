@@ -2644,6 +2644,7 @@ class purchase_Data_SF(Resource):
                 delivery_zip = data['delivery_zip']
                 delivery_latitude = data['delivery_latitude']
                 delivery_longitude = data['delivery_longitude']
+                delivery_status = data['delivery_status'] if data['purchase_notes'] else 'FALSE'
                 purchase_notes = data['purchase_notes']
 
                 query = "SELECT * FROM sf.customers " \
@@ -2684,7 +2685,8 @@ class purchase_Data_SF(Resource):
                                     delivery_zip = \'""" + delivery_zip + """\',
                                     delivery_latitude = \'""" + delivery_latitude + """\',
                                     delivery_longitude = \'""" + delivery_longitude + """\',
-                                    purchase_notes = \'""" + purchase_notes + """\';
+                                    purchase_notes = \'""" + purchase_notes + """\',
+                                    delivery_status = \'""" + delivery_status + """\';
                                 """
                 items = execute(query_insert, 'post', conn)
 
@@ -3434,11 +3436,10 @@ class admin_report(Resource):
 
 class report_order_customer_pivot_detail(Resource):
 
-    def get(self, report, uid, date):
+    def get(self, report, uid):
 
         try:
             conn = connect()
-            date = date + '%'
             if report == 'order':
                 query = """
                         SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
@@ -3450,7 +3451,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND purchase_date LIKE \'""" + date + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
                         """
 
                 items = execute(query, 'get', conn)
@@ -3517,7 +3518,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND purchase_date LIKE \'""" + date + """\'
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\'
                         GROUP BY pur_customer_uid;
                         """
 
@@ -3573,7 +3574,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND purchase_date LIKE \'""" + date + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
                         """
 
                 items = execute(query, 'get', conn)
@@ -4015,7 +4016,7 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
-api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
+api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
 
 
 # Notification Endpoints
