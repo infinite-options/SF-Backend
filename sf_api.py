@@ -2767,6 +2767,164 @@ class purchase_Data_SF(Resource):
                 disconnect(conn)
 
 
+class Checkout(Resource):
+    def post(self):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            # Purchases start here
+
+            query = "CALL sf.new_purchase_uid"
+            newPurchaseUID_query = execute(query, 'get', conn)
+            newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
+
+            purchase_uid = newPurchaseUID
+            purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+            purchase_id = purchase_uid
+            purchase_status = 'ACTIVE'
+            pur_customer_uid = data['pur_customer_uid']
+            pur_business_uid = data['pur_business_uid']
+            # items_pur = data['items']
+            items_pur = json.dumps(data['items'])
+            order_instructions = data['order_instructions']
+            delivery_instructions = data['delivery_instructions']
+            order_type = data['order_type']
+            delivery_first_name = data['delivery_first_name']
+            delivery_last_name = data['delivery_last_name']
+            delivery_phone_num = data['delivery_phone_num']
+            delivery_email = data['delivery_email']
+            delivery_address = data['delivery_address']
+            delivery_unit = data['delivery_unit']
+            delivery_city = data['delivery_city']
+            delivery_state = data['delivery_state']
+            delivery_zip = data['delivery_zip']
+            delivery_latitude = data['delivery_latitude']
+            delivery_longitude = data['delivery_longitude']
+            purchase_notes = data['purchase_notes']
+
+            query = "SELECT * FROM sf.customers " \
+                    "WHERE customer_email =\'" + delivery_email + "\';"
+
+            items = execute(query, 'get', conn)
+
+            print('ITEMS--------------', items)
+
+            if not items['result']:
+                items['code'] = 404
+                items['message'] = "User email doesn't exists"
+                return items
+
+            print('in insert-------')
+
+            query_insert = """ 
+                                    INSERT INTO sf.purchases
+                                    SET
+                                    purchase_uid = \'""" + newPurchaseUID + """\',
+                                    purchase_date = \'""" + purchase_date + """\',
+                                    purchase_id = \'""" + purchase_id + """\',
+                                    purchase_status = \'""" + purchase_status + """\',
+                                    pur_customer_uid = \'""" + pur_customer_uid + """\',
+                                    pur_business_uid = \'""" + pur_business_uid + """\',
+                                    items = '""" + items_pur + """',
+                                    order_instructions = \'""" + order_instructions + """\',
+                                    delivery_instructions = \'""" + delivery_instructions + """\',
+                                    order_type = \'""" + order_type + """\',
+                                    delivery_first_name = \'""" + delivery_first_name + """\',
+                                    delivery_last_name = \'""" + delivery_last_name + """\',
+                                    delivery_phone_num = \'""" + delivery_phone_num + """\',
+                                    delivery_email = \'""" + delivery_email + """\',
+                                    delivery_address = \'""" + delivery_address + """\',
+                                    delivery_unit = \'""" + delivery_unit + """\',
+                                    delivery_city = \'""" + delivery_city + """\',
+                                    delivery_state = \'""" + delivery_state + """\',
+                                    delivery_zip = \'""" + delivery_zip + """\',
+                                    delivery_latitude = \'""" + delivery_latitude + """\',
+                                    delivery_longitude = \'""" + delivery_longitude + """\',
+                                    purchase_notes = \'""" + purchase_notes + """\';
+                                """
+            items = execute(query_insert, 'post', conn)
+
+            print('execute')
+            if items['code'] == 281:
+                items['code'] = 200
+                items['message'] = 'Purchase info updated'
+
+            else:
+                items['message'] = 'check sql query'
+                items['code'] = 490
+
+            # Payments start here
+
+            query = "CALL sf.new_payment_uid"
+            newPaymentUID_query = execute(query, 'get', conn)
+            newPaymentUID = newPaymentUID_query['result'][0]['new_id']
+
+            payment_uid = newPaymentUID
+            payment_id = payment_uid
+            pay_purchase_uid = newPurchaseUID
+            pay_purchase_id = newPurchaseUID
+            payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+            start_delivery_date = data['start_delivery_date']
+            pay_coupon_id = data['pay_coupon_id']
+            amount_due = data['amount_due']
+            amount_discount = data['amount_discount']
+            amount_paid = data['amount_paid']
+            info_is_Addon = data['info_is_Addon']
+            cc_num = data['cc_num']
+            cc_exp_date = data['cc_exp_date']
+            cc_cvv = data['cc_cvv']
+            cc_zip = data['cc_zip']
+            print('data: ', data)
+            charge_id = data['charge_id']
+            payment_type = data['payment_type']
+            print(data)
+
+            query_insert = [""" 
+                                    INSERT INTO  sf.payments
+                                    SET
+                                    payment_uid = \'""" + payment_uid + """\',
+                                    payment_id = \'""" + payment_id + """\',
+                                    pay_purchase_uid = \'""" + pay_purchase_uid + """\',
+                                    pay_purchase_id = \'""" + pay_purchase_id + """\',
+                                    payment_time_stamp = \'""" + payment_time_stamp + """\',
+                                    start_delivery_date = \'""" + start_delivery_date + """\',
+                                    pay_coupon_id = \'""" + pay_coupon_id + """\',
+                                    amount_due = \'""" + str(amount_due) + """\',
+                                    amount_discount = \'""" + str(amount_discount) + """\',
+                                    amount_paid = \'""" + str(amount_paid) + """\',
+                                    info_is_Addon = \'""" + str(info_is_Addon) + """\',
+                                    cc_num = \'""" + str(cc_num) + """\',
+                                    cc_exp_date = \'""" + cc_exp_date + """\',
+                                    cc_cvv = \'""" + cc_cvv + """\',
+                                    cc_zip = \'""" + cc_zip + """\',
+                                    charge_id = \'""" + charge_id + """\',
+                                    payment_type = \'""" + payment_type + """\';
+
+                                """]
+
+            print(query_insert)
+            item = execute(query_insert[0], 'post', conn)
+
+            if item['code'] == 281:
+                item['code'] = 200
+                item['message'] = 'Payment info updated'
+            else:
+                item['message'] = 'check sql query'
+                item['code'] = 490
+
+            return item
+
+        except:
+            print("Error happened while inserting in purchase table")
+
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class history(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -2807,8 +2965,8 @@ class Stripe_Intent(Resource):
         print('AMOUNT------', amount)
 
         intent = stripe.PaymentIntent.create(
-        amount=amount,
-        currency='usd',
+            amount=amount,
+            currency='usd',
         )
         print('INTENT------', intent)
         client_secret = intent.client_secret
@@ -3871,6 +4029,7 @@ api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
+api.add_resource(Checkout, '/api/v2/checkout')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
