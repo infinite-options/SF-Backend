@@ -2078,7 +2078,7 @@ class getItems(Resource):
 
             items['message'] = 'Items sent successfully'
             items['code'] = 200
-
+            """
             # get max profit
 
             dict_items = {}
@@ -2106,6 +2106,7 @@ class getItems(Resource):
             result = [i for j, i in enumerate(result) if j not in rm_idx]
 
             items['result'] = result
+            """
             return items
 
         except:
@@ -2298,22 +2299,14 @@ class available_Coupons(Resource):
         items = []
         try:
             conn = connect()
-            query = """
-                    SELECT *
-                    FROM sf.customers cus
-                    WHERE customer_email = \'""" + email + """\';
-                    """
 
-            items = execute(query, 'get', conn)
-            if not items['result']:
-                items['message'] = "Email doesn't exists"
-                items['code'] = 404
-                return items
+            if email == 'guest':
+                email = ''
 
             query = """
                     SELECT *
                     FROM sf.coupons
-                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND num_used > 0;
+                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > num_used AND expire_date> CURDATE();;
                     """
             items = execute(query, 'get', conn)
             items['message'] = 'Coupons sent successfully'
@@ -2342,7 +2335,7 @@ class update_Coupons(Resource):
                     query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
+                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + '0' + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
                     """
                     print(query)
                     items = execute(query, 'post', conn)
@@ -2421,6 +2414,31 @@ class update_Coupons(Resource):
                     items['message'] = 'Coupon info updated'
                     items['code'] = 200
                     return items
+
+
+                elif action == 'add':
+
+                    query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
+                    """
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
+                    return items
+
+
 
                 else:
 
