@@ -2078,6 +2078,34 @@ class getItems(Resource):
 
             items['message'] = 'Items sent successfully'
             items['code'] = 200
+
+            # get max profit
+
+            dict_items = {}
+            rm_idx = []
+            result = items['result']
+            print('RESULT-----------')
+            print(result[0])
+            for i, vals in enumerate(result):
+                if vals['item_name'] + vals["item_type"] + vals["item_unit"] in dict_items.keys():
+                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][0] < vals["item_price"] - vals["business_price"]:
+                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][1])
+                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
+                    else:
+                        rm_idx.append(i)
+                else:
+                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
+
+            print('VALS---------')
+            print(dict_items)
+            print(rm_idx)
+
+            for dd in rm_idx:
+                print(result[dd])
+
+            result = [i for j, i in enumerate(result) if j not in rm_idx]
+
+            items['result'] = result
             return items
 
         except:
@@ -2644,6 +2672,7 @@ class purchase_Data_SF(Resource):
                 delivery_zip = data['delivery_zip']
                 delivery_latitude = data['delivery_latitude']
                 delivery_longitude = data['delivery_longitude']
+                delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
                 purchase_notes = data['purchase_notes']
 
                 query = "SELECT * FROM sf.customers " \
@@ -2684,7 +2713,8 @@ class purchase_Data_SF(Resource):
                                     delivery_zip = \'""" + delivery_zip + """\',
                                     delivery_latitude = \'""" + delivery_latitude + """\',
                                     delivery_longitude = \'""" + delivery_longitude + """\',
-                                    purchase_notes = \'""" + purchase_notes + """\';
+                                    purchase_notes = \'""" + purchase_notes + """\',
+                                    delivery_status = \'""" + delivery_status + """\';
                                 """
                 items = execute(query_insert, 'post', conn)
 
@@ -2902,7 +2932,6 @@ class Checkout(Resource):
                                     cc_zip = \'""" + cc_zip + """\',
                                     charge_id = \'""" + charge_id + """\',
                                     payment_type = \'""" + payment_type + """\';
-
                                 """]
 
             print(query_insert)
@@ -2923,6 +2952,8 @@ class Checkout(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
 
 
 class history(Resource):
@@ -3596,74 +3627,195 @@ class report_order_customer_pivot_detail(Resource):
 
         try:
             conn = connect()
+            if report == 'order':
+                query = """
+                        SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                        FROM sf.purchases, sf.payments,
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
+                        """
 
-            query = """
-                    SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
-                    FROM sf.purchases, sf.payments,
-                         JSON_TABLE(items, '$[*]' COLUMNS (
-                                    qty VARCHAR(255)  PATH '$.qty',
-                                    name VARCHAR(255)  PATH '$.name',
-                                    price VARCHAR(255)  PATH '$.price',
-                                    item_uid VARCHAR(255)  PATH '$.item_uid',
-                                    itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
-                         ) AS deconstruct
-                    WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
-                    """
+                items = execute(query, 'get', conn)
 
-            items = execute(query, 'get', conn)
+                if items['code'] != 280:
+                    items['message'] = 'Check sql query'
+                    return items
+                else:
 
-            if items['code'] != 280:
-                items['message'] = 'Check sql query'
-                return items
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                    result = items['result']
+                    dict = {}
+                    for vals in result:
+                        if vals['purchase_uid'] in dict:
+                            dict[vals['purchase_uid']].append(vals)
+                        else:
+                            dict[vals['purchase_uid']] = [vals]
+
+                    data = []
+
+                    for key, vals in dict.items():
+
+                        tmp = vals[0]
+                        print('tmp----', tmp)
+                        data.append([tmp['purchase_date'],
+                                     tmp['delivery_first_name'],
+                                     tmp['delivery_last_name'],
+                                     tmp['delivery_phone_num'],
+                                     tmp['delivery_email'],
+                                     tmp['delivery_address'],
+                                     tmp['delivery_unit'],
+                                     tmp['delivery_city'],
+                                     tmp['delivery_state'],
+                                     tmp['delivery_zip'],
+                                     tmp['amount_paid']
+                                     ])
+                        for items in vals:
+                            data.append([items['name'],
+                                        items['qty'],
+                                        items['price']
+                                        ])
+
+
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    cw.writerow(['Open Orders'])
+                    for item in data:
+                        cw.writerow(item)
+
+                    orders = si.getvalue()
+                    output = make_response(orders)
+                    output.headers["Content-Disposition"] = "attachment; filename=order_details.csv"
+                    output.headers["Content-type"] = "text/csv"
+                    return output
+            elif report == 'customer':
+                query = """
+                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, sum(price) as Amount
+                        FROM sf.purchases, sf.payments,
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\'
+                        GROUP BY pur_customer_uid;
+                        """
+
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'Check sql query'
+                    return items
+                else:
+
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                    result = items['result']
+                    print('result------', result)
+                    data = []
+
+                    for vals in result:
+
+                        tmp = vals
+                        print('tmp----', tmp)
+                        data.append([tmp['delivery_first_name'],
+                                     tmp['delivery_last_name'],
+                                     tmp['delivery_phone_num'],
+                                     tmp['delivery_email'],
+                                     tmp['delivery_address'],
+                                     tmp['delivery_unit'],
+                                     tmp['delivery_city'],
+                                     tmp['delivery_state'],
+                                     tmp['delivery_zip'],
+                                     tmp['Amount']
+                                     ])
+
+
+
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    for item in data:
+                        cw.writerow(item)
+
+                    orders = si.getvalue()
+                    output = make_response(orders)
+                    output.headers["Content-Disposition"] = "attachment; filename=customer_details.csv"
+                    output.headers["Content-type"] = "text/csv"
+                    return output
+            elif report == 'pivot':
+                query = """
+                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                        FROM sf.purchases, sf.payments,
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
+                        """
+
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'Check sql query'
+                    return items
+                else:
+
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                    result = items['result']
+                    itm_dict = {}
+                    for vals in result:
+                        if vals['name'] in itm_dict:
+                            itm_dict[vals['name']] += int(vals['qty'])
+                        else:
+                            itm_dict[vals['name']] = int(vals['qty'])
+                    print('ddddddd------', itm_dict)
+                    dict = {}
+                    for vals in result:
+                        if vals['pur_customer_uid'] in dict:
+                            dict[vals['pur_customer_uid']].append(vals)
+                        else:
+                            dict[vals['pur_customer_uid']] = [vals]
+
+                    print('dict----', dict)
+                    si = io.StringIO()
+                    cw = csv.DictWriter(si, ['Name', 'Email', 'Phone', 'Total'] + list(itm_dict.keys()))
+                    cw.writeheader()
+                    glob_tot = 0
+                    for key, vals in dict.items():
+                        print('VALSSS---', vals)
+                        items = {groc['name']:groc['qty'] for groc in vals}
+                        total_sum = 0
+                        for tp_key, tp_vals in items.items():
+                            total_sum += int(tp_vals)
+                        glob_tot += total_sum
+                        print('items-----------------', items)
+                        items['Name'] = vals[0]['delivery_first_name'] + vals[0]['delivery_last_name']
+                        items['Email'] = vals[0]['delivery_email']
+                        items['Phone'] = vals[0]['delivery_phone_num']
+                        items['Total'] = total_sum
+                        cw.writerow(items)
+
+                    cw.writerow({'Name': 'Total', 'Total': glob_tot, **itm_dict})
+
+                    orders = si.getvalue()
+                    output = make_response(orders)
+                    output.headers["Content-Disposition"] = "attachment; filename=pivot_table.csv"
+                    output.headers["Content-type"] = "text/csv"
+                    return output
             else:
-
-                items['message'] = 'Report data successful'
-                items['code'] = 200
-                result = items['result']
-                dict = {}
-                for vals in result:
-                    if vals['purchase_uid'] in dict:
-                        dict[vals['purchase_uid']].append(vals)
-                    else:
-                        dict[vals['purchase_uid']] = [vals]
-
-                data = []
-
-                for key, vals in dict.items():
-
-                    tmp = vals[0]
-                    print('tmp----', tmp)
-                    data.append([tmp['purchase_date'],
-                                 tmp['delivery_first_name'],
-                                 tmp['delivery_last_name'],
-                                 tmp['delivery_phone_num'],
-                                 tmp['delivery_email'],
-                                 tmp['delivery_address'],
-                                 tmp['delivery_unit'],
-                                 tmp['delivery_city'],
-                                 tmp['delivery_state'],
-                                 tmp['delivery_zip'],
-                                 tmp['amount_paid']
-                                 ])
-                    for items in vals:
-                        data.append([items['name'],
-                                    items['qty'],
-                                    items['price']
-                                    ])
-
-
-                si = io.StringIO()
-                cw = csv.writer(si)
-                cw.writerow(['Open Orders'])
-                for item in data:
-                    cw.writerow(item)
-
-                orders = si.getvalue()
-                output = make_response(orders)
-                output.headers["Content-Disposition"] = "attachment; filename=order_details.csv"
-                output.headers["Content-type"] = "text/csv"
-                return output
-
+                return "choose correct option"
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
