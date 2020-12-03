@@ -1943,7 +1943,7 @@ class update_guid_notification(Resource):
                         continue
                     if vals['guid'] == data['guid']:
                         print(vals)
-                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                        json_guid[i]['notification'] = data['notification']
                         break
                 if json_guid[0] == None:
                     json_guid[0] = 'null'
@@ -1979,7 +1979,7 @@ class update_guid_notification(Resource):
                         continue
                     if vals['guid'] == data['guid']:
                         print(vals)
-                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                        json_guid[i]['notification'] = data['notification']
                         break
                 if json_guid[0] == None:
                     json_guid[0] = 'null'
