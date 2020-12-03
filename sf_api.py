@@ -1765,40 +1765,6 @@ class update_Profile(Resource):
         try:
             data = request.get_json(force=True)
             conn = connect()
-            print(data['guid'])
-            if data['guid']:
-                print('IN')
-                query = """
-                    SELECT cust_guid_device_id_notification
-                    FROM sf.customers c
-                    WHERE customer_uid = \'""" + data['customer_uid'] + """\';
-                    """
-                items = execute(query, 'get', conn)
-                json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
-                for i, vals in enumerate(json_guid):
-                    print(i, vals)
-                    if vals == None or vals == 'null':
-                        continue
-                    if vals['guid'] == data['guid']:
-                        print(vals)
-                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
-                        break
-                if json_guid[0] == None:
-                    json_guid[0] = 'null'
-
-                guid = str(json_guid)
-                guid = guid.replace("'", '"')
-                print(guid)
-                query = """
-                        UPDATE  sf.customers  
-                        SET
-                        cust_guid_device_id_notification = \'""" + guid + """\'
-                        WHERE ( customer_uid  = '""" + data['customer_uid'] + """' );
-                        """
-                items = execute(query, 'post', conn)
-                if items['code'] != 281:
-                    items['message'] = 'guid not updated check sql query and data'
-                    return items
 
             query = """
                     UPDATE  sf.customers  
@@ -1879,7 +1845,7 @@ class update_email_password(Resource):
 
 class update_guid_notification(Resource):
 
-    def post(self, role):
+    def post(self, role, action):
         response = {}
         items = {}
 
@@ -1888,7 +1854,7 @@ class update_guid_notification(Resource):
             data = request.get_json(force=True)
 
             print(data)
-            if role == 'customer':
+            if role == 'customer' and action == 'add':
                 uid = data['uid']
                 guid = data['guid']
                 notification = data['notification']
@@ -1925,7 +1891,7 @@ class update_guid_notification(Resource):
 
                 return items
 
-            elif role == 'business':
+            elif role == 'business' and action == 'add':
                 uid = data['uid']
                 guid = data['guid']
                 query = """
@@ -1959,6 +1925,80 @@ class update_guid_notification(Resource):
                 else:
                     items['message'] = "UID doesn't exists"
 
+                return items
+
+            #GUIDS
+
+            elif role == 'customer' and action == 'update':
+                query = """
+                    SELECT cust_guid_device_id_notification
+                    FROM sf.customers c
+                    WHERE customer_uid = \'""" + data['uid'] + """\';
+                    """
+                items = execute(query, 'get', conn)
+                json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
+                for i, vals in enumerate(json_guid):
+                    print(i, vals)
+                    if vals == None or vals == 'null':
+                        continue
+                    if vals['guid'] == data['guid']:
+                        print(vals)
+                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                        break
+                if json_guid[0] == None:
+                    json_guid[0] = 'null'
+
+                guid = str(json_guid)
+                guid = guid.replace("'", '"')
+                print(guid)
+                query = """
+                        UPDATE  sf.customers  
+                        SET
+                        cust_guid_device_id_notification = \'""" + guid + """\'
+                        WHERE ( customer_uid  = '""" + data['uid'] + """' );
+                        """
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = 'guid not updated check sql query and data'
+
+                else:
+                    items['message'] = 'guid updated'
+                return items
+
+            elif role == 'business' and action == 'update':
+                query = """
+                    SELECT bus_guid_device_id_notification
+                    FROM sf.businesses b
+                    WHERE business_uid = \'""" + data['uid'] + """\';
+                    """
+                items = execute(query, 'get', conn)
+                json_guid = json.loads(items['result'][0]['bus_guid_device_id_notification'])
+                for i, vals in enumerate(json_guid):
+                    print(i, vals)
+                    if vals == None or vals == 'null':
+                        continue
+                    if vals['guid'] == data['guid']:
+                        print(vals)
+                        json_guid[i]['notification'] = 'TRUE' if json_guid[i]['notification'] == 'FALSE' else 'FALSE'
+                        break
+                if json_guid[0] == None:
+                    json_guid[0] = 'null'
+
+                guid = str(json_guid)
+                guid = guid.replace("'", '"')
+                print(guid)
+                query = """
+                        UPDATE  sf.businesses
+                        SET
+                        bus_guid_device_id_notification = \'""" + guid + """\'
+                        WHERE ( business_uid  = '""" + data['uid'] + """' );
+                        """
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = 'guid not updated check sql query and data'
+
+                else:
+                    items['message'] = 'guid updated'
                 return items
 
             else:
@@ -2804,8 +2844,27 @@ class purchase_Data_SF(Resource):
                 else:
                     item['message'] = 'check sql query'
                     item['code'] = 490
+                    return items
 
-                return item
+                query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + pay_coupon_id + """\';
+                    """
+
+                items = execute(query, 'get', conn)
+                if not items['result']:
+                    items['message'] = "Coupon uid doesn't exists"
+                    items['code'] = 404
+                    return items
+
+                query = """
+                        UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
+                        """
+                items = execute(query, 'post', conn)
+                items['message'] = 'purchase, payments and coupons info updated'
+                items['code'] = 200
+                return items
 
             except:
                 print("Error happened while inserting in purchase table")
@@ -4191,11 +4250,10 @@ api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
 api.add_resource(update_Profile, '/api/v2/update_Profile')
 api.add_resource(update_email_password, '/api/v2/update_email_password')
-api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>')
+api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>,<string:action>')
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(categoricalOptions, '/api/v2/categoricalOptions/<string:long>,<string:lat>')
 api.add_resource(getItems, '/api/v2/getItems')
-api.add_resource(Categorical_Options, '/api/v2/Categorical_Options/<string:long>,<string:lat>')
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
