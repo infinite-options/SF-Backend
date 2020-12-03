@@ -2107,7 +2107,8 @@ class getItems(Resource):
             query = """
                     SELECT * 
                     FROM sf.items
-                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """;
+                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """
+                    ORDER BY item_name;
                     """
             print(query)
             items = execute(query, 'get', conn)
@@ -2695,183 +2696,183 @@ class get_Fee_Tax(Resource):
 
 class purchase_Data_SF(Resource):
     def post(self):
-            response = {}
-            items = {}
-            try:
-                conn = connect()
-                data = request.get_json(force=True)
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
 
-                # Purchases start here
+            # Purchases start here
 
-                query = "CALL sf.new_purchase_uid"
-                newPurchaseUID_query = execute(query, 'get', conn)
-                newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
+            query = "CALL sf.new_purchase_uid"
+            newPurchaseUID_query = execute(query, 'get', conn)
+            newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
 
-                purchase_uid = newPurchaseUID
-                purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-                purchase_id = purchase_uid
-                purchase_status = 'ACTIVE'
-                pur_customer_uid = data['pur_customer_uid']
-                pur_business_uid = data['pur_business_uid']
-                #items_pur = data['items']
-                items_pur = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['items']]) + "]'"
+            purchase_uid = newPurchaseUID
+            purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+            purchase_id = purchase_uid
+            purchase_status = 'ACTIVE'
+            pur_customer_uid = data['pur_customer_uid']
+            pur_business_uid = data['pur_business_uid']
+            #items_pur = data['items']
+            items_pur = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['items']]) + "]'"
 
-                order_instructions = data['order_instructions']
-                delivery_instructions = data['delivery_instructions']
-                order_type = data['order_type']
-                delivery_first_name = data['delivery_first_name']
-                delivery_last_name = data['delivery_last_name']
-                delivery_phone_num = data['delivery_phone_num']
-                delivery_email = data['delivery_email']
-                delivery_address = data['delivery_address']
-                delivery_unit = data['delivery_unit']
-                delivery_city = data['delivery_city']
-                delivery_state = data['delivery_state']
-                delivery_zip = data['delivery_zip']
-                delivery_latitude = data['delivery_latitude']
-                delivery_longitude = data['delivery_longitude']
-                delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
-                purchase_notes = data['purchase_notes']
+            order_instructions = data['order_instructions']
+            delivery_instructions = data['delivery_instructions']
+            order_type = data['order_type']
+            delivery_first_name = data['delivery_first_name']
+            delivery_last_name = data['delivery_last_name']
+            delivery_phone_num = data['delivery_phone_num']
+            delivery_email = data['delivery_email']
+            delivery_address = data['delivery_address']
+            delivery_unit = data['delivery_unit']
+            delivery_city = data['delivery_city']
+            delivery_state = data['delivery_state']
+            delivery_zip = data['delivery_zip']
+            delivery_latitude = data['delivery_latitude']
+            delivery_longitude = data['delivery_longitude']
+            delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
+            purchase_notes = data['purchase_notes']
 
-                query = "SELECT * FROM sf.customers " \
-                        "WHERE customer_email =\'"+delivery_email+"\';"
+            query = "SELECT * FROM sf.customers " \
+                    "WHERE customer_email =\'"+delivery_email+"\';"
 
-                items = execute(query, 'get', conn)
+            items = execute(query, 'get', conn)
 
-                print('ITEMS--------------', items)
+            print('ITEMS--------------', items)
 
-                if not items['result']:
-                    items['code'] = 404
-                    items['message'] = "User email doesn't exists"
-                    return items
-
-                print('in insert-------')
-
-                query_insert = """ 
-                                    INSERT INTO sf.purchases
-                                    SET
-                                    purchase_uid = \'""" + newPurchaseUID + """\',
-                                    purchase_date = \'""" + purchase_date + """\',
-                                    purchase_id = \'""" + purchase_id + """\',
-                                    purchase_status = \'""" + purchase_status + """\',
-                                    pur_customer_uid = \'""" + pur_customer_uid + """\',
-                                    pur_business_uid = \'""" + pur_business_uid + """\',
-                                    items = """ + items_pur + """,
-                                    order_instructions = \'""" + order_instructions + """\',
-                                    delivery_instructions = \'""" + delivery_instructions + """\',
-                                    order_type = \'""" + order_type + """\',
-                                    delivery_first_name = \'""" + delivery_first_name + """\',
-                                    delivery_last_name = \'""" + delivery_last_name + """\',
-                                    delivery_phone_num = \'""" + delivery_phone_num + """\',
-                                    delivery_email = \'""" + delivery_email + """\',
-                                    delivery_address = \'""" + delivery_address + """\',
-                                    delivery_unit = \'""" + delivery_unit + """\',
-                                    delivery_city = \'""" + delivery_city + """\',
-                                    delivery_state = \'""" + delivery_state + """\',
-                                    delivery_zip = \'""" + delivery_zip + """\',
-                                    delivery_latitude = \'""" + delivery_latitude + """\',
-                                    delivery_longitude = \'""" + delivery_longitude + """\',
-                                    purchase_notes = \'""" + purchase_notes + """\',
-                                    delivery_status = \'""" + delivery_status + """\';
-                                """
-                items = execute(query_insert, 'post', conn)
-
-                print('execute')
-                if items['code'] == 281:
-                    items['code'] = 200
-                    items['message'] = 'Purchase info updated'
-
-                else:
-                    items['message'] = 'check sql query'
-                    items['code'] = 490
-
-
-                # Payments start here
-
-
-                query = "CALL sf.new_payment_uid"
-                newPaymentUID_query = execute(query, 'get', conn)
-                newPaymentUID = newPaymentUID_query['result'][0]['new_id']
-
-                payment_uid = newPaymentUID
-                payment_id = payment_uid
-                pay_purchase_uid = newPurchaseUID
-                pay_purchase_id = newPurchaseUID
-                payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-                start_delivery_date = data['start_delivery_date']
-                pay_coupon_id = data['pay_coupon_id']
-                amount_due = data['amount_due']
-                amount_discount = data['amount_discount']
-                amount_paid = data['amount_paid']
-                info_is_Addon = data['info_is_Addon']
-                cc_num = data['cc_num']
-                cc_exp_date = data['cc_exp_date']
-                cc_cvv = data['cc_cvv']
-                cc_zip = data['cc_zip']
-                charge_id = data['charge_id']
-                payment_type = data['payment_type']
-                print(data)
-
-                query_insert = [""" 
-                                    INSERT INTO  sf.payments
-                                    SET
-                                    payment_uid = \'""" + payment_uid + """\',
-                                    payment_id = \'""" + payment_id + """\',
-                                    pay_purchase_uid = \'""" + pay_purchase_uid + """\',
-                                    pay_purchase_id = \'""" + pay_purchase_id + """\',
-                                    payment_time_stamp = \'""" + payment_time_stamp + """\',
-                                    start_delivery_date = \'""" + start_delivery_date + """\',
-                                    pay_coupon_id = \'""" + pay_coupon_id + """\',
-                                    amount_due = \'""" + amount_due + """\',
-                                    amount_discount = \'""" + amount_discount + """\',
-                                    amount_paid = \'""" + amount_paid + """\',
-                                    info_is_Addon = \'""" + info_is_Addon + """\',
-                                    cc_num = \'""" + cc_num + """\',
-                                    cc_exp_date = \'""" + cc_exp_date + """\',
-                                    cc_cvv = \'""" + cc_cvv + """\',
-                                    cc_zip = \'""" + cc_zip + """\',
-                                    charge_id = \'""" + charge_id + """\',
-                                    payment_type = \'""" + payment_type + """\';
-                                    
-                                """]
-
-                print(query_insert)
-                item = execute(query_insert[0], 'post', conn)
-
-                if item['code'] == 281:
-                    item['code'] = 200
-                    item['message'] = 'Payment info updated'
-                else:
-                    item['message'] = 'check sql query'
-                    item['code'] = 490
-                    return items
-
-                query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE coupon_uid = \'""" + pay_coupon_id + """\';
-                    """
-
-                items = execute(query, 'get', conn)
-                if not items['result']:
-                    items['message'] = "Coupon uid doesn't exists"
-                    items['code'] = 404
-                    return items
-
-                query = """
-                        UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
-                        """
-                items = execute(query, 'post', conn)
-                items['message'] = 'purchase, payments and coupons info updated'
-                items['code'] = 200
+            if not items['result']:
+                items['code'] = 404
+                items['message'] = "User email doesn't exists"
                 return items
 
-            except:
-                print("Error happened while inserting in purchase table")
+            print('in insert-------')
 
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
+            query_insert = """ 
+                                INSERT INTO sf.purchases
+                                SET
+                                purchase_uid = \'""" + newPurchaseUID + """\',
+                                purchase_date = \'""" + purchase_date + """\',
+                                purchase_id = \'""" + purchase_id + """\',
+                                purchase_status = \'""" + purchase_status + """\',
+                                pur_customer_uid = \'""" + pur_customer_uid + """\',
+                                pur_business_uid = \'""" + pur_business_uid + """\',
+                                items = """ + items_pur + """,
+                                order_instructions = \'""" + order_instructions + """\',
+                                delivery_instructions = \'""" + delivery_instructions + """\',
+                                order_type = \'""" + order_type + """\',
+                                delivery_first_name = \'""" + delivery_first_name + """\',
+                                delivery_last_name = \'""" + delivery_last_name + """\',
+                                delivery_phone_num = \'""" + delivery_phone_num + """\',
+                                delivery_email = \'""" + delivery_email + """\',
+                                delivery_address = \'""" + delivery_address + """\',
+                                delivery_unit = \'""" + delivery_unit + """\',
+                                delivery_city = \'""" + delivery_city + """\',
+                                delivery_state = \'""" + delivery_state + """\',
+                                delivery_zip = \'""" + delivery_zip + """\',
+                                delivery_latitude = \'""" + delivery_latitude + """\',
+                                delivery_longitude = \'""" + delivery_longitude + """\',
+                                purchase_notes = \'""" + purchase_notes + """\',
+                                delivery_status = \'""" + delivery_status + """\';
+                            """
+            items = execute(query_insert, 'post', conn)
+
+            print('execute')
+            if items['code'] == 281:
+                items['code'] = 200
+                items['message'] = 'Purchase info updated'
+
+            else:
+                items['message'] = 'check sql query'
+                items['code'] = 490
+
+
+            # Payments start here
+
+
+            query = "CALL sf.new_payment_uid"
+            newPaymentUID_query = execute(query, 'get', conn)
+            newPaymentUID = newPaymentUID_query['result'][0]['new_id']
+
+            payment_uid = newPaymentUID
+            payment_id = payment_uid
+            pay_purchase_uid = newPurchaseUID
+            pay_purchase_id = newPurchaseUID
+            payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+            start_delivery_date = data['start_delivery_date']
+            pay_coupon_id = data['pay_coupon_id']
+            amount_due = data['amount_due']
+            amount_discount = data['amount_discount']
+            amount_paid = data['amount_paid']
+            info_is_Addon = data['info_is_Addon']
+            cc_num = data['cc_num']
+            cc_exp_date = data['cc_exp_date']
+            cc_cvv = data['cc_cvv']
+            cc_zip = data['cc_zip']
+            charge_id = data['charge_id']
+            payment_type = data['payment_type']
+            print(data)
+
+            query_insert = [""" 
+                                INSERT INTO  sf.payments
+                                SET
+                                payment_uid = \'""" + payment_uid + """\',
+                                payment_id = \'""" + payment_id + """\',
+                                pay_purchase_uid = \'""" + pay_purchase_uid + """\',
+                                pay_purchase_id = \'""" + pay_purchase_id + """\',
+                                payment_time_stamp = \'""" + payment_time_stamp + """\',
+                                start_delivery_date = \'""" + start_delivery_date + """\',
+                                pay_coupon_id = \'""" + pay_coupon_id + """\',
+                                amount_due = \'""" + amount_due + """\',
+                                amount_discount = \'""" + amount_discount + """\',
+                                amount_paid = \'""" + amount_paid + """\',
+                                info_is_Addon = \'""" + info_is_Addon + """\',
+                                cc_num = \'""" + cc_num + """\',
+                                cc_exp_date = \'""" + cc_exp_date + """\',
+                                cc_cvv = \'""" + cc_cvv + """\',
+                                cc_zip = \'""" + cc_zip + """\',
+                                charge_id = \'""" + charge_id + """\',
+                                payment_type = \'""" + payment_type + """\';
+                                
+                            """]
+
+            print(query_insert)
+            item = execute(query_insert[0], 'post', conn)
+
+            if item['code'] == 281:
+                item['code'] = 200
+                item['message'] = 'Payment info updated'
+            else:
+                item['message'] = 'check sql query'
+                item['code'] = 490
+                return items
+
+            query = """
+                SELECT *
+                FROM sf.coupons
+                WHERE coupon_uid = \'""" + pay_coupon_id + """\';
+                """
+
+            items = execute(query, 'get', conn)
+            if not items['result']:
+                items['message'] = "Coupon uid doesn't exists"
+                items['code'] = 404
+                return items
+
+            query = """
+                    UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
+                    """
+            items = execute(query, 'post', conn)
+            items['message'] = 'purchase, payments and coupons info updated'
+            items['code'] = 200
+            return items
+
+        except:
+            print("Error happened while inserting in purchase table")
+
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 class Checkout(Resource):
