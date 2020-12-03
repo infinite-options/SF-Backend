@@ -2672,7 +2672,7 @@ class purchase_Data_SF(Resource):
                 delivery_zip = data['delivery_zip']
                 delivery_latitude = data['delivery_latitude']
                 delivery_longitude = data['delivery_longitude']
-                delivery_status = data['delivery_status'] if data['purchase_notes'] else 'FALSE'
+                delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
                 purchase_notes = data['purchase_notes']
 
                 query = "SELECT * FROM sf.customers " \
