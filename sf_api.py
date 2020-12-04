@@ -103,9 +103,9 @@ app = Flask(__name__, template_folder='assets')
 import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
 stripe_secret_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
-
-
 stripe.api_key = stripe_secret_key
+
+
 # Allow cross-origin resource sharing
 cors = CORS(app, resources={r'/api/*': {'origins': '*'}})
 app.config['DEBUG'] = True
@@ -3063,7 +3063,7 @@ class history(Resource):
 class Stripe_Intent(Resource):
     def post(self):
         response = {}
-        amount = request.form.get('amount')
+
 
         if request.form.get('amount') == None:
             raise BadRequest('Request failed. Please provide the amount field.')
@@ -3086,6 +3086,24 @@ class Stripe_Intent(Resource):
         print(response['client_secret'])
         print(response['id'])
         return response
+
+class Stripe_Payment_key_checker(Resource):
+    def post(self):
+        response = {}
+        data = request.get_json(force=True)
+        key = "pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw"
+        status = 'Test'
+        # Status = 'Live'
+        if data['key'] == key:
+            return status
+        else:
+            return 200
+
+
+
+
+        return response
+
 
 
 # -- Customer Queries End here -------------------------------------------------------------------------------
@@ -3566,7 +3584,7 @@ class order_actions(Resource):
                 query = """ 
                         UPDATE sf.purchases 
                         SET 
-                        items = """  + itm + """
+                        items = """ + itm + """
                         WHERE (purchase_uid = \'""" + purchase_uid + """\');
                         """
                 print(query)
@@ -3894,6 +3912,51 @@ class report_order_customer_pivot_detail(Resource):
                     return output
             else:
                 return "choose correct option"
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class farmer_revenue_inventory_report(Resource):
+
+    def post(self):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            query = """
+                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price
+                    FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + data['uid'] + """\'
+                    GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                    """
+            print(query)
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Report data successful'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            print(items)
+
+            result = items['result']
+            itm_dict = {}
+            for vals in result:
+                if vals['name'] in itm_dict:
+                    itm_dict[vals['name']][0] += int(vals['total_qty'])
+                else:
+                    itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price']]
+            print('ddddddd------', itm_dict)
+
+            si = io.StringIO()
+            cw = csv.DictWriter(si, list(itm_dict.keys()))
+
+            #for vals in result:
+
+
+
+            return items
+
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -4263,6 +4326,7 @@ api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
+api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
 
 
 # Farmer Endpoints
@@ -4282,7 +4346,7 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
-
+api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report')
 
 # Notification Endpoints
 
