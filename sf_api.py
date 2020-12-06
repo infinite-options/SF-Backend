@@ -2358,144 +2358,6 @@ class available_Coupons(Resource):
         finally:
             disconnect(conn)
 
-class update_Coupons(Resource):
-    def post(self, action):
-            response = {}
-            items = []
-            try:
-                #coupon_uid
-                conn = connect()
-                data = request.get_json(force=True)
-
-                if action == 'create':
-
-                    query = ["CALL sf.new_coupons_uid;"]
-                    couponIDresponse = execute(query[0], 'get', conn)
-                    couponID = couponIDresponse['result'][0]['new_id']
-
-                    query = """
-                    INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + '0' + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
-                    """
-                    print(query)
-                    items = execute(query, 'post', conn)
-                    if items['code'] != 281:
-                        items['message'] = "check sql query"
-                        items['code'] = 400
-                        return items
-
-
-                    items['message'] = 'Coupon info created'
-                    items['code'] = 200
-                    return items
-
-                elif action == 'update':
-                    print(data)
-                    query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
-                    """
-
-                    items = execute(query, 'get', conn)
-                    if not items['result']:
-                        items['message'] = "Coupon uid doesn't exists"
-                        items['code'] = 404
-                        return items
-
-                    query = """
-                    UPDATE sf.coupons 
-                    SET 
-                    coupon_id = \'""" + data['coupon_uid'] + """\', 
-                    valid = \'""" + data['valid'] + """\', 
-                    discount_percent = \'""" + data['discount_percent'] + """\', 
-                    discount_amount = \'""" + data['discount_amount'] + """\', 
-                    discount_shipping = \'""" + data['discount_shipping'] + """\', 
-                    expire_date = \'""" + data['expire_date'] + """\', 
-                    limits = \'""" + data['limits'] + """\', 
-                    notes = \'""" + data['notes'] + """\', 
-                    num_used = \'""" + data['num_used'] + """\', 
-                    recurring = \'""" + data['recurring'] + """\', 
-                    email_id = \'""" + data['email_id'] + """\',
-                    threshold = \'""" + data['threshold'] + """\', 
-                    cup_business_uid = \'""" + data['cup_business_uid'] + """\' 
-                    WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
-                    """
-
-                    items = execute(query, 'post', conn)
-                    print(items)
-                    if items['code'] != 281:
-                        items['message'] = "check sql query"
-                        items['code'] = 400
-                        return items
-
-                    items['message'] = 'Coupon info updated'
-                    items['code'] = 200
-                    return items
-
-                elif action == 'subtract':
-
-                    query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
-                    """
-
-                    items = execute(query, 'get', conn)
-                    if not items['result']:
-                        items['message'] = "Coupon uid doesn't exists"
-                        items['code'] = 404
-                        return items
-
-                    query = """
-                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
-                            """
-                    items = execute(query, 'post', conn)
-                    items['message'] = 'Coupon info updated'
-                    items['code'] = 200
-                    return items
-
-
-                elif action == 'add':
-
-                    query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
-                    """
-
-                    items = execute(query, 'get', conn)
-                    if not items['result']:
-                        items['message'] = "Coupon uid doesn't exists"
-                        items['code'] = 404
-                        return items
-
-                    query = """
-                            UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
-                            """
-                    items = execute(query, 'post', conn)
-                    items['message'] = 'Coupon info updated'
-                    items['code'] = 200
-                    return items
-
-
-
-                else:
-
-                    items['message'] = 'Choose correct option'
-                    items['code'] = 500
-                    return items
-
-
-            except:
-                print("Error happened while updating coupon table")
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
-                print('process completed')
-
-
 class purchase(Resource):
     def post(self):
             response = {}
@@ -2875,165 +2737,6 @@ class purchase_Data_SF(Resource):
             disconnect(conn)
 
 
-class Checkout(Resource):
-    def post(self):
-        response = {}
-        items = {}
-        try:
-            conn = connect()
-            data = request.get_json(force=True)
-
-            # Purchases start here
-
-            query = "CALL sf.new_purchase_uid"
-            newPurchaseUID_query = execute(query, 'get', conn)
-            newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
-
-            purchase_uid = newPurchaseUID
-            purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-            purchase_id = purchase_uid
-            purchase_status = 'ACTIVE'
-            pur_customer_uid = data['pur_customer_uid']
-            pur_business_uid = data['pur_business_uid']
-            # items_pur = data['items']
-            items_pur = json.dumps(data['items'])
-            order_instructions = data['order_instructions']
-            delivery_instructions = data['delivery_instructions']
-            order_type = data['order_type']
-            delivery_first_name = data['delivery_first_name']
-            delivery_last_name = data['delivery_last_name']
-            delivery_phone_num = data['delivery_phone_num']
-            delivery_email = data['delivery_email']
-            delivery_address = data['delivery_address']
-            delivery_unit = data['delivery_unit']
-            delivery_city = data['delivery_city']
-            delivery_state = data['delivery_state']
-            delivery_zip = data['delivery_zip']
-            delivery_latitude = data['delivery_latitude']
-            delivery_longitude = data['delivery_longitude']
-            purchase_notes = data['purchase_notes']
-
-            query = "SELECT * FROM sf.customers " \
-                    "WHERE customer_email =\'" + delivery_email + "\';"
-
-            items = execute(query, 'get', conn)
-
-            print('ITEMS--------------', items)
-
-            if not items['result']:
-                items['code'] = 404
-                items['message'] = "User email doesn't exists"
-                return items
-
-            print('in insert-------')
-
-            query_insert = """ 
-                                    INSERT INTO sf.purchases
-                                    SET
-                                    purchase_uid = \'""" + newPurchaseUID + """\',
-                                    purchase_date = \'""" + purchase_date + """\',
-                                    purchase_id = \'""" + purchase_id + """\',
-                                    purchase_status = \'""" + purchase_status + """\',
-                                    pur_customer_uid = \'""" + pur_customer_uid + """\',
-                                    pur_business_uid = \'""" + pur_business_uid + """\',
-                                    items = '""" + items_pur + """',
-                                    order_instructions = \'""" + order_instructions + """\',
-                                    delivery_instructions = \'""" + delivery_instructions + """\',
-                                    order_type = \'""" + order_type + """\',
-                                    delivery_first_name = \'""" + delivery_first_name + """\',
-                                    delivery_last_name = \'""" + delivery_last_name + """\',
-                                    delivery_phone_num = \'""" + delivery_phone_num + """\',
-                                    delivery_email = \'""" + delivery_email + """\',
-                                    delivery_address = \'""" + delivery_address + """\',
-                                    delivery_unit = \'""" + delivery_unit + """\',
-                                    delivery_city = \'""" + delivery_city + """\',
-                                    delivery_state = \'""" + delivery_state + """\',
-                                    delivery_zip = \'""" + delivery_zip + """\',
-                                    delivery_latitude = \'""" + delivery_latitude + """\',
-                                    delivery_longitude = \'""" + delivery_longitude + """\',
-                                    purchase_notes = \'""" + purchase_notes + """\';
-                                """
-            items = execute(query_insert, 'post', conn)
-
-            print('execute')
-            if items['code'] == 281:
-                items['code'] = 200
-                items['message'] = 'Purchase info updated'
-
-            else:
-                items['message'] = 'check sql query'
-                items['code'] = 490
-
-            # Payments start here
-
-            query = "CALL sf.new_payment_uid"
-            newPaymentUID_query = execute(query, 'get', conn)
-            newPaymentUID = newPaymentUID_query['result'][0]['new_id']
-
-            payment_uid = newPaymentUID
-            payment_id = payment_uid
-            pay_purchase_uid = newPurchaseUID
-            pay_purchase_id = newPurchaseUID
-            payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-            start_delivery_date = data['start_delivery_date']
-            pay_coupon_id = data['pay_coupon_id']
-            amount_due = data['amount_due']
-            amount_discount = data['amount_discount']
-            amount_paid = data['amount_paid']
-            info_is_Addon = data['info_is_Addon']
-            cc_num = data['cc_num']
-            cc_exp_date = data['cc_exp_date']
-            cc_cvv = data['cc_cvv']
-            cc_zip = data['cc_zip']
-            print('data: ', data)
-            charge_id = data['charge_id']
-            payment_type = data['payment_type']
-            print(data)
-
-            query_insert = [""" 
-                                    INSERT INTO  sf.payments
-                                    SET
-                                    payment_uid = \'""" + payment_uid + """\',
-                                    payment_id = \'""" + payment_id + """\',
-                                    pay_purchase_uid = \'""" + pay_purchase_uid + """\',
-                                    pay_purchase_id = \'""" + pay_purchase_id + """\',
-                                    payment_time_stamp = \'""" + payment_time_stamp + """\',
-                                    start_delivery_date = \'""" + start_delivery_date + """\',
-                                    pay_coupon_id = \'""" + pay_coupon_id + """\',
-                                    amount_due = \'""" + str(amount_due) + """\',
-                                    amount_discount = \'""" + str(amount_discount) + """\',
-                                    amount_paid = \'""" + str(amount_paid) + """\',
-                                    info_is_Addon = \'""" + str(info_is_Addon) + """\',
-                                    cc_num = \'""" + str(cc_num) + """\',
-                                    cc_exp_date = \'""" + cc_exp_date + """\',
-                                    cc_cvv = \'""" + cc_cvv + """\',
-                                    cc_zip = \'""" + cc_zip + """\',
-                                    charge_id = \'""" + charge_id + """\',
-                                    payment_type = \'""" + payment_type + """\';
-                                """]
-
-            print(query_insert)
-            item = execute(query_insert[0], 'post', conn)
-
-            if item['code'] == 281:
-                item['code'] = 200
-                item['message'] = 'Payment info updated'
-            else:
-                item['message'] = 'check sql query'
-                item['code'] = 490
-
-            return item
-
-        except:
-            print("Error happened while inserting in purchase table")
-
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
-
-
-
-
 class history(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -3092,18 +2795,15 @@ class Stripe_Payment_key_checker(Resource):
         response = {}
         data = request.get_json(force=True)
         key = "pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw"
+        # if app is in testing
         status = 'Test'
-        # Status = 'Live'
+        # if app is live
+        #status = 'Live'
         if data['key'] == key:
             return status
         else:
             return 200
-
-
-
-
         return response
-
 
 
 # -- Customer Queries End here -------------------------------------------------------------------------------
@@ -3670,6 +3370,143 @@ class get_item_photos(Resource):
             disconnect(conn)
 
 
+class update_Coupons(Resource):
+    def post(self, action):
+            response = {}
+            items = []
+            try:
+                #coupon_uid
+                conn = connect()
+                data = request.get_json(force=True)
+
+                if action == 'create':
+
+                    query = ["CALL sf.new_coupons_uid;"]
+                    couponIDresponse = execute(query[0], 'get', conn)
+                    couponID = couponIDresponse['result'][0]['new_id']
+
+                    query = """
+                    INSERT INTO sf.coupons 
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + '0' + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
+                    """
+                    print(query)
+                    items = execute(query, 'post', conn)
+                    if items['code'] != 281:
+                        items['message'] = "check sql query"
+                        items['code'] = 400
+                        return items
+
+
+                    items['message'] = 'Coupon info created'
+                    items['code'] = 200
+                    return items
+
+                elif action == 'update':
+                    print(data)
+                    query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
+                    """
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                    UPDATE sf.coupons 
+                    SET 
+                    coupon_id = \'""" + data['coupon_uid'] + """\', 
+                    valid = \'""" + data['valid'] + """\', 
+                    discount_percent = \'""" + data['discount_percent'] + """\', 
+                    discount_amount = \'""" + data['discount_amount'] + """\', 
+                    discount_shipping = \'""" + data['discount_shipping'] + """\', 
+                    expire_date = \'""" + data['expire_date'] + """\', 
+                    limits = \'""" + data['limits'] + """\', 
+                    notes = \'""" + data['notes'] + """\', 
+                    num_used = \'""" + data['num_used'] + """\', 
+                    recurring = \'""" + data['recurring'] + """\', 
+                    email_id = \'""" + data['email_id'] + """\',
+                    threshold = \'""" + data['threshold'] + """\', 
+                    cup_business_uid = \'""" + data['cup_business_uid'] + """\' 
+                    WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
+                    """
+
+                    items = execute(query, 'post', conn)
+                    print(items)
+                    if items['code'] != 281:
+                        items['message'] = "check sql query"
+                        items['code'] = 400
+                        return items
+
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
+                    return items
+
+                elif action == 'subtract':
+
+                    query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
+                    """
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used - 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
+                    return items
+
+
+                elif action == 'add':
+
+                    query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + data['coupon_uid'] + """\';
+                    """
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'Coupon info updated'
+                    items['code'] = 200
+                    return items
+
+
+
+                else:
+
+                    items['message'] = 'Choose correct option'
+                    items['code'] = 500
+                    return items
+
+
+            except:
+                print("Error happened while updating coupon table")
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+                print('process completed')
+
 
 
 
@@ -3919,25 +3756,32 @@ class report_order_customer_pivot_detail(Resource):
 
 class farmer_revenue_inventory_report(Resource):
 
-    def post(self):
+    def post(self, report):
 
         try:
             conn = connect()
             data = request.get_json(force=True)
             query = """
-                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price
+                    SELECT business_name FROM sf.businesses
+                    WHERE business_uid = \'""" + data['uid'] + """\';
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = "Business UID doesn't exsist"
+                return items
+            print(items)
+            business_name = items['result'][0]['business_name']
+            query = """
+                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                     FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
                     WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + data['uid'] + """\'
                     GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                     """
             print(query)
             items = execute(query, 'get', conn)
-            if items['code'] == 280:
-                items['message'] = 'Report data successful'
-                items['code'] = 200
-            else:
+            if items['code'] != 280:
                 items['message'] = 'Check sql query'
-            print(items)
+                return items
 
             result = items['result']
             itm_dict = {}
@@ -3945,17 +3789,58 @@ class farmer_revenue_inventory_report(Resource):
                 if vals['name'] in itm_dict:
                     itm_dict[vals['name']][0] += int(vals['total_qty'])
                 else:
-                    itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price']]
-            print('ddddddd------', itm_dict)
+                    itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+            print('dict------', itm_dict)
 
             si = io.StringIO()
-            cw = csv.DictWriter(si, list(itm_dict.keys()))
+            cw = csv.writer(si)
+            cw.writerow([business_name])
+            cw.writerow([])
+            cw.writerow([])
+            itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+            if report == 'summary':
+                glob_rev = 0
+                cw.writerow(['Item', 'Quantity', 'Revenue'])
+                for key, vals in itm_dict.items():
+                    print(key)
+                    itm_rev = 0
+                    itm_qty = 0
 
-            #for vals in result:
 
+                    rr = []
+                    for vals in result:
+                        if vals['name'] == key:
+                            itm_qty += vals['total_qty']
+                            itm_rev += vals['total_qty']*vals['business_price']
+                    cw.writerow([key, itm_qty, itm_rev])
+                    glob_rev += itm_rev
 
+                cw.writerow(['TOTAL REVENUE', glob_rev])
+                orders = si.getvalue()
+                output = make_response(orders)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report - " + data['delivery_date'] + ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
 
-            return items
+            elif report == 'packing':
+
+                for key, vals in itm_dict.items():
+                    print(key)
+                    rr = []
+                    for vals in result:
+                        if vals['name'] == key:
+                            rr.append(int(vals['total_qty']))
+                    rr.sort()
+                    rr.insert(0, key)
+                    cw.writerow(rr)
+
+                orders = si.getvalue()
+                output = make_response(orders)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report - " + data['delivery_date'] + ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            else:
+                return 'choose correct report'
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -4321,7 +4206,6 @@ api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
-api.add_resource(Checkout, '/api/v2/checkout')
 api.add_resource(history, '/api/v2/history/<string:email>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
@@ -4346,7 +4230,7 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
-api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report')
+api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 
 # Notification Endpoints
 
