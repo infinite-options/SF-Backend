@@ -2709,24 +2709,25 @@ class purchase_Data_SF(Resource):
                 item['code'] = 490
                 return items
 
-            query = """
-                SELECT *
-                FROM sf.coupons
-                WHERE coupon_uid = \'""" + pay_coupon_id + """\';
-                """
-
-            items = execute(query, 'get', conn)
-            if not items['result']:
-                items['message'] = "Coupon uid doesn't exists"
-                items['code'] = 404
-                return items
-
-            query = """
-                    UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
+            if pay_coupon_id:
+                query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE coupon_uid = \'""" + pay_coupon_id + """\';
                     """
-            items = execute(query, 'post', conn)
-            items['message'] = 'purchase, payments and coupons info updated'
-            items['code'] = 200
+
+                items = execute(query, 'get', conn)
+                if not items['result']:
+                    items['message'] = "Coupon uid doesn't exists"
+                    items['code'] = 404
+                    return items
+
+                query = """
+                        UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
+                        """
+                items = execute(query, 'post', conn)
+                items['message'] = 'purchase, payments and coupons info updated'
+                items['code'] = 200
             return items
 
         except:
