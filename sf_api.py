@@ -2155,101 +2155,6 @@ class getItems(Resource):
         finally:
             disconnect(conn)
 
-
-
-
-class Categorical_Options(Resource):
-    def get(self, long, lat):
-        response = {}
-        items = {}
-
-        try:
-            conn = connect()
-
-            # query for businesses serving in customer's zone
-            query = """
-                    SELECT DISTINCT z_business_uid
-                    FROM
-                    (SELECT *,  
-                    IF (
-                    IF ((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) <= 0,
-                    \'""" + lat + """\' >=  (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),
-                    \'""" + lat + """\' <=   (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long) * \'""" + long + """\' + z.LT_lat - z.LT_long * (z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long)) AND
-                           
-                    \'""" + lat + """\' <= (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) * \'""" + long + """\' + z.RT_lat - z.RT_long * (z.RT_lat - z.LT_lat)/(z.RT_long - z.LT_long) AND
-                           
-                    IF ((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) >= 0,  
-                    \'""" + lat + """\' >= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),
-                    \'""" + lat + """\' <= (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long) * \'""" + long + """\' + z.RB_lat - z.RB_long * (z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long)) AND
-                           
-                    \'""" + lat + """\' >= (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long) * \'""" + long + """\' + z.LB_lat - z.LB_long * (z.LB_lat - z.RB_lat)/(z.LB_long - z.RB_long), "TRUE", "FALSE") AS "In_Zone",
-                     
-                    FORMAT((z.LT_lat - z.LB_lat)/(z.LT_long - z.LB_long),3) AS "LEFT_SLOPE",
-                    FORMAT((z.RB_lat - z.RT_lat)/(z.RB_long - z.RT_long),3) AS "RIGHT_SLOPE"
-                    FROM sf.zones z) AS DD
-                    WHERE In_Zone = 'True'
-                    ;
-                    """
-            items = execute(query, 'get', conn)
-
-            if items['code'] != 280:
-                items['message'] = 'check sql query'
-                return items
-            #print(items)
-            ids = []
-            for vals in items['result']:
-                ids.append(vals['z_business_uid'])
-            print(ids)
-            print(tuple(ids))
-            query = """
-                    SELECT business_association 
-                    FROM sf.businesses
-                    WHERE business_uid IN """ + str(tuple(ids)) + """;
-                    """
-            items = execute(query, 'get', conn)
-
-            if items['code'] != 280:
-                items['message'] = 'check sql query'
-                return items
-            print('ITEMS--------------------')
-            #print(items)
-
-            bus_asc = []
-            for vals in items['result']:
-                if vals['business_association']:
-                    print(vals['business_association'])
-                    res = vals['business_association'].strip('][').split(', ')
-                    res = [id.strip('"') for id in res]
-                    print(res)
-                    bus_asc.extend(res)
-            print(bus_asc)
-            ids.extend(bus_asc)
-
-
-            #query for getting categorical data
-            query = """
-                    SELECT * 
-                    FROM sf.businesses as bus,
-                    (SELECT itm_business_uid, GROUP_CONCAT(DISTINCT item_type SEPARATOR ',') AS item_type
-                    FROM sf.items
-                    GROUP BY itm_business_uid) as itm
-                    WHERE bus.business_uid = itm.itm_business_uid AND bus.business_uid IN """ + str(tuple(ids)) + """;
-                    """
-            items = execute(query, 'get', conn)
-            print(items)
-
-            if items['code'] != 280:
-                items['message'] = 'check sql query'
-                return items
-
-            items['message'] = 'Categorical options successful'
-            items['code'] = 200
-            return items
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
-
 # updated refund
 class Refund(Resource):
     # HTTP method POST
@@ -2578,7 +2483,6 @@ class purchase_Data_SF(Resource):
             pur_business_uid = data['pur_business_uid']
             #items_pur = data['items']
             items_pur = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['items']]) + "]'"
-
             order_instructions = data['order_instructions']
             delivery_instructions = data['delivery_instructions']
             order_type = data['order_type']
@@ -2795,13 +2699,49 @@ class Stripe_Payment_key_checker(Resource):
     def post(self):
         response = {}
         data = request.get_json(force=True)
-        key = "pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw"
-        # if app is in testing
-        status = 'Test'
-        # if app is live
-        #status = 'Live'
-        if data['key'] == key:
-            return status
+        key_test = "pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw"
+        key_live = "pk_live_g0VCt4AW6k7tyjRw61O3ac5a00Tefdbp8E"
+
+        if data['key'] == key_test:
+            # if app is in testing
+            stripe_status = 'Test'
+            # if app is live
+            #stripe_status = 'Live'
+            return stripe_status
+
+        elif data['key'] == key_live:
+            # if app is in testing
+            stripe_status = 'Test'
+            # if app is live
+            #stripe_status = 'Live'
+            return stripe_status
+
+        else:
+            return 200
+        return response
+
+
+class Paypal_Payment_key_checker(Resource):
+    def post(self):
+        response = {}
+        data = request.get_json(force=True)
+        key_test = "Acg-SnCe4XqkDEjd2YmVgphGr_y9o_BPWkov-kp_TP6dpD6jPIg9M8Ltm8t6xog-Ym0dFMcHCbsVCSHD"
+        key_live = "Abg89Ka2pj3KK7TEujTgFKdMcY_v-JSo6rQmyucgcDl7rgrLoMCsNwZNiChk4wuCLDnfl3OO_dF7iB1F"
+
+        if data['key'] == key_test:
+            # if app is in testing
+            paypal_status = 'Test'
+            # if app is live
+            #paypal_status = 'Live'
+            return paypal_status
+
+        elif data['key'] == key_live:
+            # if app is in testing
+            paypal_status = 'Test'
+            # if app is live
+            #paypal_status = 'Live'
+            return paypal_status
+
         else:
             return 200
         return response
@@ -3672,8 +3612,6 @@ class report_order_customer_pivot_detail(Resource):
                                      tmp['Amount']
                                      ])
 
-
-
                     si = io.StringIO()
                     cw = csv.writer(si)
                     for item in data:
@@ -3786,6 +3724,7 @@ class farmer_revenue_inventory_report(Resource):
 
             result = items['result']
             itm_dict = {}
+            cust_dict = {}
             for vals in result:
                 if vals['name'] in itm_dict:
                     itm_dict[vals['name']][0] += int(vals['total_qty'])
@@ -3793,6 +3732,15 @@ class farmer_revenue_inventory_report(Resource):
                     itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
             print('dict------', itm_dict)
 
+            for vals in result:
+                unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
+                print(unq)
+                if unq in itm_dict:
+                    cust_dict[unq][0] += int(vals['total_qty'])
+                else:
+                    cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+
+            print('cust_dict------', cust_dict)
             si = io.StringIO()
             cw = csv.writer(si)
             cw.writerow([business_name])
@@ -3840,6 +3788,12 @@ class farmer_revenue_inventory_report(Resource):
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
+            elif report == 'customer':
+
+                for key, vals in cust_dict.items():
+                    rr = []
+
+
             else:
                 return 'choose correct report'
 
@@ -4212,6 +4166,7 @@ api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
+api.add_resource(Paypal_Payment_key_checker, '/api/v2/Paypal_Payment_key_checker')
 
 
 # Farmer Endpoints
