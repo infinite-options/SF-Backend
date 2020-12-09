@@ -1373,7 +1373,14 @@ class email_verification(Resource):
             print('message complete')
             link = url_for('confirm', token=token, hashed=password, _external=True)
             print('link---', link)
-            msg.body = "Click on the link {} to verify your email address.".format(link)
+            #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+            msg.body = "Congratulations for signing up with Serving Fresh!  " \
+                       "Please click on the link below to be redirected to our website.  " \
+                       "Email support@servingfresh.me if you run into any problems or have any questions.  " \
+                       "Thx - The Serving Fresh Team" \
+                       "{}".format(link)
+
             print('msg-bd----', msg.body)
             mail.send(msg)
         except:
