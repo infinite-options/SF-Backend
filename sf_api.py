@@ -2577,6 +2577,7 @@ class purchase_Data_SF(Resource):
             cc_zip = data['cc_zip']
             charge_id = data['charge_id']
             payment_type = data['payment_type']
+            print("data------")
             print(data)
 
             query_insert = [""" 
@@ -2704,16 +2705,16 @@ class Stripe_Payment_key_checker(Resource):
 
         if data['key'] == key_test:
             # if app is in testing
-            stripe_status = 'Test'
+            stripe_status = "Test"
             # if app is live
-            #stripe_status = 'Live'
+            #stripe_status = "Live"
             return stripe_status
 
         elif data['key'] == key_live:
             # if app is in testing
-            stripe_status = 'Test'
+            stripe_status = "Test"
             # if app is live
-            #stripe_status = 'Live'
+            #stripe_status = "Live"
             return stripe_status
 
         else:
@@ -3460,6 +3461,8 @@ class update_Coupons(Resource):
 # -- Admin Queries Start here -------------------------------------------------------------------------------
 
 
+
+#-- Analytics
 class admin_report(Resource):
 
     def get(self, uid):
@@ -3494,6 +3497,107 @@ class admin_report(Resource):
         finally:
             disconnect(conn)
 
+
+class summary_reports(Resource):
+
+    def get(self, category,start,end):
+
+        try:
+            conn = connect()
+            if category == 'business':
+                query = """
+                        SELECT itms_business_uid, sum(revenue_business) AS Revenue_business, sum(revenue_item) AS Revenue_item, sum(revenue_item) - sum(revenue_business) AS Profit, count(DISTINCT purchase_uid) AS Orders, count(DISTINCT pur_customer_uid) AS Customers, business_name
+                        FROM
+                        (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
+                        FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm, sf.businesses AS bus, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        items_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itms_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid 
+                              AND deconstruct.items_uid = itm.item_uid 
+                              AND purchase_status = 'ACTIVE'
+                              AND deconstruct.itms_business_uid = bus.business_uid
+                              AND start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\') AS res
+                        GROUP BY itms_business_uid;
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+            elif category == 'customer':
+                query = """
+                        SELECT sum(revenue_business) AS Revenue_business, sum(revenue_item) AS Revenue_item, sum(revenue_item) - sum(revenue_business) AS Profit, count(DISTINCT purchase_uid) AS Orders, delivery_first_name, delivery_last_name, pur_customer_uid
+                        FROM
+                        (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
+                        FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm,
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        items_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itms_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid 
+                              AND deconstruct.items_uid = itm.item_uid
+                              AND purchase_status = 'ACTIVE'
+                              AND start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\') AS res
+                        GROUP BY pur_customer_uid;
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+            elif category == 'item':
+                query = """
+                        SELECT sum(revenue_business) AS Revenue_business, sum(revenue_item) AS Revenue_item, sum(revenue_item) - sum(revenue_business) AS Profit, sum(qty) AS Orders, count(DISTINCT pur_customer_uid) AS Customer, name
+                        FROM
+                        (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
+                        FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        items_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itms_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid 
+                              AND deconstruct.items_uid = itm.item_uid
+                              AND purchase_status = 'ACTIVE'
+                              AND start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\') AS res
+                        GROUP BY items_uid;
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Report data successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+            else:
+                return 'choose correct category'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+#-- End Analytics
 
 class report_order_customer_pivot_detail(Resource):
 
@@ -4185,6 +4289,7 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
+api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 
