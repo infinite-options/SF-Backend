@@ -110,11 +110,16 @@ stripe.api_key = stripe_secret_key
 cors = CORS(app, resources={r'/api/*': {'origins': '*'}})
 app.config['DEBUG'] = True
 # Adding for email testing
-app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+#app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = 'ptydtesting@gmail.com'
-app.config['MAIL_PASSWORD'] = 'ptydtesting06282020'
-app.config['MAIL_DEFAULT_SENDER'] = 'ptydtesting@gmail.com'
+#app.config['MAIL_USERNAME'] = 'ptydtesting@gmail.com'
+#app.config['MAIL_PASSWORD'] = 'ptydtesting06282020'
+#app.config['MAIL_DEFAULT_SENDER'] = 'ptydtesting@gmail.com'
+app.config['MAIL_USERNAME'] = 'support@servingfresh.me'
+app.config['MAIL_PASSWORD'] = 'SupportNow1'
+app.config['MAIL_DEFAULT_SENDER'] = 'support@servingfresh.me'
+
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
@@ -1367,7 +1372,7 @@ class email_verification(Resource):
             print(token)
             password = items['result'][0]['password_hashed']
             print(password)
-            msg = Message("Email Verification", sender='ptydtesting@gmail.com', recipients=[email])
+            msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email])
 
             print('MESSAGE----', msg)
             print('message complete')
@@ -1375,7 +1380,8 @@ class email_verification(Resource):
             print('link---', link)
             #msg.body = "Click on the link {} to verify your email address.".format(link)
 
-            msg.body = "Congratulations for signing up with Serving Fresh!\n  Please click on the link below to be redirected to our website.\n" \
+            msg.body = "Congratulations for signing up with Serving Fresh!\n\n" \
+                       "Please click on the link below to be redirected to our website. " \
                        "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
                        "Thx - The Serving Fresh Team\n\n" \
                        "{}".format(link)
