@@ -3884,7 +3884,7 @@ class farmer_revenue_inventory_report(Resource):
                 orders = si.getvalue()
 
                 ###
-                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=['parva.shah808@gmail.com'])
+                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=['pmarathay@yahoo.com'])
 
                 #msg.body = "Click on the link {} to verify your email address.".format(link)
 
@@ -3894,6 +3894,7 @@ class farmer_revenue_inventory_report(Resource):
                            "Thx - The Serving Fresh Team\n\n"
                 msg.attach('user_inventory_report.csv', 'text/csv', orders)
                 print('msg-bd----', msg.body)
+                print('msg-')
                 mail.send(msg)
 
                 ###
