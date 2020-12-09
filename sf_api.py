@@ -3882,6 +3882,23 @@ class farmer_revenue_inventory_report(Resource):
 
                 cw.writerow(['TOTAL REVENUE', glob_rev])
                 orders = si.getvalue()
+
+                ###
+                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=['parva.shah808@gmail.com'])
+
+                #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+                msg.body = "Congratulations for signing up with Serving Fresh!\n\n" \
+                           "Please click on the link below to be redirected to our website. " \
+                           "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                           "Thx - The Serving Fresh Team\n\n"
+                msg.attach('user_inventory_report.csv', 'text/csv', orders)
+                print('msg-bd----', msg.body)
+                mail.send(msg)
+
+                ###
+
+
                 output = make_response(orders)
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
