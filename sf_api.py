@@ -1375,10 +1375,9 @@ class email_verification(Resource):
             print('link---', link)
             #msg.body = "Click on the link {} to verify your email address.".format(link)
 
-            msg.body = "Congratulations for signing up with Serving Fresh!  " \
-                       "Please click on the link below to be redirected to our website.  " \
-                       "Email support@servingfresh.me if you run into any problems or have any questions.  " \
-                       "Thx - The Serving Fresh Team" \
+            msg.body = "Congratulations for signing up with Serving Fresh!\n  Please click on the link below to be redirected to our website.\n" \
+                       "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                       "Thx - The Serving Fresh Team\n\n" \
                        "{}".format(link)
 
             print('msg-bd----', msg.body)
