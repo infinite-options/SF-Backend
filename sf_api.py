@@ -3863,6 +3863,7 @@ class farmer_revenue_inventory_report(Resource):
             cw.writerow([])
             cw.writerow([])
             itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+
             if report == 'summary':
                 glob_rev = 0
                 cw.writerow(['Item', 'Quantity', 'Revenue'])
@@ -3870,8 +3871,6 @@ class farmer_revenue_inventory_report(Resource):
                     print(key)
                     itm_rev = 0
                     itm_qty = 0
-
-
                     rr = []
                     for vals in result:
                         if vals['name'] == key:
@@ -3882,24 +3881,6 @@ class farmer_revenue_inventory_report(Resource):
 
                 cw.writerow(['TOTAL REVENUE', glob_rev])
                 orders = si.getvalue()
-
-                ###
-                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=['pmarathay@yahoo.com'])
-
-                #msg.body = "Click on the link {} to verify your email address.".format(link)
-
-                msg.body = "Congratulations for signing up with Serving Fresh!\n\n" \
-                           "Please click on the link below to be redirected to our website. " \
-                           "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
-                           "Thx - The Serving Fresh Team\n\n"
-                msg.attach('user_inventory_report.csv', 'text/csv', orders)
-                print('msg-bd----', msg.body)
-                print('msg-')
-                mail.send(msg)
-
-                ###
-
-
                 output = make_response(orders)
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
@@ -3918,6 +3899,36 @@ class farmer_revenue_inventory_report(Resource):
                     cw.writerow(rr)
 
                 orders = si.getvalue()
+
+                query = """
+                        SELECT business_email from sf.businesses WHERE business_uid = \'""" + data['uid'] + """\';
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] != 280:
+                    items['message'] = 'business email query failed'
+                    return items
+                email = items['result'][0]['business_email']
+                print(email)
+
+                orders = si.getvalue()
+
+                ###
+                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email])
+
+                #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+                msg.body = "Hi " + business_name + "!\n\n" \
+                           "We are excited to send you your packaging report for delivery date " + data['delivery_date'] + \
+                           ". Please find the report in the attachment. \n"\
+                           "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                           "Thx - The Serving Fresh Team\n\n"
+                msg.attach('Produce Packing Report - ' + data['delivery_date'] + '.csv', 'text/csv', orders)
+                print('msg-bd----', msg.body)
+                print('msg-')
+                mail.send(msg)
+
+                ###
                 output = make_response(orders)
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
