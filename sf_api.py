@@ -3022,7 +3022,11 @@ class business_details_update(Resource):
                                delivery = \'""" + data["delivery"] + """\',
                                reusable = \'""" + data["reusable"] + """\',
                                business_image = \'""" + data["business_image"] + """\',
-                               business_password = \'""" + data["business_password"] + """\'
+                               business_password = \'""" + data["business_password"] + """\',
+                               platform_fee = \'""" + data["platform_fee"] + """\',
+                               transaction_fee = \'""" + data["transaction_fee"] + """\',
+                               revenue_sharing = \'""" + data["revenue_sharing"] + """\',
+                               profit_sharing = \'""" + data["profit_sharing"] + """\'
                                WHERE business_uid = \'""" + data["business_uid"] + """\' ;
                              """
                     print(query)
@@ -3881,6 +3885,23 @@ class farmer_revenue_inventory_report(Resource):
 
                 cw.writerow(['TOTAL REVENUE', glob_rev])
                 orders = si.getvalue()
+
+                ###
+                msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
+
+                #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+                msg.body = "Hi " + business_name + "!\n\n" \
+                           "We are excited to send you your Summary report for delivery date " + data['delivery_date'] + \
+                           ". Please find the report in the attachment. \n"\
+                           "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                           "Thx - The Serving Fresh Team\n\n"
+                msg.attach('Produce Summary Report - ' + data['delivery_date'] + '.csv', 'text/csv', orders)
+                print('msg-bd----', msg.body)
+                print('msg-')
+                mail.send(msg)
+
+                ###
                 output = make_response(orders)
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
@@ -3914,7 +3935,7 @@ class farmer_revenue_inventory_report(Resource):
                 orders = si.getvalue()
 
                 ###
-                msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email])
+                msg = Message(business_name + " Packing Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
 
                 #msg.body = "Click on the link {} to verify your email address.".format(link)
 
