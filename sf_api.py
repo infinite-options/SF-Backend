@@ -2512,6 +2512,7 @@ class purchase_Data_SF(Resource):
             delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
             purchase_notes = data['purchase_notes']
 
+            """
             query = "SELECT * FROM sf.customers " \
                     "WHERE customer_email =\'"+delivery_email+"\';"
 
@@ -2523,7 +2524,7 @@ class purchase_Data_SF(Resource):
                 items['code'] = 404
                 items['message'] = "User email doesn't exists"
                 return items
-
+            """
             print('in insert-------')
 
             query_insert = """ 
@@ -2617,6 +2618,7 @@ class purchase_Data_SF(Resource):
 
             print(query_insert)
             item = execute(query_insert[0], 'post', conn)
+            print(item)
 
             if item['code'] == 281:
                 item['code'] = 200
@@ -2625,8 +2627,9 @@ class purchase_Data_SF(Resource):
                 item['message'] = 'check sql query'
                 item['code'] = 490
                 return items
-
+            print('coupons')
             if pay_coupon_id:
+                print('IN coupons')
                 query = """
                     SELECT *
                     FROM sf.coupons
