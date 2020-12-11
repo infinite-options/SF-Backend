@@ -2661,16 +2661,16 @@ class purchase_Data_SF(Resource):
 class history(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
-    def get(self, email):
+    def get(self, uid):
         response = {}
         items = {}
-        print("user_email: ", email)
+        print("user_uid: ", uid)
         try:
             conn = connect()
             query = """
                     SELECT * 
                     FROM sf.purchases as pur, sf.payments as pay
-                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.delivery_email = \'""" + email + """\'
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
                     ORDER BY pur.purchase_date DESC; 
                     """
             items = execute(query, 'get', conn)
@@ -3890,6 +3890,18 @@ class farmer_revenue_inventory_report(Resource):
                 orders = si.getvalue()
 
                 ###
+
+                query = """
+                        SELECT business_email from sf.businesses WHERE business_uid = \'""" + data['uid'] + """\';
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] != 280:
+                    items['message'] = 'business email query failed'
+                    return items
+                email = items['result'][0]['business_email']
+                print(email)
+
                 msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
 
                 #msg.body = "Click on the link {} to verify your email address.".format(link)
@@ -3921,8 +3933,6 @@ class farmer_revenue_inventory_report(Resource):
                     rr.sort()
                     rr.insert(0, key)
                     cw.writerow(rr)
-
-                orders = si.getvalue()
 
                 query = """
                         SELECT business_email from sf.businesses WHERE business_uid = \'""" + data['uid'] + """\';
@@ -4330,7 +4340,7 @@ api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(purchase, '/api/v2/purchase')
 api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
-api.add_resource(history, '/api/v2/history/<string:email>')
+api.add_resource(history, '/api/v2/history/<string:uid>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
