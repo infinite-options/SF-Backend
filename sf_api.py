@@ -3203,7 +3203,7 @@ class order_actions(Resource):
 
                 query = """
                         UPDATE sf.purchases 
-                        SET delivery_status = 'Yes' 
+                        SET delivery_status = 'TRUE' 
                         WHERE purchase_uid = \'""" + purchase_uid + """\';
                         """
                 print(query)
@@ -3222,7 +3222,7 @@ class order_actions(Resource):
                 print('DELIVERY_NO')
                 query = """
                         UPDATE sf.purchases 
-                        SET delivery_status = 'No' 
+                        SET delivery_status = 'FALSE' 
                         WHERE purchase_uid = \'""" + purchase_uid + """\';
                         """
 
