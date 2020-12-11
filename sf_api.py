@@ -224,7 +224,7 @@ def serializeResponse(response):
                 if type(row[key]) is Decimal:
                     row[key] = float(row[key])
                 elif type(row[key]) is date or type(row[key]) is datetime:
-                    row[key] = row[key].strftime("%Y-%m-%d")
+                    row[key] = row[key].strftime("%Y-%m-%d %H:%M:%S")
         print("In Serialize JSON response", response)
         return response
     except:
@@ -248,11 +248,12 @@ def execute(sql, cmd, conn, skipSerialization = False):
             cur.execute(sql)
             if cmd is 'get':
                 result = cur.fetchall()
-
+                print('RESULT-----------', result[0])
                 response['message'] = 'Successfully executed SQL query.'
                 # Return status code of 280 for successful GET request
                 response['code'] = 280
                 if not skipSerialization:
+                    print('IN skipSerialization')
                     result = serializeResponse(result)
                 response['result'] = result
             elif cmd in 'post':
@@ -2668,11 +2669,12 @@ class history(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT * 
+                    SELECT *
                     FROM sf.purchases as pur, sf.payments as pay
                     WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
                     ORDER BY pur.purchase_date DESC; 
                     """
+
             items = execute(query, 'get', conn)
 
             items['message'] = 'History Loaded successful'
