@@ -223,7 +223,9 @@ def serializeResponse(response):
             for key in row:
                 if type(row[key]) is Decimal:
                     row[key] = float(row[key])
-                elif type(row[key]) is date or type(row[key]) is datetime:
+                elif type(row[key]) is date:
+                    row[key] = row[key].strftime("%Y-%m-%d")
+                elif type(row[key]) is datetime:
                     row[key] = row[key].strftime("%Y-%m-%d %H:%M:%S")
         print("In Serialize JSON response", response)
         return response
@@ -248,7 +250,6 @@ def execute(sql, cmd, conn, skipSerialization = False):
             cur.execute(sql)
             if cmd is 'get':
                 result = cur.fetchall()
-                print('RESULT-----------', result[0])
                 response['message'] = 'Successfully executed SQL query.'
                 # Return status code of 280 for successful GET request
                 response['code'] = 280
@@ -1571,6 +1572,51 @@ class Login(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+
+class AppleEmail(Resource):
+    #  RETURNS EMAIL FOR APPLE LOGIN ID
+
+    def post(self):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            social_id = data.get('social_id')
+
+            query = """
+                    SELECT customer_email
+                    FROM sf.customers c
+                    WHERE social_id = \'""" + social_id + """\'
+                    """
+
+            print(query)
+
+            items = execute(query, 'get', conn)
+            print("Items:", items)
+            print(items['code'])
+            print(items['result'])
+
+            if items['code'] == 280:
+                items['message'] = 'Email Returned'
+                items['result'] = items['result']
+                print(items['code'])
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+                items['result'] = items['result']
+                items['code'] = 400
+            return items
+
+        except:
+            raise BadRequest('AppleEmail Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
 
 
 class AppleLogin (Resource):
@@ -3490,10 +3536,10 @@ class admin_report(Resource):
 
         try:
             conn = connect()
-
-            query = """
-                    SELECT *,deconstruct.*, sum(price) as Amount  
-                    FROM sf.purchases, 
+            if uid == 'all':
+                query = """
+                    SELECT *,deconstruct.*, sum(business_price*qty) as Amount  
+                    FROM sf.purchases, sf.items as itms, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
                                     qty VARCHAR(255)  PATH '$.qty',
                                     name VARCHAR(255)  PATH '$.name',
@@ -3501,9 +3547,23 @@ class admin_report(Resource):
                                     item_uid VARCHAR(255)  PATH '$.item_uid',
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
-                    WHERE itm_business_uid = \'""" + uid + """\'
+                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
                     GROUP BY purchase_uid;
                     """
+            else:
+                query = """
+                        SELECT *,deconstruct.*, sum(business_price*qty) as Amount  
+                        FROM sf.purchases, sf.items as itms, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                        GROUP BY purchase_uid;
+                        """
 
             items = execute(query, 'get', conn)
             if items['code'] == 280:
@@ -4330,6 +4390,7 @@ api.add_resource(createAccount, '/api/v2/createAccount')
 api.add_resource(email_verification, '/api/v2/email_verification')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
+api.add_resource(AppleEmail, '/api/v2/AppleEmail', '/')
 api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
