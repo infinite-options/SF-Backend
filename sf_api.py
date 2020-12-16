@@ -102,8 +102,9 @@ app = Flask(__name__, template_folder='assets')
 # these key are using for testing. Customer should use their stripe account's keys instead
 import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
-stripe_secret_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
-stripe.api_key = stripe_secret_key
+stripe_secret_test_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
+stripe_secret_live_key = 'sk_live_j0B1UpSGqpvGM8uGLHAXRurR00DabtKlyy'
+
 
 
 # Allow cross-origin resource sharing
@@ -2695,6 +2696,35 @@ class purchase_Data_SF(Resource):
                 items = execute(query, 'post', conn)
                 items['message'] = 'purchase, payments and coupons info updated'
                 items['code'] = 200
+            """
+            ### SEND EMAIL
+
+            msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
+
+            #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+            msg.body = "Hi " + delivery_first_name + "!\n\n" \
+                       "We are excited to send you your order details " \
+                       "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                       "Thx - The Serving Fresh Team\n\n"
+
+
+            its = json.dumps(data['items'])
+            arr = []
+            for vals in its:
+                arr.append()
+
+            for
+            msg.html = "<b>Order Details</b>" \
+                        ""
+
+
+            print('msg-bd----', msg.body)
+            print('msg-')
+            mail.send(msg)
+            """
+
+
             return items
 
         except:
@@ -2703,6 +2733,53 @@ class purchase_Data_SF(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+
+class checkout_email(Resource):
+    # Fetches ALL DETAILS FOR A SPECIFIC USER
+
+    def get(self, uid):
+        response = {}
+        items = {}
+        print("user_uid: ", uid)
+        try:
+            conn = connect()
+            query = """
+                    SELECT *
+                    FROM sf.purchases as pur, sf.payments as pay
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
+                    ORDER BY pur.purchase_date DESC; 
+                    """
+
+            items = execute(query, 'get', conn)
+
+            items['message'] = 'History Loaded successful'
+            items['code'] = 200
+            return items
+
+            msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
+
+            #msg.body = "Click on the link {} to verify your email address.".format(link)
+
+            msg.body = "Hi " + business_name + "!\n\n" \
+                       "We are excited to send you your Summary report for delivery date " + data['delivery_date'] + \
+                       ". Please find the report in the attachment. \n"\
+                       "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                       "Thx - The Serving Fresh Team\n\n"
+
+
+            print('msg-bd----', msg.body)
+            print('msg-')
+            mail.send(msg)
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 
 class history(Resource):
@@ -2736,6 +2813,8 @@ class Stripe_Intent(Resource):
     def post(self):
         response = {}
 
+        stripe.api_key = stripe_secret_test_key
+        #stripe.api_key = stripe_secret_live_key
 
         if request.form.get('amount') == None:
             raise BadRequest('Request failed. Please provide the amount field.')
@@ -3538,7 +3617,7 @@ class admin_report(Resource):
             conn = connect()
             if uid == 'all':
                 query = """
-                    SELECT *,deconstruct.*, sum(business_price*qty) as Amount  
+                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount   
                     FROM sf.purchases, sf.items as itms, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
                                     qty VARCHAR(255)  PATH '$.qty',
@@ -3547,12 +3626,11 @@ class admin_report(Resource):
                                     item_uid VARCHAR(255)  PATH '$.item_uid',
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
-                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
-                    GROUP BY purchase_uid;
+                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE';
                     """
             else:
                 query = """
-                        SELECT *,deconstruct.*, sum(business_price*qty) as Amount  
+                        SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount  
                         FROM sf.purchases, sf.items as itms, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         qty VARCHAR(255)  PATH '$.qty',
@@ -3561,8 +3639,7 @@ class admin_report(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
-                        GROUP BY purchase_uid;
+                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE';
                         """
 
             items = execute(query, 'get', conn)
