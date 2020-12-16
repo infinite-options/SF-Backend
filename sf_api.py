@@ -2166,7 +2166,7 @@ class getItems(Resource):
             query = """
                     SELECT * 
                     FROM sf.items
-                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """
+                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
                     ORDER BY item_name;
                     """
             print(query)
