@@ -102,8 +102,9 @@ app = Flask(__name__, template_folder='assets')
 # these key are using for testing. Customer should use their stripe account's keys instead
 import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
-stripe_secret_test_key = os.environ.get('stripe_secret_test_key')
-stripe_secret_live_key = os.environ.get('stripe_secret_live_key')
+
+stripe_public_test_key = os.environ.get('stripe_public_test_key')
+stripe_public_live_key = os.environ.get('stripe_public_live_key')
 
 paypal_secret_test_key = os.environ.get('paypal_secret_test_key')
 paypal_secret_live_key = os.environ.get('paypal_secret_live_key')
@@ -2838,8 +2839,9 @@ class Stripe_Payment_key_checker(Resource):
     def post(self):
         response = {}
         data = request.get_json(force=True)
-        key_test = stripe_secret_test_key
-        key_live = stripe_secret_live_key
+
+        key_test = stripe_public_test_key
+        key_live = stripe_public_live_key
 
         if data['key'] == key_test:
             # if app is in testing
