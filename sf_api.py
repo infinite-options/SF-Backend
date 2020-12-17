@@ -117,18 +117,15 @@ app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
 
-#app.config['MAIL_USERNAME'] = 'support@servingfresh.me'
-#app.config['MAIL_PASSWORD'] = 'SupportFresh1'
-app.config['MAIL_DEFAULT_SENDER'] = 'support@servingfresh.me'
+app.config['MAIL_USERNAME'] = "support@servingfresh.me"
+app.config['MAIL_PASSWORD'] = "SupportFresh1"
+app.config['MAIL_DEFAULT_SENDER'] = "support@servingfresh.me"
 
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
 
 
-# Setting for mydomain.com
-app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
-app.config['MAIL_PORT'] = 465
 
 # Setting for gmail
 # app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -1369,8 +1366,7 @@ class email_verification(Resource):
                 return items
 
 
-            app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
-            app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+
 
 
             token = s.dumps(email)
@@ -2701,8 +2697,7 @@ class purchase_Data_SF(Resource):
 
             ### SEND EMAIL
 
-            app.config['MAIL_USERNAME'] = os.environ.get('ORDERS_EMAIL')
-            app.config['MAIL_PASSWORD'] = os.environ.get('ORDERS_PASSWORD')
+
 
 
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
@@ -2767,7 +2762,9 @@ class purchase_Data_SF(Resource):
             msg.html = arr
             print('msg-bd----', msg.body)
             print('msg-', msg)
+            print('INNNNNNN')
             mail.send(msg)
+            print('OUTTTTTT')
             return items
 
         except:
@@ -4009,8 +4006,6 @@ class farmer_revenue_inventory_report(Resource):
             cw.writerow([])
             itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
 
-            app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
-            app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
 
 
             if report == 'summary':
