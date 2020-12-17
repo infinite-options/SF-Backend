@@ -102,8 +102,8 @@ app = Flask(__name__, template_folder='assets')
 # these key are using for testing. Customer should use their stripe account's keys instead
 import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
-stripe_secret_test_key = 'sk_test_fe99fW2owhFEGTACgW3qaykd006gHUwj1j'
-stripe_secret_live_key = 'sk_live_j0B1UpSGqpvGM8uGLHAXRurR00DabtKlyy'
+stripe_secret_test_key = os.environ.get('stripe_secret_test_key')
+stripe_secret_live_key = os.environ.get('stripe_secret_live_key')
 
 
 
@@ -124,8 +124,8 @@ app.config['MAIL_DEFAULT_SENDER'] = 'support@servingfresh.me'
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
-app.config['MAIL_USERNAME'] = os.environ.get('EMAIL')
-app.config['MAIL_PASSWORD'] = os.environ.get('PASSWORD')
+#app.config['MAIL_USERNAME'] = os.environ.get('EMAIL')
+#app.config['MAIL_PASSWORD'] = os.environ.get('PASSWORD')
 # app.config['MAIL_USERNAME'] = ''
 # app.config['MAIL_PASSWORD'] = ''
 
@@ -2676,7 +2676,7 @@ class purchase_Data_SF(Resource):
                 item['code'] = 490
                 return items
             print('coupons')
-            if pay_coupon_id:
+            if pay_coupon_id != "":
                 print('IN coupons')
                 query = """
                     SELECT *
@@ -2696,35 +2696,72 @@ class purchase_Data_SF(Resource):
                 items = execute(query, 'post', conn)
                 items['message'] = 'purchase, payments and coupons info updated'
                 items['code'] = 200
-            """
+
             ### SEND EMAIL
 
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
+            #delivery_email
 
             #msg.body = "Click on the link {} to verify your email address.".format(link)
 
             msg.body = "Hi " + delivery_first_name + "!\n\n" \
-                       "We are excited to send you your order details " \
+                       "We are pleased to send you your order details " \
                        "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
                        "Thx - The Serving Fresh Team\n\n"
 
 
             its = json.dumps(data['items'])
-            arr = []
-            for vals in its:
-                arr.append()
+            st_init = "<html>" \
+                      "<body>" \
+                      "<p> Hi " + delivery_first_name + "," + "<br><br>" \
+                        "We are pleased to send you your order details which will be delivered on " + start_delivery_date + ""\
+                      "</p>"\
+                      "<table style='width:50%'>" \
+                      "<caption><h2><b> Order Details </h2></caption>"\
+                      "<tr>"\
+                        "<td><b>&emsp;&emsp;&emsp;&emsp;Item</td>"\
+                        "<td><b>Name</td>"\
+                        "<td><b>Qty</td>"\
+                        "<td><b>Price</td>"\
+                      "</tr>"
+            arr = st_init
+            sub = ''
+            i = 0
+            tot_amt = 0
+            while i < len(its):
+                if its[i] == '{':
+                    sub += its[i]
+                    while its[i] != '}':
+                        i += 1
+                        sub += its[i]
+                    prod = json.loads(sub)
+                    amount = int(prod['qty'])*int(prod['price'])
+                    tot_amt += amount
+                    tmp_str = "<tr>"\
+                                "<td><img src=" + "'" + prod['img'] + "'" + "style='width:150px;height:100px;'/></td>"\
+                                "<td>" + prod['name'] + "</td>"\
+                                "<td>" + str(prod['qty']) + "</td>"\
+                                "<td>" + str(amount) + "</td>"\
+                              "</tr>"
+                    arr += tmp_str
+                sub = ''
+                i += 1
 
-            for
-            msg.html = "<b>Order Details</b>" \
-                        ""
-
-
+            end_str = "<tr>"\
+                        "<td></td>"\
+                        "<td></td>"\
+                        "<td><b><i>Total Amount</td>"\
+                        "<td><i>" + str(amount_paid) + "</td>"\
+                      "</tr></table>" \
+                        "<br>"\
+                      "Email support@servingfresh.me if you run into any problems or have any questions." + "<br>"\
+                       "Thx - The Serving Fresh Team" + "<br><br>"\
+                      "</body></html>"
+            arr += end_str
+            msg.html = arr
             print('msg-bd----', msg.body)
-            print('msg-')
+            print('msg-', msg)
             mail.send(msg)
-            """
-
-
             return items
 
         except:
