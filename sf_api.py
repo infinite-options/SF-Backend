@@ -105,6 +105,8 @@ stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
 stripe_secret_test_key = os.environ.get('stripe_secret_test_key')
 stripe_secret_live_key = os.environ.get('stripe_secret_live_key')
 
+paypal_secret_test_key = os.environ.get('paypal_secret_test_key')
+paypal_secret_live_key = os.environ.get('paypal_secret_live_key')
 
 
 # Allow cross-origin resource sharing
@@ -114,20 +116,15 @@ app.config['DEBUG'] = True
 #app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
-#app.config['MAIL_USERNAME'] = 'ptydtesting@gmail.com'
-#app.config['MAIL_PASSWORD'] = 'PTYDTesting1'
-#app.config['MAIL_DEFAULT_SENDER'] = 'ptydtesting@gmail.com'
-app.config['MAIL_USERNAME'] = 'support@servingfresh.me'
-app.config['MAIL_PASSWORD'] = 'SupportFresh1'
+
+#app.config['MAIL_USERNAME'] = 'support@servingfresh.me'
+#app.config['MAIL_PASSWORD'] = 'SupportFresh1'
 app.config['MAIL_DEFAULT_SENDER'] = 'support@servingfresh.me'
 
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
-#app.config['MAIL_USERNAME'] = os.environ.get('EMAIL')
-#app.config['MAIL_PASSWORD'] = os.environ.get('PASSWORD')
-# app.config['MAIL_USERNAME'] = ''
-# app.config['MAIL_PASSWORD'] = ''
+
 
 # Setting for mydomain.com
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
@@ -1370,6 +1367,11 @@ class email_verification(Resource):
                 items['message'] = "Customer password doesn't exists"
                 items['code'] = 405
                 return items
+
+
+            app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
+            app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+
 
             token = s.dumps(email)
             print(token)
@@ -2699,6 +2701,10 @@ class purchase_Data_SF(Resource):
 
             ### SEND EMAIL
 
+            app.config['MAIL_USERNAME'] = os.environ.get('ORDERS_EMAIL')
+            app.config['MAIL_PASSWORD'] = os.environ.get('ORDERS_PASSWORD')
+
+
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
             #delivery_email
 
@@ -2773,50 +2779,6 @@ class purchase_Data_SF(Resource):
 
 
 
-class checkout_email(Resource):
-    # Fetches ALL DETAILS FOR A SPECIFIC USER
-
-    def get(self, uid):
-        response = {}
-        items = {}
-        print("user_uid: ", uid)
-        try:
-            conn = connect()
-            query = """
-                    SELECT *
-                    FROM sf.purchases as pur, sf.payments as pay
-                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
-                    ORDER BY pur.purchase_date DESC; 
-                    """
-
-            items = execute(query, 'get', conn)
-
-            items['message'] = 'History Loaded successful'
-            items['code'] = 200
-            return items
-
-            msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
-
-            #msg.body = "Click on the link {} to verify your email address.".format(link)
-
-            msg.body = "Hi " + business_name + "!\n\n" \
-                       "We are excited to send you your Summary report for delivery date " + data['delivery_date'] + \
-                       ". Please find the report in the attachment. \n"\
-                       "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
-                       "Thx - The Serving Fresh Team\n\n"
-
-
-            print('msg-bd----', msg.body)
-            print('msg-')
-            mail.send(msg)
-
-
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
-
-
 
 
 class history(Resource):
@@ -2879,8 +2841,8 @@ class Stripe_Payment_key_checker(Resource):
     def post(self):
         response = {}
         data = request.get_json(force=True)
-        key_test = "pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw"
-        key_live = "pk_live_g0VCt4AW6k7tyjRw61O3ac5a00Tefdbp8E"
+        key_test = stripe_secret_test_key
+        key_live = stripe_secret_live_key
 
         if data['key'] == key_test:
             # if app is in testing
@@ -2905,8 +2867,8 @@ class Paypal_Payment_key_checker(Resource):
     def post(self):
         response = {}
         data = request.get_json(force=True)
-        key_test = "Acg-SnCe4XqkDEjd2YmVgphGr_y9o_BPWkov-kp_TP6dpD6jPIg9M8Ltm8t6xog-Ym0dFMcHCbsVCSHD"
-        key_live = "Abg89Ka2pj3KK7TEujTgFKdMcY_v-JSo6rQmyucgcDl7rgrLoMCsNwZNiChk4wuCLDnfl3OO_dF7iB1F"
+        key_test = paypal_secret_test_key
+        key_live = paypal_secret_live_key
 
         if data['key'] == key_test:
             # if app is in testing
@@ -4046,6 +4008,10 @@ class farmer_revenue_inventory_report(Resource):
             cw.writerow([])
             cw.writerow([])
             itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+
+            app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
+            app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+
 
             if report == 'summary':
                 glob_rev = 0
