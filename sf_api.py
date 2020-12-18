@@ -2996,9 +2996,9 @@ class Paypal_Payment_key_checker(Resource):
 
         elif data['key'] == key_live:
             # if app is in testing
-            #paypal_status = 'Test'
+            paypal_status = 'Test'
             # if app is live
-            paypal_status = 'Live'
+            #paypal_status = 'Live'
             return paypal_status
 
         else:
