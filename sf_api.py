@@ -2561,19 +2561,7 @@ class purchase_Data_SF(Resource):
             delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
             purchase_notes = data['purchase_notes']
 
-            """
-            query = "SELECT * FROM sf.customers " \
-                    "WHERE customer_email =\'"+delivery_email+"\';"
 
-            items = execute(query, 'get', conn)
-
-            print('ITEMS--------------', items)
-
-            if not items['result']:
-                items['code'] = 404
-                items['message'] = "User email doesn't exists"
-                return items
-            """
             print('in insert-------')
 
             query_insert = """ 
@@ -2611,7 +2599,7 @@ class purchase_Data_SF(Resource):
                 items['message'] = 'Purchase info updated'
 
             else:
-                items['message'] = 'check sql query'
+                items['message'] = 'check sql query for purchase query'
                 items['code'] = 490
 
 
@@ -2673,7 +2661,7 @@ class purchase_Data_SF(Resource):
                 item['code'] = 200
                 item['message'] = 'Payment info updated'
             else:
-                item['message'] = 'check sql query'
+                item['message'] = 'check sql query for paymenta'
                 item['code'] = 490
                 return items
             print('coupons')
@@ -3636,7 +3624,8 @@ class admin_report(Resource):
                                     item_uid VARCHAR(255)  PATH '$.item_uid',
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
-                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE';
+                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                    ORDER BY purchase_date DESC;
                     """
             else:
                 query = """
@@ -3649,7 +3638,8 @@ class admin_report(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE';
+                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                        ORDER BY purchase_date DESC;
                         """
 
             items = execute(query, 'get', conn)
