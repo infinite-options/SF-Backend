@@ -103,6 +103,8 @@ app = Flask(__name__, template_folder='assets')
 import stripe
 stripe_public_key = 'pk_test_6RSoSd9tJgB2fN2hGkEDHCXp00MQdrK3Tw'
 
+stripe_secret_test_key = os.environ.get('stripe_secret_test_key')
+
 stripe_public_test_key = os.environ.get('stripe_public_test_key')
 stripe_public_live_key = os.environ.get('stripe_public_live_key')
 
