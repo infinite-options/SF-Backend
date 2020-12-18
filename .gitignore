@@ -4,3 +4,23 @@ zappa_settings.json
 
 # misc
 .DS_Store
+
+# . files
+.pem
+.log
+.vscode
+.idea
+
+
+# py files
+api_key.py
+env_keys.py
+bing_api_key.py
+node_modules
+yarn.lock
+env
+venv
+sample.py
+
+# __ files
+__pycache__/
