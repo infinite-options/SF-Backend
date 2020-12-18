@@ -2699,10 +2699,11 @@ class purchase_Data_SF(Resource):
             ### SEND EMAIL
 
 
-
+            print('IN Email')
 
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
             #delivery_email
+            print(msg)
 
             #msg.body = "Click on the link {} to verify your email address.".format(link)
 
@@ -2712,7 +2713,10 @@ class purchase_Data_SF(Resource):
                        "Thx - The Serving Fresh Team\n\n"
 
 
+            print('MSG BODY')
             its = json.dumps(data['items'])
+            print('items', its)
+            print('INN')
             st_init = "<html>" \
                       "<body>" \
                       "<p> Hi " + delivery_first_name + "," + "<br><br>" \
@@ -2726,6 +2730,8 @@ class purchase_Data_SF(Resource):
                         "<td><b>Qty</td>"\
                         "<td><b>Price</td>"\
                       "</tr>"
+
+            print('MID_1')
             arr = st_init
             sub = ''
             i = 0
@@ -2737,8 +2743,10 @@ class purchase_Data_SF(Resource):
                         i += 1
                         sub += its[i]
                     prod = json.loads(sub)
-                    amount = int(prod['qty'])*int(prod['price'])
-                    tot_amt += amount
+                    print(prod['name'])
+                    amount = float(prod['qty'])*float(prod['price'])
+                    #tot_amt += amount
+                    print(prod['name'])
                     tmp_str = "<tr>"\
                                 "<td><img src=" + "'" + prod['img'] + "'" + "style='width:150px;height:100px;'/></td>"\
                                 "<td>" + prod['name'] + "</td>"\
@@ -2748,6 +2756,8 @@ class purchase_Data_SF(Resource):
                     arr += tmp_str
                 sub = ''
                 i += 1
+
+            print('OuTTT')
 
             end_str = "<tr>"\
                         "<td></td>"\
