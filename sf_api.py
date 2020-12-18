@@ -3094,7 +3094,8 @@ class addItems(Resource):
                 item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
                 print('oout')
                 exp_date = request.form.get('exp_date')
-                key = "items/" + str(item_uid)
+                TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                key = "items/" + str(item_uid) + "_" + TimeStamp
 
 
                 if item_photo == 'NULL':
@@ -3774,7 +3775,7 @@ class admin_report(Resource):
             disconnect(conn)
 
 
-class admin_report_front(Resource):
+class admin_report_groupby(Resource):
 
     def get(self, uid):
 
@@ -3792,7 +3793,7 @@ class admin_report_front(Resource):
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
                     WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
-                    GROUP BY 
+                    GROUP BY purchase_uid  
                     ORDER BY purchase_date DESC;
                     """
             else:
@@ -3807,6 +3808,7 @@ class admin_report_front(Resource):
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
                         WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                        GROUP BY purchase_uid 
                         ORDER BY purchase_date DESC;
                         """
 
@@ -4679,6 +4681,7 @@ api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
+api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
 api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
