@@ -79,6 +79,8 @@ import pymysql
 import requests
 import jwt
 s3 = boto3.client('s3')
+s3_res = boto3.resource('s3')
+s3_cl = boto3.client('s3')
 
 # aws s3 bucket where the image is stored
 BUCKET_NAME = os.environ.get('MEAL_IMAGES_BUCKET')
@@ -2970,9 +2972,9 @@ class Stripe_Payment_key_checker(Resource):
 
         elif data['key'] == key_live:
             # if app is in testing
-            stripe_status = "Test"
+            #stripe_status = "Test"
             # if app is live
-            #stripe_status = "Live"
+            stripe_status = "Live"
             return stripe_status
 
         else:
@@ -2996,9 +2998,9 @@ class Paypal_Payment_key_checker(Resource):
 
         elif data['key'] == key_live:
             # if app is in testing
-            paypal_status = 'Test'
+            #paypal_status = 'Test'
             # if app is live
-            #paypal_status = 'Live'
+            paypal_status = 'Live'
             return paypal_status
 
         else:
@@ -3715,6 +3717,38 @@ class update_Coupons(Resource):
 
 
 
+class get_s3_photos(Resource):
+
+    def get(self):
+
+        try:
+            arr = []
+            print('IN')
+            bucket_name = 'servingfresh'
+            my_bucket = s3_res.Bucket(bucket_name)
+            print('Bucket done')
+
+            for file in my_bucket.objects.all():
+                print('IN file', file)
+                params = {'Bucket': bucket_name, 'Key': file.key}
+                if 'items/' in file.key:
+                    print('params')
+                    url = s3_cl.generate_presigned_url('get_object', params)
+                    res = url.split("?")
+                    arr.append(res[0])
+                    print(res)
+
+            return arr[1:]
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+
+
+
+
+
+
+
 
 
 
@@ -3737,6 +3771,8 @@ class admin_report(Resource):
                     SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount   
                     FROM sf.purchases, sf.items as itms, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
+                                    img VARCHAR(255)  PATH '$.img',
+                                    description VARCHAR(255)  PATH '$.description',
                                     qty VARCHAR(255)  PATH '$.qty',
                                     name VARCHAR(255)  PATH '$.name',
                                     price VARCHAR(255)  PATH '$.price',
@@ -3751,6 +3787,8 @@ class admin_report(Resource):
                         SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount  
                         FROM sf.purchases, sf.items as itms, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -3786,6 +3824,8 @@ class admin_report_groupby(Resource):
                     SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount   
                     FROM sf.purchases, sf.items as itms, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
+                                    img VARCHAR(255)  PATH '$.img',
+                                    description VARCHAR(255)  PATH '$.description',
                                     qty VARCHAR(255)  PATH '$.qty',
                                     name VARCHAR(255)  PATH '$.name',
                                     price VARCHAR(255)  PATH '$.price',
@@ -3801,6 +3841,8 @@ class admin_report_groupby(Resource):
                         SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount  
                         FROM sf.purchases, sf.items as itms, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -3826,11 +3868,6 @@ class admin_report_groupby(Resource):
             disconnect(conn)
 
 
-
-
-
-
-
 class summary_reports(Resource):
 
     def get(self, category,start,end):
@@ -3844,6 +3881,8 @@ class summary_reports(Resource):
                         (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
                         FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm, sf.businesses AS bus, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -3872,6 +3911,8 @@ class summary_reports(Resource):
                         (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
                         FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm,
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -3899,6 +3940,8 @@ class summary_reports(Resource):
                         (SELECT *, (itm.business_price * qty) AS revenue_business, (itm.item_price * qty) AS revenue_item
                         FROM sf.purchases AS pur, sf.payments AS pay, sf.items AS itm, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -3929,6 +3972,91 @@ class summary_reports(Resource):
 
 
 
+class profits_reports(Resource):
+
+    def get(self, category,start,end):
+
+        try:
+            conn = connect()
+            if category == 'items':
+                query = """
+                        SELECT *,deconstruct.*, sum(qty*(item_price-business_price)) as profit, sum(qty) AS total_qty  
+                        FROM sf.purchases, sf.items as itms, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\'
+                        GROUP BY deconstruct.item_uid
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Profit Report successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+            elif category == 'farms':
+                query = """
+                        SELECT *,deconstruct.*, sum(qty*(item_price-business_price)) as profit, sum(qty) AS total_qty 
+                        FROM sf.purchases, sf.items as itms, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\'
+                        GROUP BY deconstruct.itm_business_uid;
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'profit report data successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+
+            elif category == 'dates':
+                query = """
+                        SELECT *,deconstruct.*, sum((qty*(item_price-business_price))+service_fee+delivery_fee+driver_tip) as profit, sum(qty) AS total_qty 
+                        FROM sf.purchases as pur, sf.items as itms, sf.payments as pay, 
+                             JSON_TABLE(items, '$[*]' COLUMNS (
+                                        qty VARCHAR(255)  PATH '$.qty',
+                                        name VARCHAR(255)  PATH '$.name',
+                                        price VARCHAR(255)  PATH '$.price',
+                                        item_uid VARCHAR(255)  PATH '$.item_uid',
+                                        itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                             ) AS deconstruct
+                        WHERE deconstruct.item_uid = itms.item_uid AND pur.purchase_uid = pay.pay_purchase_uid AND purchase_status = 'ACTIVE'
+                        GROUP BY CAST(purchase_date AS DATE);
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] == 280:
+                    items['message'] = 'Profit Report data successful'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'Check sql query'
+                return items
+            else:
+                return 'choose correct category'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
 
 #-- End Analytics
 
@@ -3943,6 +4071,8 @@ class report_order_customer_pivot_detail(Resource):
                         SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -4010,6 +4140,8 @@ class report_order_customer_pivot_detail(Resource):
                         SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, sum(price) as Amount
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -4064,6 +4196,8 @@ class report_order_customer_pivot_detail(Resource):
                         SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
+                                        img VARCHAR(255)  PATH '$.img',
+                                        description VARCHAR(255)  PATH '$.description',
                                         qty VARCHAR(255)  PATH '$.qty',
                                         name VARCHAR(255)  PATH '$.name',
                                         price VARCHAR(255)  PATH '$.price',
@@ -4365,6 +4499,8 @@ class customer_info(Resource):
                     max(pay.payment_time_stamp) AS latest_order_date
                                 FROM sf.purchases , 
                                      JSON_TABLE(items, '$[*]' COLUMNS (
+                                                img VARCHAR(255)  PATH '$.img',
+                                                description VARCHAR(255)  PATH '$.description',
                                                 qty VARCHAR(255)  PATH '$.qty',
                                                 name VARCHAR(255)  PATH '$.name',
                                                 price VARCHAR(255)  PATH '$.price',
@@ -4677,12 +4813,14 @@ api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
 api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 api.add_resource(get_item_photos, '/api/v2/get_item_photos/<string:category>')
 api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
+api.add_resource(get_s3_photos, '/api/v2/get_s3_photos')
 
 # Admin Endpoints
 
 api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
 api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
+api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 
