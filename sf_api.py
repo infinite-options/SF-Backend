@@ -3097,7 +3097,9 @@ class addItems(Resource):
                 print('oout')
                 exp_date = request.form.get('exp_date')
                 TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                key = "items/" + str(item_uid) + "_" + TimeStamp
+                TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                print('Test timestamp----', TimeStamp_test)
+                key = "items/" + str(item_uid) + "_" + TimeStamp_test
 
 
                 if item_photo == 'NULL':
