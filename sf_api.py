@@ -4090,13 +4090,13 @@ class profits_reports(Resource):
 
 class report_order_customer_pivot_detail(Resource):
 
-    def get(self, report, uid):
+    def get(self, report, uid, date):
 
         try:
             conn = connect()
             if report == 'order':
                 query = """
-                        SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                        SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
@@ -4107,7 +4107,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
                         """
 
                 items = execute(query, 'get', conn)
@@ -4165,7 +4165,7 @@ class report_order_customer_pivot_detail(Resource):
                     return output
             elif report == 'customer':
                 query = """
-                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, sum(price) as Amount
+                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, sum(price) as Amount
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
@@ -4176,7 +4176,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\'
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\'
                         GROUP BY pur_customer_uid;
                         """
 
@@ -4232,7 +4232,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';;
                         """
 
                 items = execute(query, 'get', conn)
@@ -4266,7 +4266,15 @@ class report_order_customer_pivot_detail(Resource):
                     glob_tot = 0
                     for key, vals in dict.items():
                         print('VALSSS---', vals)
-                        items = {groc['name']:groc['qty'] for groc in vals}
+                        #items = {groc['name']:groc['qty'] for groc in vals}
+                        itm_input_dict = {}
+                        for groc in vals:
+                            if groc['name'] not in itm_input_dict:
+                                itm_input_dict[groc['name']] = float(groc['qty'])
+                            else:
+                                itm_input_dict[groc['name']] += float(groc['qty'])
+                        items = itm_input_dict
+
                         total_sum = 0
                         for tp_key, tp_vals in items.items():
                             total_sum += int(tp_vals)
@@ -4480,6 +4488,124 @@ class farmer_revenue_inventory_report(Resource):
 
 
 
+class drivers_report_sort(Resource):
+
+    def get(self, date):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name
+                    FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                    """
+            items = execute(query, 'get', conn)
+
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            sg_ord = {}
+            sg_itm = {}
+            sg_ord_itm = {}
+            for vals in items['result']:
+                address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                if address not in sg_ord:
+                    sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
+                    sg_ord_itm[address] = [[vals['item_name'],vals['qty']]]
+                else:
+                    sg_ord[address].append(vals['item_name'])
+                    sg_ord_itm[address].append([vals['item_name'],vals['qty']])
+                    sg_ord[address][0] = sg_ord[address][0] + 1
+                if vals['item_name'] not in sg_itm:
+                    sg_itm[vals['item_name']] = float(vals['qty'])
+                else:
+                    sg_itm[vals['item_name']] += float(vals['qty'])
+            print(sg_ord, sg_itm, sg_ord_itm)
+
+
+
+
+            for vals, v in sg_ord_itm.items():
+                dict1 = {}
+                for prod in v:
+                    #print(prod)
+                    if prod[0] in dict1:
+                          dict1[prod[0]] += float(prod[1])
+                    else:
+                          dict1[prod[0]] = float(prod[1])
+                arr_x = []
+
+                for key, itm in dict1.items():
+                    print('keyy', key)
+                    arr_x.append([key, itm])
+                print('hello', sg_ord_itm[vals])
+                sg_ord_itm[vals] = arr_x
+
+            print('ORDDDD', sg_ord_itm)
+
+            for key, orders in sg_ord_itm.items():
+                print(key)
+                print(orders)
+                print(len(orders))
+                sg_ord[key][0] = len(orders)
+
+
+
+            emails = [vals[2] for it, vals in sg_ord.items()]
+            print(emails)
+            phones = [vals[1] for it, vals in sg_ord.items()]
+            tot_ord = [vals[0] for it, vals in sg_ord.items()]
+            cust_names = [vals[3] for it, vals in sg_ord.items()]
+            print('in')
+
+            si = io.StringIO()
+            cw = csv.writer(si)
+            cw.writerow(['Name'] + cust_names + ['Total'])
+
+            print('IN!')
+            print(['Email'] + emails)
+            cw.writerow(['Email'] + emails)
+            cw.writerow(['Phone'] + phones)
+            print('IN@')
+
+            print(type(sg_ord))
+            cw.writerow(['Address'] + list(sg_ord.keys()))
+
+
+            print('IN#')
+            cw.writerow(['Total'] + tot_ord)
+
+
+            for key, val in sg_itm.items():
+                print('key:', key)
+                arr = []
+                tot = 0
+                for key_ord in sg_ord.keys():
+                    flag = 'False'
+                    if key_ord in sg_ord_itm:
+                        for i in sg_ord_itm[key_ord]:
+                            #print('iii: ', i)
+                            if i[0] == key:
+                                flag = 'True'
+                                #print('INNN ', i[0], i[1])
+                                arr.append(float(i[1]))
+                                tot += float(i[1])
+                                print('ARRRR', arr)
+
+                    if flag == 'False':
+                        arr.append(0.0)
+                cw.writerow([key]+arr+[tot])
+
+            orders = si.getvalue()
+            output = make_response(orders)
+            output.headers["Content-Disposition"] = "attachment; filename=driver_report_sort_" + date + ".csv"
+            output.headers["Content-type"] = "text/csv"
+            return output
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
@@ -4869,8 +4995,10 @@ api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
 api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
-api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>')
+api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
+api.add_resource(drivers_report_sort, '/api/v2/drivers_report_sort/<string:date>')
+
 
 # Notification Endpoints
 
