@@ -4488,7 +4488,7 @@ class farmer_revenue_inventory_report(Resource):
 
 
 
-class drivers_report_sort(Resource):
+class drivers_report_check(Resource):
 
     def get(self, date):
 
@@ -4599,7 +4599,7 @@ class drivers_report_sort(Resource):
 
             orders = si.getvalue()
             output = make_response(orders)
-            output.headers["Content-Disposition"] = "attachment; filename=driver_report_sort_" + date + ".csv"
+            output.headers["Content-Disposition"] = "attachment; filename=driver_report_check_" + date + ".csv"
             output.headers["Content-type"] = "text/csv"
             return output
         except:
@@ -4997,7 +4997,7 @@ api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<st
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
-api.add_resource(drivers_report_sort, '/api/v2/drivers_report_sort/<string:date>')
+api.add_resource(drivers_report_check, '/api/v2/drivers_report_check/<string:date>')
 
 
 # Notification Endpoints
