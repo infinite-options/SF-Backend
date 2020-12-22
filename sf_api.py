@@ -2073,6 +2073,32 @@ class update_guid_notification(Resource):
         finally:
             disconnect(conn)
 
+class business_delivery_details(Resource):
+    def get(self, id):
+
+        items = {}
+        try:
+            conn = connect()
+            query = """
+                    SELECT zone_uid, area, zone, zone_name, z_businesses, z_delivery_day, z_delivery_time, service_fee, delivery_fee, tax_rate, business_uid, z_id
+                     FROM sf.zones AS z,
+                     json_table(z_businesses, '$[*]'
+                         COLUMNS (
+                                z_id FOR ORDINALITY,
+                                business_uid VARCHAR(255) PATH '$')
+                                             ) as zjt
+                    WHERE business_uid = \'""" + id + """\';
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 class categoricalOptions(Resource):
     def get(self, long, lat):
@@ -4790,6 +4816,7 @@ api.add_resource(update_Profile, '/api/v2/update_Profile')
 api.add_resource(update_email_password, '/api/v2/update_email_password')
 api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>,<string:action>')
 api.add_resource(Refund, '/api/v2/Refund')
+api.add_resource(business_delivery_details, '/api/v2/business_delivery_details/<string:id>')
 api.add_resource(categoricalOptions, '/api/v2/categoricalOptions/<string:long>,<string:lat>')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(purchase, '/api/v2/purchase')
