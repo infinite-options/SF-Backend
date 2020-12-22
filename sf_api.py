@@ -4221,7 +4221,7 @@ class report_order_customer_pivot_detail(Resource):
                     return output
             elif report == 'pivot':
                 query = """
-                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
@@ -4261,7 +4261,7 @@ class report_order_customer_pivot_detail(Resource):
 
                     print('dict----', dict)
                     si = io.StringIO()
-                    cw = csv.DictWriter(si, ['Name', 'Email', 'Phone', 'Total'] + list(itm_dict.keys()))
+                    cw = csv.DictWriter(si, ['Name', 'Email', 'Phone', 'delivery_date', 'order_date', 'delivery_address', 'Total'] + list(itm_dict.keys()))
                     cw.writeheader()
                     glob_tot = 0
                     for key, vals in dict.items():
@@ -4272,9 +4272,28 @@ class report_order_customer_pivot_detail(Resource):
                             total_sum += int(tp_vals)
                         glob_tot += total_sum
                         print('items-----------------', items)
-                        items['Name'] = vals[0]['delivery_first_name'] + vals[0]['delivery_last_name']
+                        items['Name'] = vals[0]['delivery_first_name'] + " " + vals[0]['delivery_last_name']
                         items['Email'] = vals[0]['delivery_email']
                         items['Phone'] = vals[0]['delivery_phone_num']
+                        items['delivery_date'] = vals[0]['start_delivery_date']
+                        items['order_date'] = vals[0]['purchase_date']
+
+                        if vals[0]['delivery_address'] == 'NULL':
+                            vals[0]['delivery_address'] = ''
+
+                        if vals[0]['delivery_unit'] == 'NULL':
+                            vals[0]['delivery_unit'] = ''
+
+                        if vals[0]['delivery_state'] == 'NULL':
+                            vals[0]['delivery_state'] = ''
+
+                        if vals[0]['delivery_city'] == 'NULL':
+                            vals[0]['delivery_city'] = ''
+
+                        if vals[0]['delivery_zip'] == 'NULL':
+                            vals[0]['delivery_zip'] = ''
+
+                        items['delivery_address'] = vals[0]['delivery_address'] + " " + vals[0]['delivery_unit'] + " " + vals[0]['delivery_city'] + " " + vals[0]['delivery_state'] + " " + vals[0]['delivery_zip']
                         items['Total'] = total_sum
                         cw.writerow(items)
 
