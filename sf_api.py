@@ -2153,7 +2153,9 @@ class categoricalOptions(Resource):
                     rjzjt.z_delivery_time,
                     rjzjt.LB_long,rjzjt.LB_lat,rjzjt.LT_long,rjzjt.LT_lat,rjzjt.RT_long,rjzjt.RT_lat,rjzjt.RB_long,rjzjt.RB_lat,
                     b.business_type,
-                    b.business_image
+                    b.business_image,
+                    b.business_accepting_hours
+                    
                    
                 FROM sf.businesses b
                 RIGHT JOIN
