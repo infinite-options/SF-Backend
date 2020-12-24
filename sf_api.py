@@ -2136,7 +2136,7 @@ class categoricalOptions(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-            zones = []
+            zones = ['Random', 'Random']
             for vals in items['result']:
                 zones.append(vals['zone'])
             print('ZONES-----', zones)
