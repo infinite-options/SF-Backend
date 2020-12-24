@@ -2603,6 +2603,32 @@ class get_Fee_Tax(Resource):
             print('process completed')
 
 
+class last_delivery_instruction(Resource):
+    def get(self, uid):
+        try:
+            conn = connect()
+            query = """
+                    SELECT delivery_instructions
+                    FROM sf.purchases
+                    WHERE pur_customer_uid = \'""" + uid + """\'
+                    ORDER BY purchase_date 
+                    DESC LIMIT 1;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+            return items
+        except:
+                print("Error happened while getting taxes")
+                raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+            print('process completed')
+
+
+
+
 class purchase_Data_SF(Resource):
     def post(self):
         response = {}
@@ -5097,6 +5123,7 @@ api.add_resource(payment, '/api/v2/payment')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
+api.add_resource(last_delivery_instruction, '/api/v2/last_delivery_instruction/<string:uid>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
