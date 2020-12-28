@@ -2155,20 +2155,18 @@ class categoricalOptions(Resource):
                     b.business_type,
                     b.business_image,
                     b.business_accepting_hours
-                    
-                   
-                FROM sf.businesses b
-                RIGHT JOIN
-                (SELECT *
-                     FROM sf.zones AS z,
-                     json_table(z_businesses, '$[*]'
-                         COLUMNS (
-                                z_id FOR ORDINALITY,
-                                z_biz_id VARCHAR(255) PATH '$')
-                                             ) as zjt) as rjzjt
-                ON b.business_uid = rjzjt.z_biz_id
-                WHERE zone IN """ + str(tuple(zones)) + """;
-                """
+                    FROM sf.businesses b
+                    RIGHT JOIN
+                    (SELECT *
+                         FROM sf.zones AS z,
+                         json_table(z_businesses, '$[*]'
+                             COLUMNS (
+                                    z_id FOR ORDINALITY,
+                                    z_biz_id VARCHAR(255) PATH '$')
+                                                 ) as zjt) as rjzjt
+                    ON b.business_uid = rjzjt.z_biz_id
+                    WHERE zone IN """ + str(tuple(zones)) + """;
+                    """
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
@@ -3352,6 +3350,38 @@ class business_details_update(Resource):
                 disconnect(conn)
                 print('process completed')
 
+class business_image_upload(Resource):
+
+    def post(self):
+
+        try:
+            conn = connect()
+            bus_photo = request.files.get('bus_photo') if request.files.get('bus_photo') is not None else 'NULL'
+            uid = request.form.get('uid')
+            TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            key = "business/" + str(uid) + "_" + TimeStamp_test
+            bus_photo_url = helper_upload_meal_img(bus_photo, key)
+            query = """
+                   UPDATE sf.businesses
+                   SET 
+                   business_image = \'""" + bus_photo_url + """\'
+                   WHERE business_uid = \'""" + uid + """\';
+                   """
+            items = execute(query, 'post', conn)
+            if items['code'] != 281:
+                items['message'] = 'check sql query'
+            return items
+        except:
+                print("Error happened while outputting from business table")
+                raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+            print('process completed')
+
+
+
+
+
 class orders_by_farm(Resource):
 
     def get(self):
@@ -3824,8 +3854,8 @@ class admin_report(Resource):
             conn = connect()
             if uid == 'all':
                 query = """
-                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount   
-                    FROM sf.purchases, sf.items as itms, 
+                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
+                    FROM sf.purchases, sf.items as itms, sf.payments, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
                                     img VARCHAR(255)  PATH '$.img',
                                     description VARCHAR(255)  PATH '$.description',
@@ -3835,13 +3865,13 @@ class admin_report(Resource):
                                     item_uid VARCHAR(255)  PATH '$.item_uid',
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
-                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                     ORDER BY purchase_date DESC;
                     """
             else:
                 query = """
-                        SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount  
-                        FROM sf.purchases, sf.items as itms, 
+                        SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
+                        FROM sf.purchases, sf.items as itms, sf.payments, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
                                         description VARCHAR(255)  PATH '$.description',
@@ -3851,7 +3881,7 @@ class admin_report(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                         ORDER BY purchase_date DESC;
                         """
 
@@ -3877,8 +3907,8 @@ class admin_report_groupby(Resource):
             conn = connect()
             if uid == 'all':
                 query = """
-                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount   
-                    FROM sf.purchases, sf.items as itms, 
+                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date     
+                    FROM sf.purchases, sf.items as itms, sf.payments, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
                                     img VARCHAR(255)  PATH '$.img',
                                     description VARCHAR(255)  PATH '$.description',
@@ -3888,14 +3918,14 @@ class admin_report_groupby(Resource):
                                     item_uid VARCHAR(255)  PATH '$.item_uid',
                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                          ) AS deconstruct
-                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                    WHERE deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                     GROUP BY purchase_uid  
                     ORDER BY purchase_date DESC;
                     """
             else:
                 query = """
-                        SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount  
-                        FROM sf.purchases, sf.items as itms, 
+                        SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date    
+                        FROM sf.purchases, sf.items as itms, sf.payments, 
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
                                         description VARCHAR(255)  PATH '$.description',
@@ -3905,7 +3935,7 @@ class admin_report_groupby(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE'
+                        WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                         GROUP BY purchase_uid 
                         ORDER BY purchase_date DESC;
                         """
@@ -5137,6 +5167,7 @@ api.add_resource(Paypal_Payment_key_checker, '/api/v2/Paypal_Payment_key_checker
 api.add_resource(addItems, '/api/v2/addItems/<string:action>')
 api.add_resource(all_businesses, '/api/v2/all_businesses')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
+api.add_resource(business_image_upload, '/api/v2/business_image_upload')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(orderSummary, '/api/v2/orderSummary')
