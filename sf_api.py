@@ -2147,10 +2147,11 @@ class categoricalOptions(Resource):
                     rjzjt.zone_name,
                     rjzjt.z_id,
                     rjzjt.z_biz_id,
-                    rjzjt.z_delivery_day,
                     b.business_name,
                     rjzjt.z_delivery_day,
                     rjzjt.z_delivery_time,
+                    rjzjt.z_accepting_day,
+                    rjzjt.z_accepting_time,
                     rjzjt.LB_long,rjzjt.LB_lat,rjzjt.LT_long,rjzjt.LT_lat,rjzjt.RT_long,rjzjt.RT_lat,rjzjt.RB_long,rjzjt.RB_lat,
                     b.business_type,
                     b.business_image,
@@ -4681,9 +4682,9 @@ class drivers_report_check(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name
-                    FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                    SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name, bus.business_name
+                    FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm, sf.businesses as bus
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid;;
                     """
             items = execute(query, 'get', conn)
 
@@ -4698,20 +4699,17 @@ class drivers_report_check(Resource):
                 address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
                 if address not in sg_ord:
                     sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
-                    sg_ord_itm[address] = [[vals['item_name'],vals['qty']]]
+                    sg_ord_itm[address] = [[(vals['item_name']+"_"+vals['business_name']),vals['qty']]]
                 else:
-                    sg_ord[address].append(vals['item_name'])
-                    sg_ord_itm[address].append([vals['item_name'],vals['qty']])
+                    sg_ord[address].append((vals['item_name']+"_"+vals['business_name']))
+                    sg_ord_itm[address].append([(vals['item_name']+"_"+vals['business_name']),vals['qty']])
                     sg_ord[address][0] = sg_ord[address][0] + 1
-                if vals['item_name'] not in sg_itm:
-                    sg_itm[vals['item_name']] = float(vals['qty'])
+                if (vals['item_name']+"_"+vals['business_name']) not in sg_itm:
+                    sg_itm[(vals['item_name']+"_"+vals['business_name'])] = float(vals['qty'])
                 else:
-                    sg_itm[vals['item_name']] += float(vals['qty'])
-            print(sg_ord, sg_itm, sg_ord_itm)
+                    sg_itm[(vals['item_name']+"_"+vals['business_name'])] += float(vals['qty'])
 
-
-
-
+            print("sd_items-----", sg_itm)
             for vals, v in sg_ord_itm.items():
                 dict1 = {}
                 for prod in v:
@@ -4747,22 +4745,22 @@ class drivers_report_check(Resource):
 
             si = io.StringIO()
             cw = csv.writer(si)
-            cw.writerow(['Name'] + cust_names + ['Total'])
+            cw.writerow([' '] + ['Name'] + cust_names + ['Total'])
 
             print('IN!')
             print(['Email'] + emails)
-            cw.writerow(['Email'] + emails)
-            cw.writerow(['Phone'] + phones)
+            cw.writerow([' '] + ['Email'] + emails)
+            cw.writerow([' '] + ['Phone'] + phones)
             print('IN@')
 
             print(type(sg_ord))
-            cw.writerow(['Address'] + list(sg_ord.keys()))
+            cw.writerow([' '] + ['Address'] + list(sg_ord.keys()))
 
 
             print('IN#')
-            cw.writerow(['Total'] + tot_ord)
+            cw.writerow(['Farm'] + ['Total'] + tot_ord)
 
-
+            ans = {}
             for key, val in sg_itm.items():
                 print('key:', key)
                 arr = []
@@ -4781,7 +4779,18 @@ class drivers_report_check(Resource):
 
                     if flag == 'False':
                         arr.append(0.0)
-                cw.writerow([key]+arr+[tot])
+                name = key.split("_")
+
+                if name[1] in ans:
+                    ans[name[1]].append([name[0]]+arr+[tot])
+                else:
+                    ans[name[1]] = [[name[0]]+arr+[tot]]
+
+
+            for key, vals in ans.items():
+                #cw.writerow([key])
+                for val in vals:
+                    cw.writerow([key]+val)
 
             orders = si.getvalue()
             output = make_response(orders)
