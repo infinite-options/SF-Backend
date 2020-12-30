@@ -2984,7 +2984,14 @@ class Stripe_Intent(Resource):
         response = {}
 
         #stripe.api_key = stripe_secret_test_key
-        stripe.api_key = stripe_secret_live_key
+        note = request.form.get('note')
+        print(note, type(note))
+        if note == "SFTEST":
+            stripe.api_key = stripe_secret_test_key
+            print('TEST')
+        else:
+            stripe.api_key = stripe_secret_live_key
+            print('LIVE')
 
         if request.form.get('amount') == None:
             raise BadRequest('Request failed. Please provide the amount field.')
@@ -4692,111 +4699,178 @@ class drivers_report_check(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-            sg_ord = {}
-            sg_itm = {}
-            sg_ord_itm = {}
-            for vals in items['result']:
-                address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
-                if address not in sg_ord:
-                    sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
-                    sg_ord_itm[address] = [[(vals['item_name']+"_"+vals['business_name']),vals['qty']]]
-                else:
-                    sg_ord[address].append((vals['item_name']+"_"+vals['business_name']))
-                    sg_ord_itm[address].append([(vals['item_name']+"_"+vals['business_name']),vals['qty']])
-                    sg_ord[address][0] = sg_ord[address][0] + 1
-                if (vals['item_name']+"_"+vals['business_name']) not in sg_itm:
-                    sg_itm[(vals['item_name']+"_"+vals['business_name'])] = float(vals['qty'])
-                else:
-                    sg_itm[(vals['item_name']+"_"+vals['business_name'])] += float(vals['qty'])
-
-            print("sd_items-----", sg_itm)
-            for vals, v in sg_ord_itm.items():
-                dict1 = {}
-                for prod in v:
-                    #print(prod)
-                    if prod[0] in dict1:
-                          dict1[prod[0]] += float(prod[1])
+            d = 2
+            if d == 3:
+                sg_ord = {}
+                sg_itm = {}
+                sg_ord_itm = {}
+                for vals in items['result']:
+                    address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                    if address not in sg_ord:
+                        sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
+                        sg_ord_itm[address] = [[(vals['item_name']+"_"+vals['business_name']),vals['qty']]]
                     else:
-                          dict1[prod[0]] = float(prod[1])
-                arr_x = []
+                        sg_ord[address].append((vals['item_name']+"_"+vals['business_name']))
+                        sg_ord_itm[address].append([(vals['item_name']+"_"+vals['business_name']),vals['qty']])
+                        sg_ord[address][0] = sg_ord[address][0] + 1
+                    if (vals['item_name']+"_"+vals['business_name']) not in sg_itm:
+                        sg_itm[(vals['item_name']+"_"+vals['business_name'])] = float(vals['qty'])
+                    else:
+                        sg_itm[(vals['item_name']+"_"+vals['business_name'])] += float(vals['qty'])
 
-                for key, itm in dict1.items():
-                    print('keyy', key)
-                    arr_x.append([key, itm])
-                print('hello', sg_ord_itm[vals])
-                sg_ord_itm[vals] = arr_x
+                print("sd_items-----", sg_itm)
+                for vals, v in sg_ord_itm.items():
+                    dict1 = {}
+                    for prod in v:
+                        #print(prod)
+                        if prod[0] in dict1:
+                              dict1[prod[0]] += float(prod[1])
+                        else:
+                              dict1[prod[0]] = float(prod[1])
+                    arr_x = []
 
-            print('ORDDDD', sg_ord_itm)
+                    for key, itm in dict1.items():
+                        print('keyy', key)
+                        arr_x.append([key, itm])
+                    print('hello', sg_ord_itm[vals])
+                    sg_ord_itm[vals] = arr_x
 
-            for key, orders in sg_ord_itm.items():
-                print(key)
-                print(orders)
-                print(len(orders))
-                sg_ord[key][0] = len(orders)
+                print('ORDDDD', sg_ord_itm)
 
-
-
-            emails = [vals[2] for it, vals in sg_ord.items()]
-            print(emails)
-            phones = [vals[1] for it, vals in sg_ord.items()]
-            tot_ord = [vals[0] for it, vals in sg_ord.items()]
-            cust_names = [vals[3] for it, vals in sg_ord.items()]
-            print('in')
-
-            si = io.StringIO()
-            cw = csv.writer(si)
-            cw.writerow([' '] + ['Name'] + cust_names + ['Total'])
-
-            print('IN!')
-            print(['Email'] + emails)
-            cw.writerow([' '] + ['Email'] + emails)
-            cw.writerow([' '] + ['Phone'] + phones)
-            print('IN@')
-
-            print(type(sg_ord))
-            cw.writerow([' '] + ['Address'] + list(sg_ord.keys()))
+                for key, orders in sg_ord_itm.items():
+                    print(key)
+                    print(orders)
+                    print(len(orders))
+                    sg_ord[key][0] = len(orders)
 
 
-            print('IN#')
-            cw.writerow(['Farm'] + ['Total'] + tot_ord)
 
-            ans = {}
-            for key, val in sg_itm.items():
-                print('key:', key)
-                arr = []
-                tot = 0
-                for key_ord in sg_ord.keys():
-                    flag = 'False'
-                    if key_ord in sg_ord_itm:
-                        for i in sg_ord_itm[key_ord]:
-                            #print('iii: ', i)
-                            if i[0] == key:
-                                flag = 'True'
-                                #print('INNN ', i[0], i[1])
-                                arr.append(float(i[1]))
-                                tot += float(i[1])
-                                print('ARRRR', arr)
+                emails = [vals[2] for it, vals in sg_ord.items()]
+                print(emails)
+                phones = [vals[1] for it, vals in sg_ord.items()]
+                tot_ord = [vals[0] for it, vals in sg_ord.items()]
+                cust_names = [vals[3] for it, vals in sg_ord.items()]
+                print('in')
 
-                    if flag == 'False':
-                        arr.append(0.0)
-                name = key.split("_")
+                si = io.StringIO()
+                cw = csv.writer(si)
+                cw.writerow([' '] + ['Name'] + cust_names + ['Total'])
 
-                if name[1] in ans:
-                    ans[name[1]].append([name[0]]+arr+[tot])
-                else:
-                    ans[name[1]] = [[name[0]]+arr+[tot]]
+                print('IN!')
+                print(['Email'] + emails)
+                cw.writerow([' '] + ['Email'] + emails)
+                cw.writerow([' '] + ['Phone'] + phones)
+                print('IN@')
+
+                print(type(sg_ord))
+                cw.writerow([' '] + ['Address'] + list(sg_ord.keys()))
 
 
-            for key, vals in ans.items():
-                #cw.writerow([key])
-                for val in vals:
-                    cw.writerow([key]+val)
+                print('IN#')
+                cw.writerow(['Farm'] + ['Total'] + tot_ord)
 
-            orders = si.getvalue()
-            output = make_response(orders)
-            output.headers["Content-Disposition"] = "attachment; filename=driver_report_check_" + date + ".csv"
-            output.headers["Content-type"] = "text/csv"
-            return output
+                ans = {}
+                for key, val in sg_itm.items():
+                    print('key:', key)
+                    arr = []
+                    tot = 0
+                    for key_ord in sg_ord.keys():
+                        flag = 'False'
+                        if key_ord in sg_ord_itm:
+                            for i in sg_ord_itm[key_ord]:
+                                #print('iii: ', i)
+                                if i[0] == key:
+                                    flag = 'True'
+                                    #print('INNN ', i[0], i[1])
+                                    arr.append(float(i[1]))
+                                    tot += float(i[1])
+                                    print('ARRRR', arr)
+
+                        if flag == 'False':
+                            arr.append(0.0)
+                    name = key.split("_")
+
+                    if name[1] in ans:
+                        ans[name[1]].append([name[0]]+arr+[tot])
+                    else:
+                        ans[name[1]] = [[name[0]]+arr+[tot]]
+
+
+
+                for key, vals in ans.items():
+                    #cw.writerow([key])
+                    for val in vals:
+                        cw.writerow([key]+val)
+
+                orders = si.getvalue()
+                output = make_response(orders)
+                output.headers["Content-Disposition"] = "attachment; filename=driver_report_check_" + date + ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+
+
+            else:
+                uni_dict = {}
+                for vals in items['result']:
+
+                    address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                    if vals['business_name'] not in uni_dict:
+                        #check business
+                        uni_dict[vals['business_name']] = {address:{vals['item_name']:float(vals['qty'])}}
+                    else:
+                        #check address
+                        if address not in uni_dict[vals['business_name']]:
+                            uni_dict[vals['business_name']][address] = {vals['item_name']:float(vals['qty'])}
+                        else:
+                            #check item
+                            if vals['item_name'] not in uni_dict[vals['business_name']][address]:
+                                uni_dict[vals['business_name']][address][vals['item_name']] = float(vals['qty'])
+                            else:
+                                uni_dict[vals['business_name']][address][vals['item_name']] += float(vals['qty'])
+
+                si = io.StringIO()
+                cw = csv.writer(si)
+                for key, vals in uni_dict.items():
+                    bus_itm = []
+                    cw.writerow([key])
+
+                    #get all items for specific farm
+                    for add_key, add_val in vals.items():
+                        bus_itm.append(list(add_val.keys()))
+                    bus_itm = [item for sublist in bus_itm for item in sublist]
+                    print('BUS_ITM', bus_itm)
+                    cw.writerow(bus_itm)
+
+                    for add_key, add_val in vals.items():
+                        res = []
+                        address_items = list(add_val.keys())
+                        print('address_items', address_items)
+                        for i in range(len(bus_itm)):
+                            if bus_itm[i] in address_items:
+                                res.append(str(add_val[bus_itm[i]]) + "_" +str(add_key))
+                            else:
+                                res.append(' ')
+                        cw.writerow(res)
+
+
+                orders = si.getvalue()
+                output = make_response(orders)
+                return output
+
+
+
+
+
+
+
+
+
+
+                return uni_dict
+
+
+
+
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
