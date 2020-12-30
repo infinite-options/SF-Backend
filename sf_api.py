@@ -4705,7 +4705,9 @@ class drivers_report_check_sort(Resource):
                 sg_itm = {}
                 sg_ord_itm = {}
                 for vals in items['result']:
-                    address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                    #address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                    address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_zip']
+
                     if address not in sg_ord:
                         sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
                         sg_ord_itm[address] = [[(vals['item_name']+"_"+vals['business_name']),vals['qty']]]
@@ -4761,7 +4763,7 @@ class drivers_report_check_sort(Resource):
 
 
                 print('IN#')
-                cw.writerow(['Farm'] + ['Total'] + tot_ord)
+                cw.writerow(['Farm'] + ['Count'] + tot_ord)
 
                 ans = {}
                 for key, val in sg_itm.items():
@@ -4806,7 +4808,7 @@ class drivers_report_check_sort(Resource):
                 uni_dict = {}
                 for vals in items['result']:
 
-                    address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_city']
+                    address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_zip']
                     name = vals['delivery_first_name'] + "_" + vals['delivery_last_name']
                     address = name + "--" + address
                     print('NAME---', name)
@@ -4847,7 +4849,14 @@ class drivers_report_check_sort(Resource):
                         print('address_items', address_items)
                         for i in range(len(bus_itm)):
                             if bus_itm[i] in address_items:
-                                res.append(str(add_val[bus_itm[i]]) + "--" +str(add_key))
+                                address_print = str(add_key).split("--")
+                                print('Address', address_print)
+                                address_name = str(address_print[0]).split("_")[0]
+                                print(address_name)
+                                address_first_digit = str(address_print[1]).split(" ")[0]
+
+                                print(address_first_digit)
+                                res.append(str(add_val[bus_itm[i]]) + "--" + str(address_name) + "--" + str(address_first_digit))
                             else:
                                 res.append(' ')
                         cw.writerow(res)
