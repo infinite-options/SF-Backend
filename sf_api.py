@@ -4682,9 +4682,9 @@ class farmer_revenue_inventory_report(Resource):
 
 
 
-class drivers_report_check(Resource):
+class drivers_report_check_sort(Resource):
 
-    def get(self, date):
+    def get(self, date, report):
 
         try:
             conn = connect()
@@ -4699,8 +4699,8 @@ class drivers_report_check(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-            d = 2
-            if d == 3:
+
+            if report == "checking":
                 sg_ord = {}
                 sg_itm = {}
                 sg_ord_itm = {}
@@ -4730,23 +4730,15 @@ class drivers_report_check(Resource):
                     arr_x = []
 
                     for key, itm in dict1.items():
-                        print('keyy', key)
                         arr_x.append([key, itm])
-                    print('hello', sg_ord_itm[vals])
                     sg_ord_itm[vals] = arr_x
 
-                print('ORDDDD', sg_ord_itm)
-
                 for key, orders in sg_ord_itm.items():
-                    print(key)
-                    print(orders)
-                    print(len(orders))
                     sg_ord[key][0] = len(orders)
 
 
 
                 emails = [vals[2] for it, vals in sg_ord.items()]
-                print(emails)
                 phones = [vals[1] for it, vals in sg_ord.items()]
                 tot_ord = [vals[0] for it, vals in sg_ord.items()]
                 cust_names = [vals[3] for it, vals in sg_ord.items()]
@@ -4754,6 +4746,8 @@ class drivers_report_check(Resource):
 
                 si = io.StringIO()
                 cw = csv.writer(si)
+                cw.writerow(['Driver Checking Report'])
+                cw.writerow([])
                 cw.writerow([' '] + ['Name'] + cust_names + ['Total'])
 
                 print('IN!')
@@ -4795,25 +4789,27 @@ class drivers_report_check(Resource):
                     else:
                         ans[name[1]] = [[name[0]]+arr+[tot]]
 
-
-
                 for key, vals in ans.items():
                     #cw.writerow([key])
                     for val in vals:
                         cw.writerow([key]+val)
+                    cw.writerow([])
 
                 orders = si.getvalue()
                 output = make_response(orders)
-                output.headers["Content-Disposition"] = "attachment; filename=driver_report_check_" + date + ".csv"
+                output.headers["Content-Disposition"] = "attachment; filename=driver_report_checking_" + date + ".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
 
 
-            else:
+            elif report == "sorting":
                 uni_dict = {}
                 for vals in items['result']:
 
-                    address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_city'] + " " + vals['delivery_state'] + " " + vals['delivery_zip']
+                    address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_city']
+                    name = vals['delivery_first_name'] + "_" + vals['delivery_last_name']
+                    address = name + "--" + address
+                    print('NAME---', name)
                     if vals['business_name'] not in uni_dict:
                         #check business
                         uni_dict[vals['business_name']] = {address:{vals['item_name']:float(vals['qty'])}}
@@ -4830,8 +4826,12 @@ class drivers_report_check(Resource):
 
                 si = io.StringIO()
                 cw = csv.writer(si)
+                cw.writerow(['Driver Sorting Report'])
+                print(uni_dict)
+                print("start")
                 for key, vals in uni_dict.items():
                     bus_itm = []
+                    cw.writerow([])
                     cw.writerow([key])
 
                     #get all items for specific farm
@@ -4847,28 +4847,21 @@ class drivers_report_check(Resource):
                         print('address_items', address_items)
                         for i in range(len(bus_itm)):
                             if bus_itm[i] in address_items:
-                                res.append(str(add_val[bus_itm[i]]) + "_" +str(add_key))
+                                res.append(str(add_val[bus_itm[i]]) + "--" +str(add_key))
                             else:
                                 res.append(' ')
                         cw.writerow(res)
 
 
+
                 orders = si.getvalue()
                 output = make_response(orders)
+                output.headers["Content-Disposition"] = "attachment; filename=driver_report_sorting_" + date + ".csv"
+                output.headers["Content-type"] = "text/csv"
                 return output
 
-
-
-
-
-
-
-
-
-
-                return uni_dict
-
-
+            else:
+                return "choose correct option"
 
 
         except:
@@ -5268,7 +5261,7 @@ api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<st
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
-api.add_resource(drivers_report_check, '/api/v2/drivers_report_check/<string:date>')
+api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 
 
 # Notification Endpoints
