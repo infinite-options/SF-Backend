@@ -4458,12 +4458,6 @@ class report_order_customer_pivot_detail(Resource):
 
 
                         if len(result) == 0:
-                            si = io.StringIO()
-                            cw = csv.writer(si)
-                            cw.writerow([bus_name])
-                            cw.writerow(['NONE'])
-                            orders = si.getvalue()
-                            res_arr += orders + "\n"
                             continue
                         #print('ressss----', items)
                         print(len(result))
@@ -4610,16 +4604,17 @@ class report_order_customer_pivot_detail(Resource):
                                          ])
 
                         print('start')
-                        si = io.StringIO()
-                        cw = csv.writer(si)
-                        cw.writerow([bus_name])
+
                         print('mid')
 
                         print('maybe')
 
                         if data == []:
-                            cw.writerow(['NONE'])
+                            continue
                         else:
+                            si = io.StringIO()
+                            cw = csv.writer(si)
+                            cw.writerow([bus_name])
                             for item in data:
                                 print('ITEM---', item, type(item))
                                 cw.writerow(item)
@@ -4717,7 +4712,7 @@ class report_order_customer_pivot_detail(Resource):
                         cw.writerow([bus_name])
 
                         if data == []:
-                            cw.writerow(['NONE'])
+                            continue
                         else:
                             for item in data:
                                 cw.writerow(item)
@@ -4904,11 +4899,11 @@ class farmer_revenue_inventory_report(Resource):
 
 class farmer_revenue_inventory_report_all(Resource):
 
-    def post(self, report):
+    def get(self, report, delivery_date):
 
         try:
             conn = connect()
-            data = request.get_json(force=True)
+
 
 
             if report == 'summary':
@@ -4945,7 +4940,7 @@ class farmer_revenue_inventory_report_all(Resource):
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
                     print(query)
@@ -5003,7 +4998,7 @@ class farmer_revenue_inventory_report_all(Resource):
                     summ_arr += orders + "\n"
 
                 output = make_response(summ_arr)
-                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + data['delivery_date'] + ".csv"
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + delivery_date + ".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
 
@@ -5040,7 +5035,7 @@ class farmer_revenue_inventory_report_all(Resource):
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
                     print(query)
@@ -5093,7 +5088,7 @@ class farmer_revenue_inventory_report_all(Resource):
 
 
                 output = make_response(inv_arr)
-                output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report all farms - " + data['delivery_date'] + ".csv"
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report all farms - " + delivery_date + ".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
 
@@ -5768,7 +5763,7 @@ api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<st
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
-api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>')
+api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
 api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 
 
