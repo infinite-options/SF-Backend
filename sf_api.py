@@ -1335,6 +1335,24 @@ class createAccount(Resource):
             items['code'] = 200
 
             print('sss-----', social_signup)
+
+            # generate coupon for new user
+
+            query = ["CALL sf.new_coupons_uid;"]
+            couponIDresponse = execute(query[0], 'get', conn)
+            couponID = couponIDresponse['result'][0]['new_id']
+
+            query = """
+                    INSERT INTO sf.coupons 
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', '0000-00-00 00:00:00', '1', 'Free Shipping', '0', 'F', \'""" + email + """\', 'null', '0');
+                    """
+            print(query)
+            item = execute(query, 'post', conn)
+            if item['code'] != 281:
+                item['message'] = "check sql query for coupons"
+                item['code'] = 400
+                return item
             return items
 
         except:
