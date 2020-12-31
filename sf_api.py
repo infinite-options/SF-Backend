@@ -4379,8 +4379,6 @@ class report_order_customer_pivot_detail(Resource):
                     output.headers["Content-Disposition"] = "attachment; filename=pivot_table_"+date+".csv"
                     output.headers["Content-type"] = "text/csv"
                     return output
-
-
             elif report == 'pivot_all':
                 query = """
                         SELECT business_uid, business_name 
@@ -4393,6 +4391,7 @@ class report_order_customer_pivot_detail(Resource):
                     return items
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
                 print(uids)
                 res_arr = ''
                 for its in uids:
@@ -4424,7 +4423,15 @@ class report_order_customer_pivot_detail(Resource):
                         items['message'] = 'Report data successful'
                         items['code'] = 200
                         result = items['result']
+
+
                         if len(result) == 0:
+                            si = io.StringIO()
+                            cw = csv.writer(si)
+                            cw.writerow([bus_name])
+                            cw.writerow(['NONE'])
+                            orders = si.getvalue()
+                            res_arr += orders + "\n"
                             continue
                         #print('ressss----', items)
                         print(len(result))
@@ -4501,11 +4508,195 @@ class report_order_customer_pivot_detail(Resource):
                         res_arr += orders + "\n"
                         print(res_arr)
                 output = make_response(res_arr)
-                output.headers["Content-Disposition"] = "attachment; filename=pivot_table_"+date+".csv"
+                output.headers["Content-Disposition"] = "attachment; filename=pivot_table_all_"+date+".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
+            elif report == 'customer_all':
+                print('IN customer_all')
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                res_arr = ''
+
+                for its in uids:
+
+                    uid = its[0]
+                    bus_name = its[1]
+                    query = """
+                            SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, sum(price) as Amount
+                            FROM sf.purchases, sf.payments,
+                                 JSON_TABLE(items, '$[*]' COLUMNS (
+                                            img VARCHAR(255)  PATH '$.img',
+                                            description VARCHAR(255)  PATH '$.description',
+                                            qty VARCHAR(255)  PATH '$.qty',
+                                            name VARCHAR(255)  PATH '$.name',
+                                            price VARCHAR(255)  PATH '$.price',
+                                            item_uid VARCHAR(255)  PATH '$.item_uid',
+                                            itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                                 ) AS deconstruct
+                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\'
+                            GROUP BY pur_customer_uid;
+                            """
+
+                    items = execute(query, 'get', conn)
+
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+                    else:
+
+                        items['message'] = 'Report data successful'
+                        items['code'] = 200
+                        result = items['result']
+                        #print('result------', result)
+                        data = []
+
+                        for vals in result:
+
+                            tmp = vals
+                            #print('tmp----', tmp)
+                            data.append([tmp['delivery_first_name'],
+                                         tmp['delivery_last_name'],
+                                         tmp['delivery_phone_num'],
+                                         tmp['delivery_email'],
+                                         tmp['delivery_address'],
+                                         tmp['delivery_unit'],
+                                         tmp['delivery_city'],
+                                         tmp['delivery_state'],
+                                         tmp['delivery_zip'],
+                                         tmp['Amount']
+                                         ])
+
+                        print('start')
+                        si = io.StringIO()
+                        cw = csv.writer(si)
+                        cw.writerow([bus_name])
+                        print('mid')
+
+                        print('maybe')
+
+                        if data == []:
+                            cw.writerow(['NONE'])
+                        else:
+                            for item in data:
+                                print('ITEM---', item, type(item))
+                                cw.writerow(item)
 
 
+                        orders = si.getvalue()
+                        print('ORDERS----', orders)
+                        res_arr += orders + "\n"
+                        print('OTTT')
+                output = make_response(res_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=customer_details_all_"+date+".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+            elif report == 'order_all':
+
+                print('IN order_all')
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                res_arr = ''
+
+                for its in uids:
+
+                    uid = its[0]
+                    bus_name = its[1]
+                    query = """
+                            SELECT purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                            FROM sf.purchases, sf.payments,
+                                 JSON_TABLE(items, '$[*]' COLUMNS (
+                                            img VARCHAR(255)  PATH '$.img',
+                                            description VARCHAR(255)  PATH '$.description',
+                                            qty VARCHAR(255)  PATH '$.qty',
+                                            name VARCHAR(255)  PATH '$.name',
+                                            price VARCHAR(255)  PATH '$.price',
+                                            item_uid VARCHAR(255)  PATH '$.item_uid',
+                                            itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                                 ) AS deconstruct
+                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                            """
+
+                    items = execute(query, 'get', conn)
+
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+                    else:
+
+                        items['message'] = 'Report data successful'
+                        items['code'] = 200
+                        result = items['result']
+                        dict = {}
+                        for vals in result:
+                            if vals['purchase_uid'] in dict:
+                                dict[vals['purchase_uid']].append(vals)
+                            else:
+                                dict[vals['purchase_uid']] = [vals]
+
+                        data = []
+
+                        for key, vals in dict.items():
+
+                            tmp = vals[0]
+                            print('tmp----', tmp)
+                            data.append([tmp['purchase_date'],
+                                         tmp['delivery_first_name'],
+                                         tmp['delivery_last_name'],
+                                         tmp['delivery_phone_num'],
+                                         tmp['delivery_email'],
+                                         tmp['delivery_address'],
+                                         tmp['delivery_unit'],
+                                         tmp['delivery_city'],
+                                         tmp['delivery_state'],
+                                         tmp['delivery_zip'],
+                                         tmp['amount_paid']
+                                         ])
+                            for items in vals:
+                                data.append([items['name'],
+                                            items['qty'],
+                                            items['price']
+                                            ])
+
+
+                        si = io.StringIO()
+                        cw = csv.writer(si)
+                        cw.writerow([bus_name])
+
+                        if data == []:
+                            cw.writerow(['NONE'])
+                        else:
+                            for item in data:
+                                cw.writerow(item)
+
+                        orders = si.getvalue()
+                        res_arr += orders + "\n"
+
+                output = make_response(res_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=order_details_all_"+date+".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
             else:
                 return "choose correct option"
         except:
@@ -4572,6 +4763,7 @@ class farmer_revenue_inventory_report(Resource):
 
             if report == 'summary':
                 glob_rev = 0
+                glob_qty = 0
                 cw.writerow(['Item', 'Quantity', 'Revenue'])
                 for key, vals in itm_dict.items():
                     print(key)
@@ -4584,12 +4776,13 @@ class farmer_revenue_inventory_report(Resource):
                             itm_rev += vals['total_qty']*vals['business_price']
                     cw.writerow([key, itm_qty, itm_rev])
                     glob_rev += itm_rev
+                    glob_qty += itm_qty
 
-                cw.writerow(['TOTAL REVENUE', glob_rev])
+                cw.writerow(['TOTAL', glob_qty,glob_rev])
                 orders = si.getvalue()
 
                 ###
-
+                print(orders)
                 query = """
                         SELECT business_email from sf.businesses WHERE business_uid = \'""" + data['uid'] + """\';
                         """
@@ -4691,7 +4884,7 @@ class drivers_report_check_sort(Resource):
             query = """
                     SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name, bus.business_name
                     FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm, sf.businesses as bus
-                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid;;
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid;
                     """
             items = execute(query, 'get', conn)
 
@@ -4709,7 +4902,7 @@ class drivers_report_check_sort(Resource):
                     address = vals['delivery_address'] + " " +vals['delivery_unit'] + " " + vals['delivery_zip']
 
                     if address not in sg_ord:
-                        sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name']]
+                        sg_ord[address] = [1, vals['delivery_phone_num'], vals['delivery_email'], vals['delivery_first_name'] + " " + vals['delivery_last_name'], vals['item_name'], vals['delivery_instructions']]
                         sg_ord_itm[address] = [[(vals['item_name']+"_"+vals['business_name']),vals['qty']]]
                     else:
                         sg_ord[address].append((vals['item_name']+"_"+vals['business_name']))
@@ -4741,6 +4934,7 @@ class drivers_report_check_sort(Resource):
 
 
                 emails = [vals[2] for it, vals in sg_ord.items()]
+                del_instruct = [vals[5] for it, vals in sg_ord.items()]
                 phones = [vals[1] for it, vals in sg_ord.items()]
                 tot_ord = [vals[0] for it, vals in sg_ord.items()]
                 cust_names = [vals[3] for it, vals in sg_ord.items()]
@@ -4760,6 +4954,7 @@ class drivers_report_check_sort(Resource):
 
                 print(type(sg_ord))
                 cw.writerow([' '] + ['Address'] + list(sg_ord.keys()))
+                cw.writerow([' '] + ['Delivery Instructions'] + del_instruct)
 
 
                 print('IN#')
@@ -4806,12 +5001,12 @@ class drivers_report_check_sort(Resource):
 
             elif report == "sorting":
                 uni_dict = {}
+                print("in SORTING")
                 for vals in items['result']:
 
                     address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_zip']
                     name = vals['delivery_first_name'] + "_" + vals['delivery_last_name']
                     address = name + "--" + address
-                    print('NAME---', name)
                     if vals['business_name'] not in uni_dict:
                         #check business
                         uni_dict[vals['business_name']] = {address:{vals['item_name']:float(vals['qty'])}}
@@ -4830,7 +5025,9 @@ class drivers_report_check_sort(Resource):
                 cw = csv.writer(si)
                 cw.writerow(['Driver Sorting Report'])
                 print(uni_dict)
+
                 print("start")
+                """
                 for key, vals in uni_dict.items():
                     bus_itm = []
                     cw.writerow([])
@@ -4860,6 +5057,75 @@ class drivers_report_check_sort(Resource):
                             else:
                                 res.append(' ')
                         cw.writerow(res)
+
+                """
+
+                #### New requirements--
+                res_dict = {}
+                for key, vals in uni_dict.items():
+                    bus_itm = []
+                    cw.writerow([])
+                    cw.writerow([key])
+                    res_dict[key] = {}
+                    for add_key, add_val in vals.items():
+                        bus_itm.append(list(add_val.keys()))
+                    bus_itm = [item for sublist in bus_itm for item in sublist]
+                    print(bus_itm)
+                    bus_itm = list(set(bus_itm))
+                    bus_itm = sorted(bus_itm)
+                    cw.writerow(bus_itm)
+                    for add_key, add_val in vals.items():
+                        print('SHOWKEY', add_key)
+                        print(add_val)
+                        res = []
+                        address_items = list(add_val.keys())
+                        for z_itm in bus_itm:
+
+                            if z_itm in address_items:
+                                address_print = str(add_key).split("--")
+                                address_name = str(address_print[0]).split("_")[0]
+                                address_first_digit = str(address_print[1]).split(" ")[0]
+
+                                res.append(str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit))
+
+                                if z_itm not in res_dict[key]:
+                                    res_dict[key][z_itm] = [str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit)]
+                                    print('RESSSSS----IF')
+                                else:
+                                    res_dict[key][z_itm].append(str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit))
+                                    print('RESSSSS----ELSE')
+
+
+                    #update report
+                    inter_dict = res_dict[key]
+                    print('INTER', inter_dict)
+
+                    arr = [vals for keys, vals in sorted(inter_dict.items())]
+                    print('ARRR',arr)
+                    max = 0
+                    for vals in arr:
+                        if max < len(vals):
+                            max = len(vals)
+
+                    for i in range(max):
+                        wrt_arr = []
+                        for vals in arr:
+                            if i < len(vals):
+                                wrt_arr.append(vals[i])
+                            else:
+                                wrt_arr.append(" ")
+                        cw.writerow(wrt_arr)
+
+
+
+
+
+                print('RESSSSS----', res_dict)
+                #return res_dict
+
+
+
+                ########
 
 
 
