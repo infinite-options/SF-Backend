@@ -2099,16 +2099,28 @@ class business_delivery_details(Resource):
         items = {}
         try:
             conn = connect()
-            query = """
-                    SELECT zone_uid, area, zone, zone_name, z_businesses, z_delivery_day, z_delivery_time, service_fee, delivery_fee, tax_rate, business_uid, z_id
-                     FROM sf.zones AS z,
-                     json_table(z_businesses, '$[*]'
-                         COLUMNS (
-                                z_id FOR ORDINALITY,
-                                business_uid VARCHAR(255) PATH '$')
-                                             ) as zjt
-                    WHERE business_uid = \'""" + id + """\';
+            if id == 'all':
+                query = """
+                        SELECT zone_uid, area, zone, zone_name, z_businesses, z_delivery_day, z_delivery_time, service_fee, delivery_fee, tax_rate, business_uid, z_id
+                         FROM sf.zones AS z,
+                         json_table(z_businesses, '$[*]'
+                             COLUMNS (
+                                    z_id FOR ORDINALITY,
+                                    business_uid VARCHAR(255) PATH '$')
+                                                 ) as zjt
                     """
+            else:
+                query = """
+                        SELECT zone_uid, area, zone, zone_name, z_businesses, z_delivery_day, z_delivery_time, service_fee, delivery_fee, tax_rate, business_uid, z_id
+                         FROM sf.zones AS z,
+                         json_table(z_businesses, '$[*]'
+                             COLUMNS (
+                                    z_id FOR ORDINALITY,
+                                    business_uid VARCHAR(255) PATH '$')
+                                                 ) as zjt
+                        WHERE business_uid = \'""" + id + """\';
+                    """
+
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
@@ -4879,11 +4891,211 @@ class farmer_revenue_inventory_report(Resource):
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report - " + data['delivery_date'] + ".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
-            elif report == 'customer':
 
-                for key, vals in cust_dict.items():
-                    rr = []
+            else:
+                return 'choose correct report'
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+class farmer_revenue_inventory_report_all(Resource):
+
+    def post(self, report):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+
+            if report == 'summary':
+
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                summ_arr = ''
+                for its in uids:
+
+                    uid = its[0]
+
+                    query = """
+                            SELECT business_name FROM sf.businesses
+                            WHERE business_uid = \'""" + uid + """\';
+                            """
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = "Business UID doesn't exsist"
+                        return items
+                    print(items)
+                    business_name = items['result'][0]['business_name']
+                    print(business_name)
+                    query = """
+                            SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
+                            FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                            """
+                    print(query)
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+
+                    result = items['result']
+                    print('RESULT-----', result, type(result))
+                    if not len(result):
+                        continue
+
+                    itm_dict = {}
+                    cust_dict = {}
+                    for vals in result:
+                        if vals['name'] in itm_dict:
+                            itm_dict[vals['name']][0] += int(vals['total_qty'])
+                        else:
+                            itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+                    print('dict------', itm_dict)
+
+                    for vals in result:
+                        unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
+                        print(unq)
+                        if unq in itm_dict:
+                            cust_dict[unq][0] += int(vals['total_qty'])
+                        else:
+                            cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+
+                    print('cust_dict------', cust_dict)
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    cw.writerow([business_name])
+                    cw.writerow([])
+                    itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+                    glob_rev = 0
+                    glob_qty = 0
+                    cw.writerow(['Item', 'Quantity', 'Revenue'])
+                    for key, vals in itm_dict.items():
+                        print(key)
+                        itm_rev = 0
+                        itm_qty = 0
+                        rr = []
+                        for vals in result:
+                            if vals['name'] == key:
+                                itm_qty += vals['total_qty']
+                                itm_rev += vals['total_qty']*vals['business_price']
+                        cw.writerow([key, itm_qty, itm_rev])
+                        glob_rev += itm_rev
+                        glob_qty += itm_qty
+
+                    cw.writerow(['TOTAL', glob_qty,glob_rev])
+                    orders = si.getvalue()
+                    summ_arr += orders + "\n"
+
+                output = make_response(summ_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + data['delivery_date'] + ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+
+            elif report == 'packing':
+
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                inv_arr = ''
+                for its in uids:
+
+                    uid = its[0]
+
+                    query = """
+                            SELECT business_name FROM sf.businesses
+                            WHERE business_uid = \'""" + uid + """\';
+                            """
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = "Business UID doesn't exsist"
+                        return items
+                    print(items)
+                    business_name = items['result'][0]['business_name']
+                    query = """
+                            SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
+                            FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                            """
+                    print(query)
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+
+                    result = items['result']
+
+                    if not len(result):
+                        continue
+
+                    itm_dict = {}
+                    cust_dict = {}
+                    for vals in result:
+                        if vals['name'] in itm_dict:
+                            itm_dict[vals['name']][0] += int(vals['total_qty'])
+                        else:
+                            itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+                    print('dict------', itm_dict)
+
+                    for vals in result:
+                        unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
+                        print(unq)
+                        if unq in itm_dict:
+                            cust_dict[unq][0] += int(vals['total_qty'])
+                        else:
+                            cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+
+                    print('cust_dict------', cust_dict)
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    cw.writerow([business_name])
+                    cw.writerow([])
+                    itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+
+                    for key, vals in itm_dict.items():
+                        print(key)
+                        rr = []
+                        for vals in result:
+                            if vals['name'] == key:
+                                rr.append(int(vals['total_qty']))
+                        rr.sort()
+                        rr.insert(0, key)
+                        cw.writerow(rr)
+
+                    orders = si.getvalue()
+                    inv_arr += orders + "\n"
+
+
+                output = make_response(inv_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Packing Report all farms - " + data['delivery_date'] + ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
 
             else:
                 return 'choose correct report'
@@ -5556,6 +5768,7 @@ api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<st
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
+api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>')
 api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 
 
