@@ -1341,11 +1341,13 @@ class createAccount(Resource):
             query = ["CALL sf.new_coupons_uid;"]
             couponIDresponse = execute(query[0], 'get', conn)
             couponID = couponIDresponse['result'][0]['new_id']
+            EndDate = date.today() + timedelta(days=30)
+            exp_time = str(EndDate) + " 00:00:00"
 
             query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', '0000-00-00 00:00:00', '1', 'Free Shipping', '0', 'F', \'""" + email + """\', 'null', '0');
+                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0');
                     """
             print(query)
             item = execute(query, 'post', conn)
