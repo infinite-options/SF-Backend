@@ -4219,6 +4219,8 @@ class report_order_customer_pivot_detail(Resource):
                     items['code'] = 200
                     result = items['result']
                     dict = {}
+
+                    bus_name = result[0]['business_name']
                     for vals in result:
                         if vals['purchase_uid'] in dict:
                             dict[vals['purchase_uid']].append(vals)
@@ -4258,12 +4260,12 @@ class report_order_customer_pivot_detail(Resource):
 
                     orders = si.getvalue()
                     output = make_response(orders)
-                    output.headers["Content-Disposition"] = "attachment; filename=order_details_"+date+".csv"
+                    output.headers["Content-Disposition"] = "attachment; filename="+bus_name+"_order_details_"+date+".csv"
                     output.headers["Content-type"] = "text/csv"
                     return output
             elif report == 'customer':
                 query = """
-                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, sum(price) as Amount
+                        SELECT pur_customer_uid, purchase_uid, purchase_date, delivery_first_name, delivery_last_name, delivery_phone_num, delivery_email, delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, deconstruct.*, amount_paid, start_delivery_date, sum(price) as Amount, (SELECT business_name from sf.businesses WHERE business_uid = itm_business_uid) AS business_name
                         FROM sf.purchases, sf.payments,
                              JSON_TABLE(items, '$[*]' COLUMNS (
                                         img VARCHAR(255)  PATH '$.img',
@@ -4290,7 +4292,7 @@ class report_order_customer_pivot_detail(Resource):
                     result = items['result']
                     print('result------', result)
                     data = []
-
+                    bus_name = result[0]['business_name']
                     for vals in result:
 
                         tmp = vals
@@ -4314,7 +4316,7 @@ class report_order_customer_pivot_detail(Resource):
 
                     orders = si.getvalue()
                     output = make_response(orders)
-                    output.headers["Content-Disposition"] = "attachment; filename=customer_details_"+date+".csv"
+                    output.headers["Content-Disposition"] = "attachment; filename="+bus_name+"_customer_details_"+date+".csv"
                     output.headers["Content-type"] = "text/csv"
                     return output
             elif report == 'pivot':
@@ -4344,6 +4346,8 @@ class report_order_customer_pivot_detail(Resource):
                     items['code'] = 200
                     result = items['result']
                     itm_dict = {}
+
+                    bus_name = result[0]['business_name']
                     for vals in result:
                         if vals['name'] in itm_dict:
                             itm_dict[vals['name']] += int(vals['qty'])
@@ -4408,7 +4412,7 @@ class report_order_customer_pivot_detail(Resource):
 
                     orders = si.getvalue()
                     output = make_response(orders)
-                    output.headers["Content-Disposition"] = "attachment; filename=pivot_table_"+date+".csv"
+                    output.headers["Content-Disposition"] = "attachment; filename="+bus_name+"_pivot_table_"+date+".csv"
                     output.headers["Content-type"] = "text/csv"
                     return output
             elif report == 'pivot_all':
@@ -5205,7 +5209,7 @@ class drivers_report_check_sort(Resource):
                                     print('ARRRR', arr)
 
                         if flag == 'False':
-                            arr.append(0.0)
+                            arr.append('')
                     name = key.split("_")
 
                     if name[1] in ans:
