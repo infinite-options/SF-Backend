@@ -2628,6 +2628,8 @@ class get_Fee_Tax(Resource):
                 return items
             items['result'] = items['result'][0]
             return items
+
+
         except:
                 print("Error happened while getting taxes")
                 raise BadRequest('Request failed, please try again later.')
@@ -4185,6 +4187,108 @@ class profits_reports(Resource):
 
 
 #-- End Analytics
+
+
+class update_zones(Resource):
+
+    def post(self, action):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            if action == 'create':
+
+                get_uid = "CALL sf.new_zone_uid();"
+                items = execute(get_uid, 'get', conn)
+                if items['code'] != 280:
+                    items['message'] = 'check sql query for getting zone uid'
+                    return items
+                print(items)
+                uid = items['result'][0]['new_id']
+                print(uid)
+                z_businesses = str(data['z_businesses'])
+                z_businesses = "'" + z_businesses.replace("'", "\"") + "'"
+                query = """
+                        INSERT INTO sf.zones 
+                        (zone_uid, z_business_uid, area, zone, zone_name, z_businesses, z_delivery_day, z_delivery_time, z_accepting_day, z_accepting_time, service_fee, delivery_fee, tax_rate, LB_long, LB_lat, LT_long, LT_lat, RT_long, RT_lat, RB_long, RB_lat)
+                         VALUES(
+                         \'""" + uid + """\',
+                          \'""" + data['z_business_uid'] + """\',
+                          \'""" + data['area'] + """\',
+                           \'""" + data['zone'] + """\',
+                            \'""" + data['zone_name'] + """\',
+                            """ + z_businesses + """,
+                            \'""" + data['z_delivery_day'] + """\',
+                            \'""" + data['z_delivery_time'] + """\',
+                            \'""" + data['z_accepting_day'] + """\',
+                            \'""" + data['z_accepting_time'] + """\',
+                            \'""" + data['service_fee'] + """\',
+                            \'""" + data['delivery_fee'] + """\',
+                            \'""" + data['tax_rate'] + """\',
+                            \'""" + data['LB_long'] + """\',
+                            \'""" + data['LB_lat'] + """\',
+                            \'""" + data['LT_long'] + """\',
+                            \'""" + data['LT_lat'] + """\',
+                            \'""" + data['RT_long'] + """\',
+                            \'""" + data['RT_lat'] + """\',
+                            \'""" + data['RB_long'] + """\',
+                            \'""" + data['RB_lat'] + """\')
+                        """
+                print('QUERY--', query)
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = 'check sql query for creating zones'
+                return items
+
+            elif action == 'update':
+                z_businesses = str(data['z_businesses'])
+                z_businesses = "'" + z_businesses.replace("'", "\"") + "'"
+                query = """
+                        UPDATE sf.zones
+                        SET
+                        z_business_uid = \'""" + data['z_business_uid'] + """\',
+                        area = \'""" + data['area'] + """\',
+                        zone = \'""" + data['zone'] + """\',
+                        zone_name = \'""" + data['zone_name'] + """\',
+                        z_businesses = """ + z_businesses + """,
+                        z_delivery_day = \'""" + data['z_delivery_day'] + """\',
+                        z_delivery_time = \'""" + data['z_delivery_time'] + """\',
+                        z_accepting_day = \'""" + data['z_accepting_day'] + """\',
+                        z_accepting_time = \'""" + data['z_accepting_time'] + """\',
+                        service_fee = \'""" + data['service_fee'] + """\',
+                        delivery_fee = \'""" + data['delivery_fee'] + """\',
+                        tax_rate = \'""" + data['tax_rate'] + """\',
+                        LB_long = \'""" + data['LB_long'] + """\',
+                        LB_lat = \'""" + data['LB_lat'] + """\',
+                        LT_long = \'""" + data['LT_long'] + """\',
+                        LT_lat = \'""" + data['LT_lat'] + """\',
+                        RT_long = \'""" + data['RT_long'] + """\',
+                        RT_lat = \'""" + data['RT_lat'] + """\',
+                        RB_long = \'""" + data['RB_long'] + """\',
+                        RB_lat = \'""" + data['RB_lat'] + """\'
+                        WHERE zone_uid = \'""" + data['zone_uid'] + """\';
+                        """
+
+                print(query)
+
+                items = execute(query, 'post', conn)
+
+                print(items)
+
+                if items['code'] != 281:
+                    items['message'] = 'check sql query to update zones'
+                return items
+
+            else:
+                return 'choose correct option'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 class report_order_customer_pivot_detail(Resource):
 
@@ -5765,6 +5869,7 @@ api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
 api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
+api.add_resource(update_zones, '/api/v2/update_zones/<string:action>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
