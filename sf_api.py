@@ -4286,7 +4286,7 @@ class update_zones(Resource):
                         """
 
                 items = execute(query, 'get', conn)
-                if items['code'] != 281:
+                if items['code'] != 280:
                     items['message'] = 'check sql query for get request'
                 return items
 
