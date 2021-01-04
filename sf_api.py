@@ -4280,6 +4280,16 @@ class update_zones(Resource):
                     items['message'] = 'check sql query to update zones'
                 return items
 
+            elif action == 'get':
+                query = """
+                        SELECT * FROM sf.zones;
+                        """
+
+                items = execute(query, 'get', conn)
+                if items['code'] != 281:
+                    items['message'] = 'check sql query for get request'
+                return items
+
             else:
                 return 'choose correct option'
 
