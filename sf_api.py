@@ -2661,6 +2661,28 @@ class last_delivery_instruction(Resource):
             disconnect(conn)
             print('process completed')
 
+class update_order_rating(Resource):
+    def get(self, uid, score):
+        try:
+            conn = connect()
+            query = """
+                    UPDATE sf.purchases
+                    SET feedback_rating = \'""" + score + """\'
+                    WHERE purchase_uid = \'""" + uid + """\'
+                    """
+            items = execute(query, 'post', conn)
+
+            if items['code'] != 281:
+                items['message'] = 'check sql query'
+            return items
+        except:
+                print("Error happened while updating order rating")
+                raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+            print('process completed')
+
+
 
 
 
@@ -5600,9 +5622,12 @@ class Send_Twilio_SMS(Resource):
         if not message:
             raise BadRequest('Request failed. Please provide the message field.')
         print('IN SMS----')
-        print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        print(numbers)
+        numbers = list(set(numbers.split(',')))
+        print(numbers)
+        #print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
-        for destination in numbers.split(','):
+        for destination in numbers:
             client.messages.create(
                 body = message,
                 from_= '+19254815757',
@@ -5852,6 +5877,7 @@ api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(last_delivery_instruction, '/api/v2/last_delivery_instruction/<string:uid>')
+api.add_resource(update_order_rating, '/api/v2/update_order_rating/<string:uid>,<string:score>')
 api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
