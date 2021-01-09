@@ -14,6 +14,7 @@
 #pip3 install boto3
 #pip3 install stripe
 #pip3 install bs4
+#pip3 install shapely
 
 import os
 import uuid
@@ -62,6 +63,10 @@ from dateutil.relativedelta import *
 from decimal import Decimal
 from datetime import datetime, date, timedelta
 from hashlib import sha512
+
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
+
 from math import ceil
 import string
 import random
@@ -2132,6 +2137,21 @@ class business_delivery_details(Resource):
         finally:
             disconnect(conn)
 
+class test_cat(Resource):
+    def get(selfself, long, lat):
+        try:
+            conn = connect()
+
+            query = """
+                    
+                    """
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 class categoricalOptions(Resource):
     def get(self, long, lat):
         response = {}
@@ -2139,7 +2159,8 @@ class categoricalOptions(Resource):
 
         try:
             conn = connect()
-
+            print('IN')
+            '''
             # query for businesses serving in customer's zone
             query = """
                     SELECT zone
@@ -2164,13 +2185,45 @@ class categoricalOptions(Resource):
                     WHERE In_Zone = 'True'
                     ;
                     """
+                
             items = execute(query, 'get', conn)
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-            zones = ['Random', 'Random']
+            print(items)
             for vals in items['result']:
                 zones.append(vals['zone'])
+            '''
+            print('START')
+            zones = ['Random', 'Random']
+            query = """
+                    SELECT * from sf.zones;
+                  """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            for vals in items['result']:
+                LT_long = vals['LT_long']
+                LT_lat = vals['LT_lat']
+                LB_long = vals['LB_long']
+                LB_lat = vals['LB_lat']
+                RT_long = vals['RT_long']
+                RT_lat = vals['RT_lat']
+                RB_long = vals['RB_long']
+                RB_lat = vals['RB_lat']
+
+
+                point = Point(float(long),float(lat))
+                polygon = Polygon([(LB_long, LB_lat), (LT_long, LT_lat), (RT_long, RT_lat), (RB_long, RB_lat)])
+                res = polygon.contains(point)
+                print(res)
+
+                if res:
+                    zones.append(vals['zone'])
+
+
             print('ZONES-----', zones)
             query = """
                     SELECT      
@@ -4884,7 +4937,7 @@ class farmer_revenue_inventory_report(Resource):
                     """
             items = execute(query, 'get', conn)
             if items['code'] != 280:
-                items['message'] = "Business UID doesn't exsist"
+                items['message'] = "Business UID doesn't exists"
                 return items
             print(items)
             business_name = items['result'][0]['business_name']
@@ -5072,7 +5125,7 @@ class farmer_revenue_inventory_report_all(Resource):
                             """
                     items = execute(query, 'get', conn)
                     if items['code'] != 280:
-                        items['message'] = "Business UID doesn't exsist"
+                        items['message'] = "Business UID doesn't exists"
                         return items
                     print(items)
                     business_name = items['result'][0]['business_name']
