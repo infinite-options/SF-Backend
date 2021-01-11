@@ -2916,6 +2916,7 @@ class purchase_Data_SF(Resource):
                 items = execute(query, 'post', conn)
                 items['message'] = 'purchase, payments and coupons info updated'
                 items['code'] = 200
+                print('COUPONS----', items)
 
             ### SEND EMAIL
 
@@ -3572,7 +3573,7 @@ class orders_info(Resource):
             conn = connect()
 
             query = """
-                    SELECT pur.*, pay.amount_due, pay.amount_paid  
+                    SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
                     FROM sf.purchases as pur, sf.payments as pay
                     WHERE pur.purchase_uid = pay.pay_purchase_uid;
                     """
@@ -5515,7 +5516,6 @@ class drivers_report_check_sort(Resource):
                                     res_dict[key][z_itm].append(str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit))
                                     print('RESSSSS----ELSE')
 
-
                     #update report
                     inter_dict = res_dict[key]
                     print('INTER', inter_dict)
@@ -5536,19 +5536,10 @@ class drivers_report_check_sort(Resource):
                                 wrt_arr.append(" ")
                         cw.writerow(wrt_arr)
 
-
-
-
-
                 print('RESSSSS----', res_dict)
                 #return res_dict
 
-
-
                 ########
-
-
-
                 orders = si.getvalue()
                 output = make_response(orders)
                 output.headers["Content-Disposition"] = "attachment; filename=driver_report_sorting_" + date + ".csv"
@@ -5564,6 +5555,45 @@ class drivers_report_check_sort(Resource):
         finally:
             disconnect(conn)
 
+
+class getAllItem(Resource):
+
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT * from sf.items
+                    ORDER BY item_name;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = "check sql query"
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+class getBusinessItems(Resource):
+
+    def get(self, name):
+        try:
+            conn = connect()
+            query = """
+                    SELECT * from sf.items
+                    WHERE item_name = \'""" + name + """\';
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = "check sql query"
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -5963,6 +5993,8 @@ api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_custo
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
 api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
+api.add_resource(getAllItem, '/api/v2/getAllItem')
+api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
 
 
 # Notification Endpoints
