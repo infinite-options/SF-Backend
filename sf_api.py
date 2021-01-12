@@ -2778,6 +2778,8 @@ class purchase_Data_SF(Resource):
             delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
             purchase_notes = data['purchase_notes']
 
+            isCopy = data['isCopy'] if data.get('isCopy') is not None or "" else "False"
+
 
             print('in insert-------')
 
@@ -2918,6 +2920,15 @@ class purchase_Data_SF(Resource):
                 items['code'] = 200
                 print('COUPONS----', items)
 
+
+
+            ## don't send email if we are copying order
+            print("isCopy---------------",isCopy)
+            if isCopy != "False":
+                print("In no email")
+                return items
+
+
             ### SEND EMAIL
 
 
@@ -2981,7 +2992,7 @@ class purchase_Data_SF(Resource):
 
             print('OuTTT')
 
-            """ Carlos and jeremy needs to implement new variables
+            #""" Carlos and jeremy needs to implement new variables
             
             end_str = "<tr>"\
                         "<td></td>"\
@@ -3030,8 +3041,9 @@ class purchase_Data_SF(Resource):
                       "Email support@servingfresh.me if you run into any problems or have any questions." + "<br>"\
                        "Thx - The Serving Fresh Team" + "<br><br>"\
                       "</body></html>"
-            """
+            #"""
 
+            """
             end_str = "<tr>"\
                         "<td></td>"\
                         "<td></td>"\
@@ -3042,6 +3054,7 @@ class purchase_Data_SF(Resource):
                       "Email support@servingfresh.me if you run into any problems or have any questions." + "<br>"\
                        "Thx - The Serving Fresh Team" + "<br><br>"\
                       "</body></html>"
+            """
             arr += end_str
             msg.html = arr
             print('msg-bd----', msg.body)
@@ -5584,7 +5597,8 @@ class getBusinessItems(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT * from sf.items
+                    SELECT itm.*, bus.business_name 
+                    FROM sf.items as itm, sf.businesses as bus
                     WHERE item_name = \'""" + name + """\';
                     """
             items = execute(query, 'get', conn)
@@ -5760,7 +5774,7 @@ class Send_Notification(Resource):
     def post(self, role):
 
         def deconstruct(uids, role):
-
+            print('IN decon')
             conn = connect()
             uids_array = uids.split(',')
             output = []
@@ -5789,6 +5803,7 @@ class Send_Notification(Resource):
                     json_val = items['result'][0]['bus_guid_device_id_notification']
 
                 if json_val != 'null':
+                    print("in deconstruct")
                     print(type(json_val))
                     print(json_val)
                     input_val = json.loads(json_val)
@@ -5807,8 +5822,10 @@ class Send_Notification(Resource):
             print('output-----', output)
             return output
         print('IN---')
+
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
-        print(hub)
+
+        
         print('role----', role)
         uids = request.form.get('uids')
         message = request.form.get('message')
@@ -5816,6 +5833,7 @@ class Send_Notification(Resource):
         print('role', role)
         tags = deconstruct(uids, role)
         print('tags-----', tags)
+
         if tags == []:
             return 'No GUIDs found for the UIDs provided'
         #tags = uids
@@ -5824,6 +5842,9 @@ class Send_Notification(Resource):
         if message is None:
             raise BadRequest('Request failed. Please provide the message field.')
         tags = tags.split(',')
+        tags = list(set(tags))
+        print('tags11-----', tags)
+        print('RESULT-----',tags)
         for tag in tags:
             print('tag-----', tag)
             print(type(tag))
