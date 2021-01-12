@@ -5599,7 +5599,7 @@ class getBusinessItems(Resource):
             query = """
                     SELECT itm.*, bus.business_name 
                     FROM sf.items as itm, sf.businesses as bus
-                    WHERE item_name = \'""" + name + """\';
+                    WHERE item_name = \'""" + name + """\' and bus.business_uid = itm.itm_business_uid;
                     """
             items = execute(query, 'get', conn)
 
@@ -5825,7 +5825,7 @@ class Send_Notification(Resource):
 
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
 
-        
+
         print('role----', role)
         uids = request.form.get('uids')
         message = request.form.get('message')
