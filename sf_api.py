@@ -5562,7 +5562,9 @@ class getAllItem(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT * from sf.items
+                    SELECT itm.*, bus.business_name 
+                    FROM sf.items as itm, sf.businesses as bus
+                    WHERE itm.itm_business_uid = bus.business_uid
                     ORDER BY item_name;
                     """
             items = execute(query, 'get', conn)
@@ -5594,6 +5596,33 @@ class getBusinessItems(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+class updateOrder(Resource):
+
+    def get(self, date):
+
+        try:
+            conn = connect()
+
+            query = """
+                    SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
+                    FROM sf.purchases as pur, sf.payments as pay
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\';;
+                    """
+            items = execute(query, 'get', conn)
+            if items['code'] == 280:
+                items['message'] = 'Orders view loaded successful'
+                items['code'] = 200
+            else:
+                items['message'] = 'Check sql query'
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -5995,6 +6024,7 @@ api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_in
 api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 api.add_resource(getAllItem, '/api/v2/getAllItem')
 api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
+api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 
 
 # Notification Endpoints
