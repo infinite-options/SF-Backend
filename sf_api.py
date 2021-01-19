@@ -2491,179 +2491,6 @@ class available_Coupons(Resource):
         finally:
             disconnect(conn)
 
-class purchase(Resource):
-    def post(self):
-            response = {}
-            items = {}
-            try:
-                conn = connect()
-                data = request.get_json(force=True)
-
-                query = "CALL sf.new_purchase_uid"
-                newPurchaseUID_query = execute(query, 'get', conn)
-                newPurchaseUID = newPurchaseUID_query['result'][0]['new_id']
-
-                purchase_uid = newPurchaseUID
-                purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-                purchase_id = purchase_uid
-                purchase_status = 'ACTIVE'
-                pur_customer_uid = data['pur_customer_uid']
-                pur_business_uid = data['pur_business_uid']
-                items_pur = data['items']
-                order_instructions = data['order_instructions']
-                delivery_instructions = data['delivery_instructions']
-                order_type = data['order_type']
-                delivery_first_name = data['delivery_first_name']
-                delivery_last_name = data['delivery_last_name']
-                delivery_phone_num = data['delivery_phone_num']
-                delivery_email = data['delivery_email']
-                delivery_address = data['delivery_address']
-                delivery_unit = data['delivery_unit']
-                delivery_city = data['delivery_city']
-                delivery_state = data['delivery_state']
-                delivery_zip = data['delivery_zip']
-                delivery_latitude = data['delivery_latitude']
-                delivery_longitude = data['delivery_longitude']
-                purchase_notes = data['purchase_notes']
-
-                query = "SELECT * FROM sf.customers " \
-                        "WHERE customer_email =\'"+delivery_email+"\';"
-
-                items = execute(query, 'get', conn)
-
-                print('ITEMS--------------', items)
-
-                if not items['result']:
-                    items['code'] = 404
-                    items['message'] = "User email doesn't exists"
-                    return items
-
-                print('in insert-------')
-
-                query_insert = """ 
-                                    INSERT INTO sf.purchases
-                                    SET
-                                    purchase_uid = \'""" + newPurchaseUID + """\',
-                                    purchase_date = \'""" + purchase_date + """\',
-                                    purchase_id = \'""" + purchase_id + """\',
-                                    purchase_status = \'""" + purchase_status + """\',
-                                    pur_customer_uid = \'""" + pur_customer_uid + """\',
-                                    pur_business_uid = \'""" + pur_business_uid + """\',
-                                    items = \'""" + items_pur + """\',
-                                    order_instructions = \'""" + order_instructions + """\',
-                                    delivery_instructions = \'""" + delivery_instructions + """\',
-                                    order_type = \'""" + order_type + """\',
-                                    delivery_first_name = \'""" + delivery_first_name + """\',
-                                    delivery_last_name = \'""" + delivery_last_name + """\',
-                                    delivery_phone_num = \'""" + delivery_phone_num + """\',
-                                    delivery_email = \'""" + delivery_email + """\',
-                                    delivery_address = \'""" + delivery_address + """\',
-                                    delivery_unit = \'""" + delivery_unit + """\',
-                                    delivery_city = \'""" + delivery_city + """\',
-                                    delivery_state = \'""" + delivery_state + """\',
-                                    delivery_zip = \'""" + delivery_zip + """\',
-                                    delivery_latitude = \'""" + delivery_latitude + """\',
-                                    delivery_longitude = \'""" + delivery_longitude + """\',
-                                    purchase_notes = \'""" + purchase_notes + """\';
-                                """
-
-
-                #print(query_insert)
-                items = execute(query_insert, 'post', conn)
-
-                print('execute')
-                if items['code'] == 281:
-                    items['code'] = 200
-                    items['message'] = 'Purchase info updated'
-
-                else:
-                    items['message'] = 'check sql query'
-                    items['code'] = 490
-
-                items['result'] = newPurchaseUID
-                return items
-
-            except:
-                print("Error happened while inserting in purchase table")
-
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
-
-
-class payment(Resource):
-    def post(self):
-            response = {}
-            item = {}
-            try:
-                conn = connect()
-                data = request.get_json(force=True)
-
-                query = "CALL sf.new_payment_uid"
-                newPaymentUID_query = execute(query, 'get', conn)
-                newPaymentUID = newPaymentUID_query['result'][0]['new_id']
-
-                payment_uid = newPaymentUID
-                payment_id = payment_uid
-                pay_purchase_uid = data['pay_purchase_uid']
-                pay_purchase_id = data['pay_purchase_id']
-                payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-                start_delivery_date = data['start_delivery_date']
-                pay_coupon_id = data['pay_coupon_id']
-                amount_due = data['amount_due']
-                amount_discount = data['amount_discount']
-                amount_paid = data['amount_paid']
-                info_is_Addon = data['info_is_Addon']
-                cc_num = data['cc_num']
-                cc_exp_date = data['cc_exp_date']
-                cc_cvv = data['cc_cvv']
-                cc_zip = data['cc_zip']
-                charge_id = data['charge_id']
-                payment_type = data['payment_type']
-                print(data)
-
-                query_insert = [""" 
-                                    INSERT INTO  sf.payments
-                                    SET
-                                    payment_uid = \'""" + payment_uid + """\',
-                                    payment_id = \'""" + payment_id + """\',
-                                    pay_purchase_uid = \'""" + pay_purchase_uid + """\',
-                                    pay_purchase_id = \'""" + pay_purchase_id + """\',
-                                    payment_time_stamp = \'""" + payment_time_stamp + """\',
-                                    start_delivery_date = \'""" + start_delivery_date + """\',
-                                    pay_coupon_id = \'""" + pay_coupon_id + """\',
-                                    amount_due = \'""" + amount_due + """\',
-                                    amount_discount = \'""" + amount_discount + """\',
-                                    amount_paid = \'""" + amount_paid + """\',
-                                    info_is_Addon = \'""" + info_is_Addon + """\',
-                                    cc_num = \'""" + cc_num + """\',
-                                    cc_exp_date = \'""" + cc_exp_date + """\',
-                                    cc_cvv = \'""" + cc_cvv + """\',
-                                    cc_zip = \'""" + cc_zip + """\',
-                                    charge_id = \'""" + charge_id + """\',
-                                    payment_type = \'""" + payment_type + """\';
-                                    
-                                """]
-
-
-                print(query_insert)
-                item = execute(query_insert[0], 'post', conn)
-
-                if item['code'] == 281:
-                    item['code'] = 200
-                    item['message'] = 'Payment info updated'
-                else:
-                    item['message'] = 'check sql query'
-                    item['code'] = 490
-
-                return item
-
-            except:
-                print("Error happened while inserting in payments table")
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
-                print('process completed')
 
 
 class get_Fee_Tax(Resource):
@@ -3982,7 +3809,7 @@ class admin_report(Resource):
     def get(self, uid):
 
         try:
-            conn = connect()
+            conn = connect
             if uid == 'all':
                 query = """
                     SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
@@ -4408,7 +4235,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                         """
 
                 items = execute(query, 'get', conn)
@@ -4479,7 +4306,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\'
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE'
                         GROUP BY pur_customer_uid;
                         """
 
@@ -4535,7 +4362,7 @@ class report_order_customer_pivot_detail(Resource):
                                         item_uid VARCHAR(255)  PATH '$.item_uid',
                                         itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                              ) AS deconstruct
-                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                        WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                         """
 
                 items = execute(query, 'get', conn)
@@ -4649,7 +4476,7 @@ class report_order_customer_pivot_detail(Resource):
                                             item_uid VARCHAR(255)  PATH '$.item_uid',
                                             itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                  ) AS deconstruct
-                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                             """
 
                     items = execute(query, 'get', conn)
@@ -4777,7 +4604,7 @@ class report_order_customer_pivot_detail(Resource):
                                             item_uid VARCHAR(255)  PATH '$.item_uid',
                                             itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                  ) AS deconstruct
-                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\'
+                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE'
                             GROUP BY pur_customer_uid;
                             """
 
@@ -4869,7 +4696,7 @@ class report_order_customer_pivot_detail(Resource):
                                             item_uid VARCHAR(255)  PATH '$.item_uid',
                                             itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                  ) AS deconstruct
-                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\';
+                            WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                             """
 
                     items = execute(query, 'get', conn)
@@ -4958,7 +4785,7 @@ class farmer_revenue_inventory_report(Resource):
             query = """
                     SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                     FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + data['uid'] + """\'
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + data['uid'] + """\' AND delivery_status = 'FALSE'
                     GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                     """
             print(query)
@@ -5147,7 +4974,7 @@ class farmer_revenue_inventory_report_all(Resource):
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\' AND delivery_status = 'FALSE'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
                     print(query)
@@ -5242,7 +5069,7 @@ class farmer_revenue_inventory_report_all(Resource):
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
-                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\' AND delivery_status = 'FALSE'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
                     print(query)
@@ -5318,7 +5145,7 @@ class drivers_report_check_sort(Resource):
             query = """
                     SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name, bus.business_name
                     FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm, sf.businesses as bus
-                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid;
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid AND delivery_status = 'FALSE'; 
                     """
             items = execute(query, 'get', conn)
 
