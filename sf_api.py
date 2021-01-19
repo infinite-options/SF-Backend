@@ -3899,6 +3899,7 @@ class admin_report_groupby(Resource):
                         """
 
             items = execute(query, 'get', conn)
+            print(items)
             if items['code'] == 280:
                 items['message'] = 'Report data successful'
                 items['code'] = 200
