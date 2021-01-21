@@ -4855,7 +4855,7 @@ class farmer_revenue_inventory_report(Resource):
                     return items
                 email = items['result'][0]['business_email']
                 print(email)
-
+                #finder
                 msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
 
                 #msg.body = "Click on the link {} to verify your email address.".format(link)
