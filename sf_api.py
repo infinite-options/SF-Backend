@@ -3412,6 +3412,9 @@ class orders_info(Resource):
         try:
             conn = connect()
 
+
+            print('IN orders')
+
             query = """
                     SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
                     FROM sf.purchases as pur, sf.payments as pay
@@ -3809,7 +3812,7 @@ class admin_report(Resource):
     def get(self, uid):
 
         try:
-            conn = connect
+            conn = connect()
             if uid == 'all':
                 query = """
                     SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
@@ -3827,6 +3830,7 @@ class admin_report(Resource):
                     ORDER BY purchase_date DESC;
                     """
             else:
+                print('in orders info')
                 query = """
                         SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
                         FROM sf.purchases, sf.items as itms, sf.payments, 
@@ -3842,7 +3846,7 @@ class admin_report(Resource):
                         WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                         ORDER BY purchase_date DESC;
                         """
-
+            print(query)
             items = execute(query, 'get', conn)
             if items['code'] == 280:
                 items['message'] = 'Report data successful'
@@ -4900,6 +4904,7 @@ class farmer_revenue_inventory_report(Resource):
                 print(email)
 
                 orders = si.getvalue()
+                print('Orders-------',orders)
 
                 ###
                 msg = Message(business_name + " Packing Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
@@ -5479,7 +5484,7 @@ class updateOrder(Resource):
 
 # -- NOTIFICATIONS Queries Start here -------------------------------------------------------------------------------
 
-class customer_info(Resource):
+class customer_info_business(Resource):
 
     def get(self):
 
@@ -5542,8 +5547,7 @@ class customer_info(Resource):
                     GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
 					RIGHT JOIN sf.customers AS custom
                     ON DS.c_uid = custom.customer_uid 
-                    WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON)
-                    ;
+                    WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON);
                     """
             items = execute(query, 'get', conn)
 
@@ -5561,6 +5565,96 @@ class customer_info(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+class customer_info(Resource):
+
+    def get(self):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT 
+                    custom.customer_uid,
+                    custom.customer_first_name,
+                    custom.customer_last_name,
+                    custom.customer_email,
+                    custom.customer_phone_num,
+                    custom.customer_address,
+                    custom.customer_unit,
+                    custom.customer_city,
+                    custom.customer_zip,
+                    custom.cust_notification_approval,
+                    custom.SMS_freq_preference,
+                    custom.SMS_last_notification,
+                    custom.cust_guid_device_id_notification,
+                    DS.business_name,
+                    DS.price,
+                    DS.itm_business_uid,
+                    DS.number_of_orders_business,
+                    DS.latest_order_date,
+                    SUM(number_of_orders_business) as number_of_orders
+                    FROM
+                        (SELECT  
+                        cust.customer_uid AS c_uid,
+                        cust.customer_first_name,
+                        cust.customer_last_name,
+                        cust.customer_email,
+                        cust.customer_phone_num,
+                        cust.customer_address,
+                        cust.customer_unit,
+                        cust.customer_city,
+                        cust.customer_zip,
+                        cust.customer_created_at,
+                        cust.cust_notification_approval,
+                        cust.SMS_freq_preference,
+                        cust.SMS_last_notification,
+                        cust.cust_guid_device_id_notification,
+                        pay.pay_purchase_uid,
+                        (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
+                        deconstruct.*,
+                        count(DISTINCT pay_purchase_uid) AS number_of_orders_business, 
+                        max(pay.payment_time_stamp) AS latest_order_date
+                                FROM sf.purchases , 
+                                     JSON_TABLE(items, '$[*]' COLUMNS (
+                                                img VARCHAR(255)  PATH '$.img',
+                                                description VARCHAR(255)  PATH '$.description',
+                                                qty VARCHAR(255)  PATH '$.qty',
+                                                name VARCHAR(255)  PATH '$.name',
+                                                price VARCHAR(255)  PATH '$.price',
+                                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+                                     ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
+                        WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid
+                        GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
+                    RIGHT JOIN sf.customers AS custom
+                    ON DS.c_uid = custom.customer_uid 
+                    WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON)
+                    GROUP BY customer_email;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] == 280:
+
+                items['message'] = 'Customer info Loaded successful'
+                items['code'] = 200
+                return items
+            else:
+                items['message'] = "check sql query"
+                items['code'] = 404
+                return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
+
+
 
 
 
@@ -5590,11 +5684,6 @@ class Send_Twilio_SMS(Resource):
         items['code'] = 200
         items['Message'] = 'SMS sent successfully to all recipients'
         return items
-
-
-
-
-
 
 
 class Send_Notification(Resource):
@@ -5800,6 +5889,113 @@ class Get_Tags_With_GUID_iOS(Resource):
         old_tags = appleregistrationdescription.tags.get_text().split(",")
         return old_tags
 
+
+class notifications(Resource):
+    def post(self, action):
+
+        conn = connect()
+
+        if action == 'get':
+            query = """
+                    SELECT * FROM sf.notifications;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+
+            return items
+
+        elif action == 'post':
+
+            content = request.form.get('content')
+            type = request.form.get('type')
+            uids = request.form.get('uids')
+            uids = str(uids)
+            uids = "'" + uids.replace("'", "\"") + "'"
+            query_id =  """
+                        CALL sf.new_notification_uid();
+                        """
+            items = execute(query_id, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query for id'
+                return items
+
+            id = items['result'][0]['new_id']
+
+            query = """
+                    INSERT INTO sf.notifications 
+                    (notification_uid, content, type, customer_uids) 
+                    VALUES 
+                    (\'""" + id + """\', \'""" + content + """\',\'""" + type + """\',""" + uids + """);
+                    """
+            print(query)
+            items = execute(query, 'post', conn)
+            if items['code'] != 281:
+                items['message'] = 'check sql query'
+
+            return items
+        else:
+            return 'choose correct option'
+
+
+class notification_groups(Resource):
+    def post(self, action):
+
+        conn = connect()
+
+        if action == 'get':
+            query = """
+                    SELECT * FROM sf.notification_groups;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+
+            return items
+
+        elif action == 'post':
+
+            name = request.form.get('name')
+            type = request.form.get('type')
+            uids = request.form.get('uids')
+            uids = str(uids)
+            uids = "'" + uids.replace("'", "\"") + "'"
+            query_id =  """
+                        CALL sf.new_notification_group_uid();
+                        """
+            items = execute(query_id, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query for id'
+                return items
+
+            id = items['result'][0]['new_id']
+
+            query = """
+                    INSERT INTO sf.notification_groups 
+                    (note_group_uid, name, type, customer_uids) 
+                    VALUES 
+                    (\'""" + id + """\', \'""" + name + """\',\'""" + type + """\',""" + uids + """);
+                    """
+            print(query)
+            items = execute(query, 'post', conn)
+            if items['code'] != 281:
+                items['message'] = 'check sql query'
+
+            return items
+        else:
+            return 'choose correct option'
+
+
+
+
+
+
+
+
+
+
 # -- NOTIFICATIONS Queries End here -------------------------------------------------------------------------------
 
 
@@ -5876,6 +6072,7 @@ api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 
 # Notification Endpoints
 
+api.add_resource(customer_info_business, '/api/v2/customer_info_business')
 api.add_resource(customer_info, '/api/v2/customer_info')
 api.add_resource(Send_Twilio_SMS, '/api/v2/Send_Twilio_SMS')
 api.add_resource(Send_Notification, '/api/v2/Send_Notification/<string:role>')
@@ -5883,6 +6080,8 @@ api.add_resource(Get_Registrations_From_Tag, '/api/v2/Get_Registrations_From_Tag
 api.add_resource(Update_Registration_With_GUID_iOS, '/api/v2/Update_Registration_With_GUID_iOS')
 api.add_resource(Update_Registration_With_GUID_Android, '/api/v2/Update_Registration_With_GUID_Android')
 api.add_resource(Get_Tags_With_GUID_iOS, '/api/v2/Get_Tags_With_GUID_iOS/<string:tag>')
+api.add_resource(notifications, '/api/v2/notifications/<string:action>')
+api.add_resource(notification_groups, '/api/v2/notification_groups/<string:action>')
 
 
 
