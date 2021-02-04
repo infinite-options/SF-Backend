@@ -50,6 +50,8 @@ TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 
 
+import atexit
+from apscheduler.schedulers.background import BackgroundScheduler
 
 
 
@@ -233,7 +235,7 @@ def serializeResponse(response):
                     row[key] = row[key].strftime("%Y-%m-%d")
                 elif type(row[key]) is datetime:
                     row[key] = row[key].strftime("%Y-%m-%d %H:%M:%S")
-        print("In Serialize JSON response", response)
+        #print("In Serialize JSON response", response)
         return response
     except:
         raise Exception("Bad query JSON")
@@ -1411,12 +1413,12 @@ class email_verification(Resource):
             link = url_for('confirm', token=token, hashed=password, _external=True)
             print('link---', link)
             #msg.body = "Click on the link {} to verify your email address.".format(link)
+            msg.body =  "Congratulations for signing up with ServingFresh.me!\n\n"\
+                        "Please click on the link below to be redirected to our website.\n"\
+                        "{}".format(link) + "\n\n"\
+                        "Email support@ServingFresh.me if you run into any problems or have any questions.\n"\
+                        "Thx - The Serving Fresh Team"
 
-            msg.body = "Congratulations for signing up with Serving Fresh!\n\n" \
-                       "Please click on the link below to be redirected to our website. " \
-                       "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
-                       "Thx - The Serving Fresh Team\n\n" \
-                       "{}".format(link)
 
             print('msg-bd----', msg.body)
             mail.send(msg)
@@ -2917,8 +2919,41 @@ class history(Resource):
                     WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
                     ORDER BY pur.purchase_date DESC; 
                     """
-
+            print(query)
             items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'Check sql query for history'
+                return items
+            print('res')
+
+            for i in range(len(items['result'])):
+
+
+                if items['result'][i]['pay_coupon_id']:
+                    print('IN',items['result'][i]['pay_coupon_id'])
+
+                    query_cp = """
+                                SELECT coupon_uid, coupon_id, notes
+                                FROM sf.coupons
+                                WHERE coupon_uid = \'""" + items['result'][i]['pay_coupon_id'] + """\';
+                               """
+                    print(query_cp)
+                    items_cp = execute(query_cp, 'get', conn)
+                    if items_cp['code'] != 280:
+                        items_cp['message'] = 'Check sql query for coupon'
+                        return items_cp
+
+                    print(items_cp)
+                    items['result'][i]['coupon_uid'] = items_cp['result'][0]['coupon_uid']
+                    items['result'][i]['coupon_id'] = items_cp['result'][0]['coupon_id']
+                    items['result'][i]['notes'] = items_cp['result'][0]['notes']
+
+                else:
+                    items['result'][i]['coupon_uid'] = ''
+                    items['result'][i]['coupon_id'] = ''
+                    items['result'][i]['notes'] = ''
+
 
             items['message'] = 'History Loaded successful'
             items['code'] = 200
@@ -5989,14 +6024,41 @@ class notification_groups(Resource):
 
 
 
-
-
-
-
-
-
-
 # -- NOTIFICATIONS Queries End here -------------------------------------------------------------------------------
+
+
+# -- CRON JOBS Start here -----------------------------------------------------------------------------------------------------
+
+def print_date_time():
+
+    try:
+
+        conn = connect()
+        query = """
+                UPDATE sf.coupons SET notes = \'""" + str(datetime.now()) + """\' WHERE (coupon_uid = '600-000100');
+                """
+        items = execute(query, 'post', conn)
+        if items['code'] != 281:
+            items['message'] = 'check sql query for coupons'
+        return items
+    except:
+        return 'error occured'
+
+    finally:
+        disconnect(conn)
+
+
+#scheduler = BackgroundScheduler()
+#scheduler.add_job(func=print_date_time, trigger="cron", day_of_week='fri', second=1, minute=3, hour=11)
+#scheduler.add_job(func=print_date_time, trigger="interval", seconds=15)
+
+#scheduler.start()
+
+# Shut down the scheduler when exiting the app
+#atexit.register(lambda: scheduler.shutdown())
+
+
+# -- CRON JOBS End here -----------------------------------------------------------------------------------------------------
 
 
 # Define API routes
