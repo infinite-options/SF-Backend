@@ -2028,6 +2028,7 @@ class update_guid_notification(Resource):
                     """
                 items = execute(query, 'get', conn)
                 json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
+                print('0', json_guid)
                 for i, vals in enumerate(json_guid):
                     print(i, vals)
                     if vals == None or vals == 'null':
@@ -2037,17 +2038,23 @@ class update_guid_notification(Resource):
                         json_guid[i]['notification'] = data['notification']
                         break
                 if json_guid[0] == None:
+                    print('none')
                     json_guid[0] = 'null'
 
+                print('1', json_guid)
                 guid = str(json_guid)
                 guid = guid.replace("'", '"')
+                print('2', guid)
                 print(guid)
+                guid = "[null," + guid[8:]
+                print('replace',guid)
                 query = """
                         UPDATE  sf.customers  
                         SET
                         cust_guid_device_id_notification = \'""" + guid + """\'
                         WHERE ( customer_uid  = '""" + data['uid'] + """' );
                         """
+                print(query)
                 items = execute(query, 'post', conn)
                 if items['code'] != 281:
                     items['message'] = 'guid not updated check sql query and data'
@@ -2078,6 +2085,7 @@ class update_guid_notification(Resource):
                 guid = str(json_guid)
                 guid = guid.replace("'", '"')
                 print(guid)
+                guid = "[null," + guid[8:]
                 query = """
                         UPDATE  sf.businesses
                         SET
