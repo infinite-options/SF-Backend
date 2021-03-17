@@ -50,10 +50,6 @@ TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
 
 
-import atexit
-from apscheduler.schedulers.background import BackgroundScheduler
-
-
 
 #  NEED TO SOLVE THIS
 from NotificationHub import Notification
@@ -2147,14 +2143,131 @@ class business_delivery_details(Resource):
         finally:
             disconnect(conn)
 
-class test_cat(Resource):
-    def get(selfself, long, lat):
-        try:
-            conn = connect()
+class brandAmbassador(Resource):
 
-            query = """
-                    
+    def post(self, action):
+        try:
+
+            data = request.get_json(force=True)
+            conn = connect()
+            if not data.get('amb_email'):
+                return 'Please enter ambassador email'
+            query_amb = """
+                    SELECT * FROM sf.coupons
+                    WHERE email_id = \'""" + data['amb_email'] + """\';
                     """
+            items_amb = execute(query_amb, 'get', conn)
+
+            if items_amb['code'] != 280:
+                items_amb['message'] = 'No data available for this ambassador email'
+                return items_amb
+
+            if action == 'create_ambassador':
+                
+                for vals in items_amb['result']:
+                    if vals['coupon_id'] == 'SFAmbassador':
+                        return 'Customer already a Ambassador'
+                
+                # all check done, now make the custoamer a ambassador and issue them a coupon
+
+                query = ["CALL sf.new_coupons_uid;"]
+                couponIDresponse = execute(query[0], 'get', conn)
+                couponID = couponIDresponse['result'][0]['new_id']
+                print('all checks done')
+                dateObject = datetime.now()
+
+                exp_date = dateObject.replace(year=dateObject.year + 5)
+                exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
+                query = """
+                INSERT INTO sf.coupons 
+                (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '5', \'""" + exp_date + """\', '2', 'SFAmbassador', '0', 'F', \'""" + data['amb_email'] + """\', 'null', '5');
+                """
+                print(query)
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = "check sql query"
+                    items['code'] = 400
+                    return items
+
+
+                items['message'] = 'SF Ambassdaor created'
+                items['code'] = 200
+                return items
+
+            elif action == 'generate_coupon':
+
+                # check if customer is already a ambassador because ambassador cannot refer himself or get referred
+                query_cust = """
+                    SELECT * FROM sf.coupons
+                    WHERE email_id = \'""" + data['cust_email'] + """\';
+                    """
+                items_cust = execute(query_cust, 'get', conn)
+                for vals in items_cust['result']:
+                    if vals['coupon_id'] == 'SFAmbassador':
+                        return 'Customer himself is an Ambassador'
+
+
+                flag = 0
+                # check if ambassador exists
+                for vals in items_amb['result']:
+                    if vals['coupon_id'] == 'SFAmbassador':
+                        flag = 1
+                
+                if flag == 0:
+                    return 'No such Ambassador email exists'
+                
+
+                cust_email = data['cust_email']
+
+                # customer can be referred only once so check that
+
+                flag = 0
+                for vals in items_cust['result']:
+                    if vals['coupon_id'] == 'Referral':
+                        flag = 1
+                
+                if flag == 1:
+                    return 'Customer has already been refered in past'
+
+
+                # generate coupon for refereed customer
+
+                query = ["CALL sf.new_coupons_uid;"]
+                couponIDresponse = execute(query[0], 'get', conn)
+                couponID = couponIDresponse['result'][0]['new_id']
+                
+                dateObject = datetime.now()
+                exp_date = dateObject.replace(year=dateObject.year + 1)
+                exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
+                query = """
+                INSERT INTO sf.coupons 
+                (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                VALUES ( \'""" + couponID + """\', 'Referral', 'TRUE', '0', '10', '5', \'""" + exp_date + """\', '2', 'Referral', '0', 'F', \'""" + cust_email + """\', 'null', '5');
+                """
+                print(query)
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = "check sql query"
+                    return items
+
+                # Now update ambasaddor coupon
+                print('updating amb')
+                query = """
+                        UPDATE sf.coupons SET limits = limits + 2 
+                        WHERE coupon_id = 'SFAmbassador' AND email_id = \'""" + data['amb_email'] + """\'
+                        """
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = "check sql query"
+                    return items
+                items['message'] = 'customer and ambassador coupons generated'
+                return items
+            
+            else:
+                return 'enter correct option'
+            
+            
 
 
         except:
@@ -2340,6 +2453,122 @@ class getItems(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+# new endpoint combining categorical options with getItems
+
+class ProduceByLocation(Resource):
+    def get(self, long, lat):
+        
+
+        try:
+            conn = connect()
+            print('IN')
+            zones = ['Random', 'Random']
+            query = """
+                    SELECT * from sf.zones;
+                  """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            for vals in items['result']:
+                LT_long = vals['LT_long']
+                LT_lat = vals['LT_lat']
+                LB_long = vals['LB_long']
+                LB_lat = vals['LB_lat']
+                RT_long = vals['RT_long']
+                RT_lat = vals['RT_lat']
+                RB_long = vals['RB_long']
+                RB_lat = vals['RB_lat']
+
+
+                point = Point(float(long),float(lat))
+                polygon = Polygon([(LB_long, LB_lat), (LT_long, LT_lat), (RT_long, RT_lat), (RB_long, RB_lat)])
+                res = polygon.contains(point)
+                print(res)
+
+                if res:
+                    zones.append(vals['zone'])
+
+
+            print('ZONES-----', zones)
+            query = """
+                    SELECT      
+                    rjzjt.zone_uid,
+                    rjzjt.zone,
+                    rjzjt.zone_name,
+                    rjzjt.z_id,
+                    rjzjt.z_biz_id,
+                    b.business_name,
+                    rjzjt.z_delivery_day,
+                    rjzjt.z_delivery_time,
+                    rjzjt.z_accepting_day,
+                    rjzjt.z_accepting_time,
+                    rjzjt.LB_long,rjzjt.LB_lat,rjzjt.LT_long,rjzjt.LT_lat,rjzjt.RT_long,rjzjt.RT_lat,rjzjt.RB_long,rjzjt.RB_lat,
+                    b.business_type,
+                    b.business_image,
+                    b.business_accepting_hours
+                    FROM sf.businesses b
+                    RIGHT JOIN
+                    (SELECT *
+                         FROM sf.zones AS z,
+                         json_table(z_businesses, '$[*]'
+                             COLUMNS (
+                                    z_id FOR ORDINALITY,
+                                    z_biz_id VARCHAR(255) PATH '$')
+                                                 ) as zjt) as rjzjt
+                    ON b.business_uid = rjzjt.z_biz_id
+                    WHERE zone IN """ + str(tuple(zones)) + """;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            business_details = items['result']
+            ids = set()
+            for vals in business_details:
+                ids.add(vals['z_biz_id'])
+                
+            
+
+
+            ## get produce
+
+            ids = list(ids)
+            ids.append('Random')
+            ids.append('Random2')
+
+            query = """
+                    SELECT * 
+                    FROM sf.items
+                    WHERE itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
+                    ORDER BY item_name;
+                    """
+            print(query)
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+
+            items['message'] = 'Items sent successfully'
+            items['code'] = 200
+            items['business_details'] = business_details
+            return items
+            
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
 
 # updated refund
 class Refund(Resource):
@@ -2938,7 +3167,7 @@ class history(Resource):
             for i in range(len(items['result'])):
 
 
-                if items['result'][i]['pay_coupon_id']:
+                if items['result'][i]['pay_coupon_id'] and items['result'][i]['pay_coupon_id'] != 'undefined':
                     print('IN',items['result'][i]['pay_coupon_id'])
 
                     query_cp = """
@@ -5184,6 +5413,119 @@ class farmer_revenue_inventory_report_all(Resource):
             disconnect(conn)
 
 
+class farmer_revenue_inventory_report_all_month(Resource):
+
+    def get(self, report, start, end):
+
+        try:
+            conn = connect()
+
+            if report == 'summary':
+
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                summ_arr = ''
+                for its in uids:
+
+                    uid = its[0]
+
+                    query = """
+                            SELECT business_name FROM sf.businesses
+                            WHERE business_uid = \'""" + uid + """\';
+                            """
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = "Business UID doesn't exists"
+                        return items
+                    print(items)
+                    business_name = items['result'][0]['business_name']
+                    print(business_name)
+                    #hexa
+                    query = """
+                            SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
+                            FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                            """
+                    print(query)
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+
+                    result = items['result']
+                    print('RESULT-----', result, type(result))
+                    if not len(result):
+                        continue
+
+                    itm_dict = {}
+                    cust_dict = {}
+                    for vals in result:
+                        if vals['name'] in itm_dict:
+                            itm_dict[vals['name']][0] += int(vals['total_qty'])
+                        else:
+                            itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+                    print('dict------', itm_dict)
+
+                    for vals in result:
+                        unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
+                        print(unq)
+                        if unq in itm_dict:
+                            cust_dict[unq][0] += int(vals['total_qty'])
+                        else:
+                            cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+
+                    print('cust_dict------', cust_dict)
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    cw.writerow([business_name])
+                    cw.writerow([])
+                    itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+                    glob_rev = 0
+                    glob_qty = 0
+                    cw.writerow(['Item', 'Quantity', 'Revenue'])
+                    for key, vals in itm_dict.items():
+                        print(key)
+                        itm_rev = 0
+                        itm_qty = 0
+                        rr = []
+                        for vals in result:
+                            if vals['name'] == key:
+                                itm_qty += vals['total_qty']
+                                itm_rev += vals['total_qty']*vals['business_price']
+                        cw.writerow([key, itm_qty, itm_rev])
+                        glob_rev += itm_rev
+                        glob_qty += itm_qty
+
+                    cw.writerow(['TOTAL', glob_qty,glob_rev])
+                    orders = si.getvalue()
+                    summ_arr += orders + "\n"
+
+                output = make_response(summ_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + start + " to " +end+ ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+
+            else:
+                return 'choose correct report'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 class drivers_report_check_sort(Resource):
 
@@ -5194,7 +5536,7 @@ class drivers_report_check_sort(Resource):
             query = """
                     SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, itm.item_unit, itm.item_name, bus.business_name
                     FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm, sf.businesses as bus
-                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = itm.itm_business_uid AND delivery_status = 'FALSE'; 
+                    WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND start_delivery_date LIKE \'""" + date + '%' + """\' AND bus.business_uid = obf.itm_business_uid AND delivery_status = 'FALSE'; 
                     """
             items = execute(query, 'get', conn)
 
@@ -5513,6 +5855,75 @@ class updateOrder(Resource):
         finally:
             disconnect(conn)
 
+class UpdatePurchaseBusiness(Resource):
+    def post(self, date, name, businessFrom, businessTo):
+        try:
+            print('Endpoint start')
+            conn = connect()
+
+            # get info of produce
+
+            query_prod = """
+                        SELECT item_uid, business_price, item_photo
+                        FROM sf.items
+                        WHERE item_name =  \'""" + name + """\' AND itm_business_uid = \'""" + businessTo + """\';
+                        """ 
+            
+            items_prod = execute(query_prod, 'get', conn)
+            if items_prod['code'] != 280:
+                items_prod['message'] = 'check sql query'
+                return items_prod
+            img = items_prod['result'][0]['item_photo']
+            item_uid = items_prod['result'][0]['item_uid']
+            business_price = items_prod['result'][0]['business_price']
+            print('item details done')
+            query = """
+                        SELECT pur.purchase_uid,pur.items, pay.start_delivery_date    
+                        FROM sf.purchases as pur, sf.payments as pay
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\';
+                        """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'Check sql query'
+                return items
+            print('purchases done')
+            print(items)
+            for vals in items['result']:
+                flag = 0
+                print('IN')
+                produce = json.loads(vals['items'])
+                print('produce', produce)
+                purchase_uid = vals['purchase_uid']
+                ans = []
+                for product in produce:
+                    tmp = product
+                    if product['name'] == name:
+                        print('LOGIC', product)
+                        flag = 1
+                        tmp['img'] = img
+                        tmp['item_uid'] = item_uid
+                        tmp['business_price'] = business_price
+                        tmp['itm_business_uid'] = businessTo
+                    ans.append(tmp)
+                    print('APPENDED')
+                if flag == 1:
+                    ans = str(ans)
+                    ans = ans.replace("'", '"')
+                    query_update = """
+                                    UPDATE sf.purchases SET items = \'""" + ans + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                                    """
+                    print('FLAGGGGGGG', query_update)
+                    items_update = execute(query_update, 'post', conn)
+                    if items_update['code'] != 281:
+                        items_update['message'] = 'check sql query for updating items in purchase'
+                        return items_update
+            return items
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -6097,6 +6508,8 @@ api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<st
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(business_delivery_details, '/api/v2/business_delivery_details/<string:id>')
 api.add_resource(categoricalOptions, '/api/v2/categoricalOptions/<string:long>,<string:lat>')
+api.add_resource(ProduceByLocation, '/api/v2/ProduceByLocation/<string:long>,<string:lat>')
+api.add_resource(brandAmbassador, '/api/v2/brandAmbassador/<string:action>')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
@@ -6134,11 +6547,12 @@ api.add_resource(update_zones, '/api/v2/update_zones/<string:action>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
 api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
+api.add_resource(farmer_revenue_inventory_report_all_month, '/api/v2/farmer_revenue_inventory_report_all_month/<string:report>,<string:start>,<string:end>')
 api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 api.add_resource(getAllItem, '/api/v2/getAllItem')
 api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
 api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
-
+api.add_resource(UpdatePurchaseBusiness, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 
 # Notification Endpoints
 
