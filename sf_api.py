@@ -2706,6 +2706,48 @@ class Refund(Resource):
             print('process completed')
 
 
+class favorite_produce(Resource):
+    
+    def post(self, action):
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            if action == 'get':
+
+                query = """
+                        SELECT favorite_produce FROM sf.customers WHERE customer_uid = \'""" + data['customer_uid'] + """\';
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'Check sql query'
+                return items
+            
+            elif action == 'post':
+                print(data)
+                favorite = str(data['favorite']).replace("'", '"')
+                
+                print(favorite)
+                query = """
+                        UPDATE sf.customers 
+                        SET favorite_produce = \'""" + favorite + """\'
+                        WHERE (customer_uid = \'""" + data['customer_uid'] + """\');
+                        """
+                print(query)
+                items = execute(query, 'post', conn)
+
+                if items['code'] != 281:
+                    items['message'] = 'Check sql query'
+                return items
+            else:
+                return 'choose correct option'
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class available_Coupons(Resource):
     def get(self, email):
         response = {}
@@ -6512,6 +6554,7 @@ api.add_resource(ProduceByLocation, '/api/v2/ProduceByLocation/<string:long>,<st
 api.add_resource(brandAmbassador, '/api/v2/brandAmbassador/<string:action>')
 api.add_resource(getItems, '/api/v2/getItems')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
+api.add_resource(favorite_produce, '/api/v2/favorite_produce/<string:action>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
 api.add_resource(last_delivery_instruction, '/api/v2/last_delivery_instruction/<string:uid>')
