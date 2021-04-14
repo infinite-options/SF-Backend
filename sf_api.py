@@ -483,6 +483,28 @@ class ItemsbyBusiness(Resource):
 
         # http://localhost:4000/api/v2/itemsByBusiness/200-000003
         # https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/itemsByBusiness/200-000003
+# copy
+class ItemsbyBusiness_copy(Resource):
+    # RETURNS ALL ITEMS FOR A SPECIFIC BUSINESS
+    def get(self, business_uid):
+        response = {}
+        items = {}
+        print("business_uid", business_uid)
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.sf_items as itm, sf.supply as sup
+                    WHERE sup.itm_business_uid = \'""" + business_uid + """\' AND sup.sup_item_uid = itm.item_uid; 
+                    """
+            items = execute(query, 'get', conn)
+
+            response['message'] = 'ItemsbyBusiness successful'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 # QUERY 2A
 class SubscriptionsbyBusiness(Resource):
@@ -2264,6 +2286,74 @@ class brandAmbassador(Resource):
                 items['message'] = 'customer and ambassador coupons generated'
                 return items
             
+            elif action == 'guest_checker':
+
+                flag = 0
+                # check if ambassador exists
+                for vals in items_amb['result']:
+                    if vals['coupon_id'] == 'SFAmbassador':
+                        flag = 1
+                
+                if flag == 0:
+                    return 'No such Ambassador email exists'
+
+
+                if not data.get('cust_address'):
+                    return 'Please enter customer address'
+                address = data['cust_address']
+                query = """
+                        SELECT customer_note FROM sf.refunds;
+                        """
+                items = execute(query, 'get', conn)
+                #return items
+                for vals in items['result']:
+                    print(vals,vals['customer_note'])
+                    if vals['customer_note'] == address:
+                        return {"message":"customer has already used ambassador code", "response":400} 
+                    
+                return {"message":"let customer use the ambassador code", "response":200}
+            
+            elif action == 'guest_insert':
+                
+                if not data.get('cust_address'):
+                    return 'Please enter customer address'
+                address = data['cust_address']
+                
+                timeStamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+                query = "CALL new_refund_uid;"
+                NewRefundIDresponse = execute(query, 'get', conn)
+                NewRefundID = NewRefundIDresponse['result'][0]['new_id']
+                query_insert = """ INSERT INTO sf.refunds
+                            (
+                                refund_uid,
+                                created_at,
+                                email_id,
+                                phone_num,
+                                image_url,
+                                customer_note,
+                                admin_note,
+                                refund_amount,
+                                ref_coupon_id
+                            )
+                            VALUES
+                            (
+                            \'""" + NewRefundID + """\'
+                            , \'""" + timeStamp + """\'
+                            , \'""" + "GUEST" + """\'
+                            , \'""" + "NULL" + """\'
+                            , \'""" + "NULL" + """\'
+                            , \'""" + address + """\'
+                            , \'""" + "SFAmbassador" + """\'
+                            , \'""" + "NULL" + """\'
+                            , \'""" + "NULL" + """\'
+                            );"""
+                
+                items = execute(query_insert, 'post', conn)
+
+                if items['code'] != 281:
+                    items['message'] = 'check sql query'
+                return items
+
             else:
                 return 'enter correct option'
             
@@ -2532,9 +2622,6 @@ class ProduceByLocation(Resource):
             for vals in business_details:
                 ids.add(vals['z_biz_id'])
                 
-            
-
-
             ## get produce
 
             ids = list(ids)
@@ -2557,6 +2644,37 @@ class ProduceByLocation(Resource):
             items['message'] = 'Items sent successfully'
             items['code'] = 200
             items['business_details'] = business_details
+
+
+            #item_type = set()
+            item_type = set()
+            
+            for vals in items['result']:
+                item_type.add(vals['item_type'])
+            
+            
+            res = []
+            if 'vegetable' in item_type and 'fruit' in item_type:
+                print('1')
+                item_type.remove('vegetable')
+                item_type.remove('fruit')
+                res = ['vegetable','fruit']
+                res.extend(list(item_type))
+            elif 'vegetable' in item_type:
+                print('2')
+                item_type.remove('vegetable')
+                res = ['vegetable']
+                res.extend(list(item_type))
+            elif 'fruit' in item_type:
+                print('3')
+                item_type.remove('fruit')
+                res = ['fruit']
+                res.extend(list(item_type))
+            else:
+                print('4')
+                res = list(item_type)
+
+            items['types'] = res
             return items
             
 
@@ -3264,12 +3382,11 @@ class Stripe_Intent(Resource):
         except:
             raise BadRequest('Request failed. Unable to convert amount to int')
         print('AMOUNT------', amount)
-
+        
         intent = stripe.PaymentIntent.create(
         amount=amount,
         currency='usd',
         )
-        print('INTENT------', intent)
         client_secret = intent.client_secret
         intent_id = intent.id
         response['client_secret'] = client_secret
@@ -3278,6 +3395,8 @@ class Stripe_Intent(Resource):
         print(response['client_secret'])
         print(response['id'])
         return response
+
+
 
 class Stripe_Payment_key_checker(Resource):
     def post(self):
@@ -4104,8 +4223,54 @@ class get_s3_photos(Resource):
         except:
             raise BadRequest('Request failed, please try again later.')
 
+class add_supply(Resource):
+
+    def get(self):
+
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.items;
+                    """
+            items = execute(query, 'get', conn)
+
+            itm_dict = {}
+
+            for vals in items['result']:
+                name = vals['item_name']
+                if name in itm_dict:
+                    itm_dict[name].append(vals)
+                else:
+                    itm_dict[name] = [vals]
+            
+
+            # got items
+
+            for item_name, vals in itm_dict.items():
+                print(item_name)
+                itm_uid = vals[0]['item_uid']
+                for single_item in vals:
+                    
+                    query_uid = """
+                                CALL sf.new_supply_uid();
+                                """
+                    item_uid = execute(query_uid, 'get', conn)
+                    supply_uid = item_uid['result'][0]['new_id']
+                    bus_uid = single_item['itm_business_uid']
+                    price = str(single_item['business_price'])
+                    in_stock = single_item['item_status']
+                    print('before insert')
+                    query_insert = """
+                                   INSERT INTO sf.supply (supply_uid, sup_business_uid, sup_item_uid, sup_price, in_stock) VALUES (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + price + """\', \'""" + in_stock + """\');
+                                   """
+                    print(query_insert)
+                    items_insert = execute(query_insert, 'post', conn)
 
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 
@@ -5898,6 +6063,7 @@ class updateOrder(Resource):
             disconnect(conn)
 
 class UpdatePurchaseBusiness(Resource):
+    
     def post(self, date, name, businessFrom, businessTo):
         try:
             print('Endpoint start')
@@ -6526,6 +6692,7 @@ def print_date_time():
 
 api.add_resource(Businesses, '/api/v2/businesses')
 api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
+api.add_resource(ItemsbyBusiness_copy, '/api/v2/ItemsbyBusiness_copy/<string:business_uid>')
 api.add_resource(SubscriptionsbyBusiness, '/api/v2/subscriptionsByBusiness/<string:business_uid>')
 api.add_resource(CouponDetails, '/api/v2/couponDetails/<string:coupon_id>', '/api/v2/couponDetails')
 api.add_resource(RefundDetails, '/api/v2/refundDetails')
@@ -6579,6 +6746,7 @@ api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 api.add_resource(get_item_photos, '/api/v2/get_item_photos/<string:category>')
 api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 api.add_resource(get_s3_photos, '/api/v2/get_s3_photos')
+api.add_resource(add_supply, '/api/v2/add_supply')
 
 # Admin Endpoints
 
@@ -6596,7 +6764,6 @@ api.add_resource(getAllItem, '/api/v2/getAllItem')
 api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
 api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 api.add_resource(UpdatePurchaseBusiness, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
-
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')

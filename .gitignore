@@ -32,3 +32,5 @@ sample.py
 
 # __ files
 __pycache__/
+test.py
+requirement.txt
