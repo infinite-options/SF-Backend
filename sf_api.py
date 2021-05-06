@@ -1134,7 +1134,6 @@ class token_fetch_update (Resource):
         finally:
             disconnect(conn)
 
-
 class createAccount(Resource):
     def post(self):
         response = {}
@@ -1390,6 +1389,197 @@ class createAccount(Resource):
         finally:
             disconnect(conn)
 
+class createAccountGuestToCustomer(Resource):
+    def post(self):
+        response = {}
+        items = []
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            print(data)
+            old_customer_uid = data['customer_uid']
+            email = data['email']
+            firstName = data['first_name']
+            lastName = data['last_name']
+            phone = data['phone_number']
+            address = data['address']
+            unit = data['unit'] if data.get('unit') is not None else 'NULL'
+            social_id = data['social_id'] if data.get('social_id') is not None else 'NULL'
+            city = data['city']
+            state = data['state']
+            zip_code = data['zip_code']
+            latitude = data['latitude']
+            longitude = data['longitude']
+            referral = data['referral_source']
+            role = data['role']
+            cust_id = data['cust_id'] if data.get('cust_id') is not None else 'NULL'
+
+            if data.get('social') is None or data.get('social') == "FALSE" or data.get('social') == False or data.get('social') == 'NULL':
+                social_signup = False
+            else:
+                social_signup = True
+            print('Done')
+            print(social_signup)
+            
+            if social_signup == False:
+
+                salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
+
+                password = sha512((data['password'] + salt).encode()).hexdigest()
+                print('password------', password)
+                algorithm = "SHA512"
+                mobile_access_token = 'NULL'
+                mobile_refresh_token = 'NULL'
+                user_access_token = 'NULL'
+                user_refresh_token = 'NULL'
+                user_social_signup = 'NULL'
+            else:
+
+                mobile_access_token = data['mobile_access_token']
+                mobile_refresh_token = data['mobile_refresh_token']
+                user_access_token = data['user_access_token']
+                user_refresh_token = data['user_refresh_token']
+                salt = 'NULL'
+                password = 'NULL'
+                algorithm = 'NULL'
+                user_social_signup = data['social']
+
+                print('ELSE- OUT')
+            
+            flag = 0
+
+            if cust_id != 'NULL' and cust_id:
+                print('IN IF')
+                flag = 1
+                NewUserID = cust_id
+
+                query = '''
+                            SELECT user_access_token, user_refresh_token, mobile_access_token, mobile_refresh_token 
+                            FROM sf.customers
+                            WHERE customer_uid = \'''' + cust_id + '''\';
+                       '''
+                it = execute(query, 'get', conn)
+                print('it-------', it)
+
+                if it['result'][0]['user_access_token'] != 'FALSE':
+                    user_access_token = it['result'][0]['user_access_token']
+
+                if it['result'][0]['user_refresh_token'] != 'FALSE':
+                    user_refresh_token = it['result'][0]['user_refresh_token']
+
+                if it['result'][0]['mobile_access_token'] != 'FALSE':
+                    mobile_access_token = it['result'][0]['mobile_access_token']
+
+                if it['result'][0]['mobile_refresh_token'] != 'FALSE':
+                    mobile_refresh_token = it['result'][0]['mobile_refresh_token']
+
+                customer_insert_query = ['''
+                                    UPDATE sf.customers 
+                                    SET 
+                                    customer_first_name = \'''' + firstName + '''\',
+                                    customer_last_name = \'''' + lastName + '''\',
+                                    customer_phone_num = \'''' + phone + '''\',
+                                    customer_address = \'''' + address + '''\',
+                                    customer_unit = \'''' + unit + '''\',
+                                    customer_city = \'''' + city + '''\',
+                                    customer_state = \'''' + state + '''\',
+                                    customer_zip = \'''' + zip_code + '''\',
+                                    customer_lat = \'''' + latitude + '''\',
+                                    customer_long = \'''' + longitude + '''\',
+                                    password_salt = \'''' + salt + '''\',
+                                    password_hashed = \'''' + password + '''\',
+                                    password_algorithm = \'''' + algorithm + '''\',
+                                    referral_source = \'''' + referral + '''\',
+                                    role = "CUSTOMER",
+                                    user_social_media = \'''' + user_social_signup + '''\',
+                                    social_timestamp  =  DATE_ADD(now() , INTERVAL 14 DAY)
+                                    WHERE customer_uid = \'''' + old_customer_uid + '''\';
+                                    ''']
+
+            else:
+                # write everything to database
+                customer_insert_query = ['''
+                                        UPDATE sf.customers 
+                                        SET 
+                                        customer_first_name = \'''' + firstName + '''\', 
+                                        customer_last_name = \'''' + lastName + '''\', 
+                                        role = "CUSTOMER", 
+                                        user_social_media = \'''' + user_social_signup + '''\', 
+                                        customer_phone_num = \'''' + phone + '''\', 
+                                        customer_email = \'''' + email + '''\', 
+                                        customer_address = \'''' + address + '''\', 
+                                        customer_city = \'''' + city + '''\', 
+                                        customer_state = \'''' + state + '''\', 
+                                        customer_zip = \'''' + zip_code + '''\', 
+                                        customer_lat = \'''' + latitude + '''\', 
+                                        customer_long = \'''' + longitude + '''\', 
+                                        password_salt = \'''' + salt + '''\', 
+                                        password_hashed = \'''' + password + '''\', 
+                                        password_algorithm = \'''' + algorithm + '''\', 
+                                        social_id = \'''' + social_id + '''\', 
+                                        user_access_token = \'''' + user_access_token + '''\', 
+                                        user_refresh_token = \'''' + user_refresh_token + '''\', 
+                                        mobile_access_token = \'''' + mobile_access_token + '''\', 
+                                        mobile_refresh_token = \'''' + mobile_refresh_token + '''\', 
+                                        social_timestamp = DATE_ADD(now() , INTERVAL 14 DAY) 
+                                        WHERE customer_uid = \'''' + old_customer_uid + '''\';
+                                        ''']
+            
+            items = execute(customer_insert_query[0], 'post', conn)
+
+            if items['code'] != 281:
+                items['result'] = ""
+                items['code'] = 480
+                items['message'] = "Error while inserting values in database"
+
+                return items
+            if flag == 1:
+                print('IN DELETE')
+                execute("""DELETE FROM customers WHERE customer_uid = '""" + cust_id + """';""", 'post', conn)
+
+            items['result'] = {
+                'first_name': firstName,
+                'last_name': lastName,
+                'customer_uid': old_customer_uid,
+                'access_token': user_access_token,
+                'refresh_token': user_refresh_token,
+                'access_token': mobile_access_token,
+                'refresh_token': mobile_refresh_token,
+                'social_id': social_id
+
+
+            }
+            items['message'] = 'Signup successful'
+            items['code'] = 200
+
+            print('sss-----', social_signup)
+
+            return items
+
+        except:
+            print("Error happened while Sign Up")
+            
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class email_info(Resource):
+    def get(self, email):
+        try:
+            conn = connect()
+
+            email_query = """
+                            SELECT *
+                            FROM sf.customers c
+                            WHERE customer_email = \'""" + email + """\'
+                          """
+            items = execute(email_query, 'get', conn)
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 class email_verification(Resource):
     def post(self):
 
@@ -1445,9 +1635,6 @@ class email_verification(Resource):
         finally:
             disconnect(conn)
 
-
-
-
 # confirmation page
 @app.route('/api/v2/confirm', methods=['GET'])
 def confirm():
@@ -1476,7 +1663,6 @@ def confirm():
         return str(err), status
     finally:
         disconnect(conn)
-
 
 class AccountSalt(Resource):
     def post(self):
@@ -1623,8 +1809,6 @@ class Login(Resource):
         finally:
             disconnect(conn)
 
-
-
 class AppleEmail(Resource):
     #  RETURNS EMAIL FOR APPLE LOGIN ID
 
@@ -1663,11 +1847,6 @@ class AppleEmail(Resource):
             raise BadRequest('AppleEmail Request failed, please try again later.')
         finally:
             disconnect(conn)
-
-
-
-
-
 
 class AppleLogin (Resource):
 
@@ -1834,7 +2013,6 @@ class access_refresh_update(Resource):
         finally:
             disconnect(conn)
 
-
 class Profile(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -1899,6 +2077,70 @@ class update_Profile(Resource):
                 items['message'] = 'check sql query'
                 return items
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class set_temp_password(Resource):
+    def get_random_string(self, stringLength=8):
+        lettersAndDigits = string.ascii_letters + string.digits
+        return "".join([random.choice(lettersAndDigits) for i in range(stringLength)])
+
+    def post(self):
+        response = {}
+        try:
+            conn = connect()
+            # search for email;
+            data = request.get_json(force=True)
+            email = data['email']
+
+            query = """SELECT * FROM sf.customers
+                    WHERE customer_email ='""" + email + "';"
+            customer_lookup = execute(query, "get", conn)
+            if customer_lookup['code'] != 280:
+                customer_lookup['message'] = 'check sql query'
+                return customer_lookup
+            if not customer_lookup['result']:
+                customer_lookup['message'] = 'No such email exists'
+                return customer_lookup
+            
+            if customer_lookup['result'][0]['user_social_media'] != 'NULL':
+                return 'Need to do login via social'
+            
+            customer_uid = customer_lookup['result'][0]['customer_uid']
+            pass_temp = self.get_random_string()
+            salt = getNow()
+            pass_temp_hashed = sha512((pass_temp + salt).encode()).hexdigest()
+            print(pass_temp_hashed)
+            query = """
+                    UPDATE sf.customers SET password_hashed = '""" + pass_temp_hashed + """'
+                     , password_salt = '""" + salt + """' 
+                     WHERE customer_uid = '""" + customer_uid + """';
+                    """
+            # update database with temp password
+            query_result = execute(query,'post', conn)
+            if query_result['code']!= 281:
+                query_result['message'] = 'check sql query'
+                return query_result
+            # send an email to client
+            print("mail 1") 
+            msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email], bcc='support@servingfresh.me')
+            msg.body = "Your temporary password is {}. Please use it to reset your password".format(pass_temp)
+            print("mail 2")
+            # msg2 = Message("Email Verification", sender='support@mealsfor.me', recipients='support@mealsfor.me')
+            # supportmessage = str(email) + " has requested a temporary password, and it is {}."
+            # #print(supportmessage)
+            # msg2.body = supportmessage.format(pass_temp)
+            print("ready to send")
+            mail.send(msg)
+            # print("sending 2")
+            # print(msg2.body)
+            # print("actual sending 2")
+            # mail.send(msg2)
+            print("both sent")
+            response['message'] = "A temporary password has been sent"
+            return response, 200
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -2165,58 +2407,13 @@ class business_delivery_details(Resource):
         finally:
             disconnect(conn)
 
+ 
 class brandAmbassador(Resource):
 
     def post(self, action):
         try:
-
-            data = request.get_json(force=True)
-            conn = connect()
-            if not data.get('amb_email'):
-                return 'Please enter ambassador email'
-            query_amb = """
-                    SELECT * FROM sf.coupons
-                    WHERE email_id = \'""" + data['amb_email'] + """\';
-                    """
-            items_amb = execute(query_amb, 'get', conn)
-
-            if items_amb['code'] != 280:
-                items_amb['message'] = 'No data available for this ambassador email'
-                return items_amb
-
-            if action == 'create_ambassador':
-                
-                for vals in items_amb['result']:
-                    if vals['coupon_id'] == 'SFAmbassador':
-                        return 'Customer already a Ambassador'
-                
-                # all check done, now make the custoamer a ambassador and issue them a coupon
-
-                query = ["CALL sf.new_coupons_uid;"]
-                couponIDresponse = execute(query[0], 'get', conn)
-                couponID = couponIDresponse['result'][0]['new_id']
-                print('all checks done')
-                dateObject = datetime.now()
-
-                exp_date = dateObject.replace(year=dateObject.year + 5)
-                exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
-                query = """
-                INSERT INTO sf.coupons 
-                (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '5', \'""" + exp_date + """\', '2', 'SFAmbassador', '0', 'F', \'""" + data['amb_email'] + """\', 'null', '5');
-                """
-                print(query)
-                items = execute(query, 'post', conn)
-                if items['code'] != 281:
-                    items['message'] = "check sql query"
-                    items['code'] = 400
-                    return items
-
-
-                items['message'] = 'SF Ambassdaor created'
-                items['code'] = 200
-                return items
-
+            
+            '''
             elif action == 'generate_coupon':
 
                 # check if customer is already a ambassador because ambassador cannot refer himself or get referred
@@ -2227,7 +2424,7 @@ class brandAmbassador(Resource):
                 items_cust = execute(query_cust, 'get', conn)
                 for vals in items_cust['result']:
                     if vals['coupon_id'] == 'SFAmbassador':
-                        return 'Customer himself is an Ambassador'
+                        return {"message":'Customer himself is an Ambassador', "code": '400'}
 
 
                 flag = 0
@@ -2237,22 +2434,21 @@ class brandAmbassador(Resource):
                         flag = 1
                 
                 if flag == 0:
-                    return 'No such Ambassador email exists'
+                    return {"message":'No such Ambassador email exists', "code": '400'}
                 
 
                 cust_email = data['cust_email']
 
                 # customer can be referred only once so check that
 
-                flag = 0
-                for vals in items_cust['result']:
-                    if vals['coupon_id'] == 'Referral':
-                        flag = 1
                 
-                if flag == 1:
-                    return 'Customer has already been refered in past'
-
-
+                for vals in items_cust['result']:
+                    if vals['coupon_id'] == 'Referral' and vals['num_used'] == vals['limits']:
+                        return {"message":'Customer has already been refered in past', "code": '400'}
+                    elif vals['coupon_id'] == 'Referral' and vals['num_used'] != vals['limits']:
+                        return {"message":'Let the customer use the referral', "code": '200', "discount":vals['discount_amount']}
+                    
+                
                 # generate coupon for refereed customer
 
                 query = ["CALL sf.new_coupons_uid;"]
@@ -2265,7 +2461,7 @@ class brandAmbassador(Resource):
                 query = """
                 INSERT INTO sf.coupons 
                 (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                VALUES ( \'""" + couponID + """\', 'Referral', 'TRUE', '0', '10', '5', \'""" + exp_date + """\', '2', 'Referral', '0', 'F', \'""" + cust_email + """\', 'null', '5');
+                VALUES ( \'""" + couponID + """\', 'Referral', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '2', 'Referral', '0', 'F', \'""" + cust_email + """\', 'null', '0');
                 """
                 print(query)
                 items = execute(query, 'post', conn)
@@ -2284,6 +2480,8 @@ class brandAmbassador(Resource):
                     items['message'] = "check sql query"
                     return items
                 items['message'] = 'customer and ambassador coupons generated'
+                items['code'] = '200'
+                items['discount'] = 10
                 return items
             
             elif action == 'guest_checker':
@@ -2353,11 +2551,218 @@ class brandAmbassador(Resource):
                 if items['code'] != 281:
                     items['message'] = 'check sql query'
                 return items
+            '''
 
+            data = request.get_json(force=True)
+            conn = connect()
+            if not data.get('code'):
+                return {"message":'Please enter code',"code":480,"discount":"","uids":""}
+            code = data['code']
+            query_amb = """
+                    SELECT * FROM sf.coupons
+                    WHERE email_id = \'""" + code + """\';
+                    """
+            items_amb = execute(query_amb, 'get', conn)
+            
+            if items_amb['code'] != 280:
+                items_amb['message'] = 'check sql query'
+                return items_amb
+            
+            if action == 'create_ambassador':
+                
+                for vals in items_amb['result']:
+                    print(vals)
+                    if vals['coupon_id'] == 'SFAmbassador':
+                        return 'Customer already an Ambassador'
+                
+                # all check done, now make the custoamer a ambassador and issue them a coupon
+                print("first")
+                query = ["CALL sf.new_coupons_uid;"]
+                
+                couponIDresponse = execute(query[0], 'get', conn)
+                couponID = couponIDresponse['result'][0]['new_id']
+                print('all checks done')
+                dateObject = datetime.now()
+
+                exp_date = dateObject.replace(year=dateObject.year + 5)
+                exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
+                query = """
+                        INSERT INTO sf.coupons 
+                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '0', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10');
+                        """
+                print(query)
+                items = execute(query, 'post', conn)
+                if items['code'] != 281:
+                    items['message'] = "check sql query"
+                    items['code'] = 400
+                    return items
+
+
+                items['message'] = 'SF Ambassdaor created'
+                items['code'] = 200
+                return items
+
+            elif action == 'discount_checker':
+
+                if not items_amb['result']:
+                    return {"message":'No code exists',"code":501,"discount":"","uids":""}
+                
+                final_res = ''
+                for vals in items_amb['result']:
+                    if vals['notes'] == 'SFAmbassador':
+                        type_code = 'SFAmbassador'
+                        rf_id = vals['coupon_uid']
+                        num_used = vals['num_used']
+                        limits = vals['limits']
+                        final_res = vals
+                    elif vals['notes'] == 'SFDiscount':
+                        type_code = 'SFDiscount'
+                        rf_id = vals['coupon_uid']
+                        num_used = vals['num_used']
+                        limits = vals['limits']
+                        final_res = vals
+                    
+                if type_code not in ['SFDiscount','SFAmbassador']:
+                    return {"message":'Got a different kind of discount please check code',"code":502,"discount":"","uids":""}
+                
+                if not data.get('IsGuest') or not data.get('info'):
+                    return {"message":'Please enter IsGuest and info',"code":503,"discount":"","uids":""}
+                
+                IsGuest = data['IsGuest']
+                info = data['info']
+                if type_code == 'SFAmbassador' and IsGuest == 'True':
+                    return {"message":'Please login',"code":504,"discount":"","uids":""}
+                
+                if type_code == 'SFAmbassador':
+
+                    # check if customer is already a ambassador because ambassador cannot refer himself or get referred
+                    query_cust = """
+                        SELECT * FROM sf.coupons
+                        WHERE email_id = \'""" + info + """\';
+                        """
+                    items_cust = execute(query_cust, 'get', conn)
+                    for vals in items_cust['result']:
+                        if vals['coupon_id'] == 'SFAmbassador':
+                            return {"message":'Customer himself is an Ambassador',"code":505,"discount":"","uids":""}
+                    
+                    cust_email = info
+
+                    # customer can be referred only once so check that
+
+                    
+                    for vals in items_cust['result']:
+                        if vals['coupon_id'] == 'SFReferral' and vals['num_used'] == vals['limits']:
+                            return {"message":'Customer has already been refered in past',"code":506,"discount":"","uids":""}
+                        elif vals['coupon_id'] == 'SFReferral' and vals['num_used'] != vals['limits']:
+                            
+                            return {"message":'Let the customer use the referral', "code": 200, "discount":vals['discount_amount'],"uids":[vals['coupon_uid']],"sub":vals}
+                        
+                    
+                    # generate coupon for referred customer
+
+                    query = ["CALL sf.new_coupons_uid;"]
+                    couponIDresponse = execute(query[0], 'get', conn)
+                    couponID = couponIDresponse['result'][0]['new_id']
+                    
+                    dateObject = datetime.now()
+                    exp_date = dateObject.replace(year=dateObject.year + 1)
+                    exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
+                    print(final_res)
+                    query = """
+                    INSERT INTO sf.coupons 
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                    VALUES ( \'""" + couponID + """\', 'SFReferral', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + cust_email + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\');
+                    """
+                    items = execute(query, 'post', conn)
+                    if items['code'] != 281:
+                        items['message'] = "check sql query"
+                        return items
+
+                    # Now update ambasaddor coupon
+                    print('updating amb')
+                    query = """
+                            UPDATE sf.coupons SET limits = limits + 2 
+                            WHERE coupon_id = 'SFAmbassador' AND email_id = \'""" + code + """\'
+                            """
+                    items_up_amb = execute(query, 'post', conn)
+                    if items_up_amb['code'] != 281:
+                        items_up_amb['message'] = "check sql query"
+                        return items_up_amb
+                    
+                    qq = """
+                        SELECT * FROM sf.coupons where coupon_uid = \'""" + couponID + """\'
+                        """
+                    qq_ex = execute(qq,'get',conn)
+                    retu = {}
+                    retu['message'] = 'customer and ambassador coupons generated'
+                    retu['code'] = 200
+                    retu['discount'] = 10
+                    retu['uids'] = [couponID]
+                    retu['sub'] = qq_ex['result'][0]
+                    return retu
+
+                elif type_code == 'SFDiscount':
+                    print('in sfdiscount')
+                    
+                    if num_used == limits:
+                        return {"message":'Limit exceeded cannot use this coupon',"code":507,"discount":"","uids":""}
+                    
+                    query_dis = """
+                                 SELECT * FROM sf.coupons
+                                 WHERE email_id = \'""" + info + """\' AND notes = \'""" + code + """\'
+                                """
+                    print(query_dis)
+                    items_dis = execute(query_dis, 'get', conn)
+                    if items_dis['code'] != 280:
+                        items_dis['message'] = 'Check sql query'
+                        return items_dis
+                    
+                    if not items_dis['result']:
+                        # create row
+                        print('in first if')
+                        query = ["CALL sf.new_coupons_uid;"]
+                        couponIDresponse = execute(query[0], 'get', conn)
+                        couponID = couponIDresponse['result'][0]['new_id']
+                        dateObject = datetime.now()
+                        exp_date = dateObject.replace(year=dateObject.year + 1)
+                        exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
+                        query = """
+                        INSERT INTO sf.coupons 
+                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
+                        VALUES ( \'""" + couponID + """\', 'SFDiscount', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + info + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\');
+                        """
+                        
+                        items = execute(query, 'post', conn)
+                        if items['code'] != 281:
+                            items['message'] = "check sql query"
+                            return items
+                        
+                        qq = """
+                        SELECT * FROM sf.coupons where coupon_uid = \'""" + couponID + """\'
+                        """
+                        qq_ex = execute(qq,'get',conn)
+                        
+                        items['code'] = 200
+                        items['discount'] = 10
+                        items['uids'] = [couponID,rf_id]
+                        items['sub'] = qq_ex['result'][0]
+                        return items
+
+                    else:
+                        items = {}
+                        items['code'] = 200
+                        items['discount'] = 10
+                        items['uids'] = [items_dis['result'][0]['coupon_uid'],rf_id]
+                        items['sub'] = items_dis['result'][0]
+                        return items
+
+                
+                else:
+                    return 'Incorrect code type encountered'
+            
             else:
                 return 'enter correct option'
-            
-            
 
 
         except:
@@ -2493,12 +2898,22 @@ class getItems(Resource):
             ids.append('Random')
             ids.append('Random2')
 
+            
+            # old query
             query = """
                     SELECT * 
                     FROM sf.items
                     WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
                     ORDER BY item_name;
                     """
+            '''
+            query = """
+                    SELECT * 
+                    FROM (select * from sf.sf_items left join sf.supply on item_uid = sup_item_uid) as tt
+                    WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
+                    ORDER BY item_name;
+                    """
+            '''
             print(query)
             items = execute(query, 'get', conn)
 
@@ -2543,8 +2958,6 @@ class getItems(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
-# new endpoint combining categorical options with getItems
 
 class ProduceByLocation(Resource):
     def get(self, long, lat):
@@ -2628,12 +3041,22 @@ class ProduceByLocation(Resource):
             ids.append('Random')
             ids.append('Random2')
 
+           
+            # old query
             query = """
                     SELECT * 
                     FROM sf.items
                     WHERE itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
                     ORDER BY item_name;
                     """
+            '''
+            query = """
+                    SELECT * 
+                    FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as tmp
+                    WHERE itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
+                    ORDER BY item_name;
+                    """
+            '''
             print(query)
             items = execute(query, 'get', conn)
 
@@ -2659,6 +3082,7 @@ class ProduceByLocation(Resource):
                 item_type.remove('vegetable')
                 item_type.remove('fruit')
                 res = ['vegetable','fruit']
+
                 res.extend(list(item_type))
             elif 'vegetable' in item_type:
                 print('2')
@@ -2674,6 +3098,7 @@ class ProduceByLocation(Resource):
                 print('4')
                 res = list(item_type)
 
+            #res = [vals[0].upper()+vals[1:]for vals in res]
             items['types'] = res
             return items
             
@@ -2683,12 +3108,6 @@ class ProduceByLocation(Resource):
         finally:
             disconnect(conn)
 
-
-
-
-
-
-# updated refund
 class Refund(Resource):
     # HTTP method POST
 
@@ -2823,7 +3242,6 @@ class Refund(Resource):
             disconnect(conn)
             print('process completed')
 
-
 class favorite_produce(Resource):
     
     def post(self, action):
@@ -2865,7 +3283,6 @@ class favorite_produce(Resource):
         finally:
             disconnect(conn)
 
-
 class available_Coupons(Resource):
     def get(self, email):
         response = {}
@@ -2890,8 +3307,6 @@ class available_Coupons(Resource):
         finally:
             disconnect(conn)
 
-
-
 class get_Fee_Tax(Resource):
     def get(self, z_id, day):
         try:
@@ -2915,7 +3330,6 @@ class get_Fee_Tax(Resource):
         finally:
             disconnect(conn)
             print('process completed')
-
 
 class last_delivery_instruction(Resource):
     def get(self, uid):
@@ -2960,10 +3374,6 @@ class update_order_rating(Resource):
         finally:
             disconnect(conn)
             print('process completed')
-
-
-
-
 
 class purchase_Data_SF(Resource):
     def post(self):
@@ -3124,27 +3534,30 @@ class purchase_Data_SF(Resource):
                 return items
             print('PAYMENTS-----', item)
             print('coupons')
+
             if pay_coupon_id != "":
-                print('IN coupons')
-                query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE coupon_uid = \'""" + pay_coupon_id + """\';
-                    """
-
-                items = execute(query, 'get', conn)
-                if not items['result']:
-                    items['message'] = "Coupon uid doesn't exists"
-                    items['code'] = 404
-                    return items
-
-                query = """
-                        UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + pay_coupon_id + """\');
+                coupons = pay_coupon_id.split(",")
+                for vals in coupons:
+                    print('IN coupons')
+                    query = """
+                        SELECT *
+                        FROM sf.coupons
+                        WHERE coupon_uid = \'""" + vals + """\';
                         """
-                items = execute(query, 'post', conn)
-                items['message'] = 'purchase, payments and coupons info updated'
-                items['code'] = 200
-                print('COUPONS----', items)
+
+                    items = execute(query, 'get', conn)
+                    if not items['result']:
+                        items['message'] = "Coupon uid doesn't exists"
+                        items['code'] = 404
+                        return items
+
+                    query = """
+                            UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + vals + """\');
+                            """
+                    items = execute(query, 'post', conn)
+                    items['message'] = 'purchase, payments and coupons info updated'
+                    items['code'] = 200
+                    
 
 
 
@@ -3297,10 +3710,6 @@ class purchase_Data_SF(Resource):
         finally:
             disconnect(conn)
 
-
-
-
-
 class history(Resource):
     # Fetches ALL DETAILS FOR A SPECIFIC USER
 
@@ -3360,7 +3769,6 @@ class history(Resource):
         finally:
             disconnect(conn)
 
-
 class Stripe_Intent(Resource):
     def post(self):
         response = {}
@@ -3396,8 +3804,6 @@ class Stripe_Intent(Resource):
         print(response['id'])
         return response
 
-
-
 class Stripe_Payment_key_checker(Resource):
     def post(self):
         response = {}
@@ -3424,7 +3830,6 @@ class Stripe_Payment_key_checker(Resource):
             return 200
         return response
 
-
 class Paypal_Payment_key_checker(Resource):
     def post(self):
         response = {}
@@ -3450,6 +3855,43 @@ class Paypal_Payment_key_checker(Resource):
             return 200
         return response
 
+class calculateOrderAmount(Resource):
+    def post(self):
+        try:
+            
+            conn = connect()
+            data = request.get_json(force=True)
+
+            
+            # old query
+            query_price = """
+                            select item_uid, item_price
+                            from sf.items;
+                          """
+            '''
+            query_price = """
+                            select item_uid, item_price
+                            from sf.sf_items;
+                          """
+            '''
+            items_price = execute(query_price, 'get', conn)
+            price_dict = {}
+            for vals in items_price['result']: 
+                price_dict[vals["item_uid"]] = float(vals["item_price"])   
+
+            total = 0
+
+            for key, vals in data.items():
+                total += price_dict[key]*float(vals)
+
+            return total
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 # -- Customer Queries End here -------------------------------------------------------------------------------
 
@@ -3463,21 +3905,22 @@ class addItems(Resource):
             conn = connect()
 
             if action == 'Insert':
-                itm_business_uid = request.form.get('itm_business_uid')
-                item_name = request.form.get('item_name') if request.form.get('item_name') is not None else 'NULL'
-                item_status = request.form.get('item_status') if request.form.get('item_status') is not None else 'NULL'
-                item_type = request.form.get('item_type') if request.form.get('item_type') is not None else 'NULL'
-                item_desc = request.form.get('item_desc') if request.form.get('item_desc') is not None else 'NULL'
-                item_unit = request.form.get('item_unit') if request.form.get('item_unit') is not None else 'NULL'
-                item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
-                business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
-                item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
-                favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
-                item_photo = request.files.get('item_photo')
-                exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
-                taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
+                #---- itm_business_uid = request.form.get('itm_business_uid')
+                #item_name = request.form.get('item_name') if request.form.get('item_name') is not None else 'NULL'
+                #---- item_status = request.form.get('item_status') if request.form.get('item_status') is not None else 'NULL'
+                #item_type = request.form.get('item_type') if request.form.get('item_type') is not None else 'NULL'
+                #item_desc = request.form.get('item_desc') if request.form.get('item_desc') is not None else 'NULL'
+                #item_unit = request.form.get('item_unit') if request.form.get('item_unit') is not None else 'NULL'
+                #item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
+                #---- business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
+                #item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
+                #favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
+                #item_photo = request.files.get('item_photo')
+                #exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
+                #taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
                 print('IN')
-
+                ## item_info
+                ##-- supply_uid, sup_item_uid
                 query = ["CALL sf.new_items_uid;"]
                 NewIDresponse = execute(query[0], 'get', conn)
                 NewID = NewIDresponse['result'][0]['new_id']
@@ -3626,6 +4069,179 @@ class addItems(Resource):
         finally:
             disconnect(conn)
 
+class addItems_new_end(Resource):
+    def post(self, action):
+
+        items = {}
+        try:
+            conn = connect()
+
+            if action == 'Insert':
+                #---- itm_business_uid = request.form.get('itm_business_uid')
+                #item_name = request.form.get('item_name') if request.form.get('item_name') is not None else 'NULL'
+                #---- item_status = request.form.get('item_status') if request.form.get('item_status') is not None else 'NULL'
+                #item_type = request.form.get('item_type') if request.form.get('item_type') is not None else 'NULL'
+                #item_desc = request.form.get('item_desc') if request.form.get('item_desc') is not None else 'NULL'
+                #item_unit = request.form.get('item_unit') if request.form.get('item_unit') is not None else 'NULL'
+                #item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
+                #---- business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
+                #item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
+                #favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
+                #item_photo = request.files.get('item_photo')
+                #exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
+                #taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
+                print('IN')
+                ## item_info
+                ##-- supply_uid, sup_item_uid
+                query = ["CALL sf.new_items_uid;"]
+                NewIDresponse = execute(query[0], 'get', conn)
+                NewID = NewIDresponse['result'][0]['new_id']
+                key = "items/" + NewID
+                print(key)
+                item_photo_url = helper_upload_meal_img(item_photo, key)
+                print(item_photo_url)
+                print("NewRefundID = ", NewID)
+                TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                print("TimeStamp = ", TimeStamp)
+
+                # INSERT query
+                query_insert =  '''
+                                INSERT INTO sf.items
+                                SET 
+                                itm_business_uid = \'''' + itm_business_uid + '''\',
+                                item_name = \'''' + item_name + '''\',
+                                item_status = \'''' + item_status + '''\',
+                                item_type = \'''' + item_type + '''\',
+                                item_desc = \'''' + item_desc + '''\',
+                                item_unit = \'''' + item_unit + '''\',
+                                item_price = \'''' + item_price + '''\',
+                                business_price = \'''' + business_price + '''\',
+                                item_sizes = \'''' + item_sizes + '''\',
+                                favorite = \'''' + favorite + '''\',
+                                item_photo = \'''' + item_photo_url + '''\',
+                                exp_date = \'''' + exp_date + '''\',
+                                created_at = \'''' + TimeStamp + '''\',
+                                taxable = \'''' + taxable + '''\',
+                                item_uid = \'''' + NewID + '''\';
+                                '''
+                items = execute(query_insert, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item added successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
+
+            elif action == 'Update':
+                # Update query
+
+                item_uid = request.form.get('item_uid')
+                itm_business_uid = request.form.get('itm_business_uid')
+                item_name = request.form.get('item_name')
+                item_status = request.form.get('item_status')
+                item_type = request.form.get('item_type')
+                item_desc = request.form.get('item_desc')
+                item_unit = request.form.get('item_unit')
+                item_price = request.form.get('item_price')
+                item_sizes = request.form.get('item_sizes')
+                favorite = request.form.get('favorite')
+                taxable = request.form.get('taxable')
+                business_price = request.form.get('business_price') if request.form.get('business_price') is not None else 'NULL'
+                print('In')
+                item_photo = request.files.get('item_photo') if request.files.get('item_photo') is not None else 'NULL'
+                print('oout')
+                exp_date = request.form.get('exp_date')
+                TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                print('Test timestamp----', TimeStamp_test)
+                key = "items/" + str(item_uid) + "_" + TimeStamp_test
+
+
+                if item_photo == 'NULL':
+                    print('IFFFFF------')
+
+                    query_update =  '''
+                                    UPDATE sf.items
+                                    SET 
+                                    itm_business_uid = \'''' + itm_business_uid + '''\',
+                                    item_name = \'''' + item_name + '''\',
+                                    item_status = \'''' + item_status + '''\',
+                                    item_type = \'''' + item_type + '''\',
+                                    item_desc = \'''' + item_desc + '''\',
+                                    item_unit = \'''' + item_unit + '''\',
+                                    item_price = \'''' + item_price + '''\',
+                                    business_price = \'''' + business_price + '''\',
+                                    item_sizes = \'''' + item_sizes + '''\',
+                                    favorite = \'''' + favorite + '''\',
+                                    taxable = \'''' + taxable + '''\',
+                                    exp_date = \'''' + exp_date + '''\'
+                                    WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+                else:
+                    print('ELSE--------')
+                    item_photo_url = helper_upload_meal_img(item_photo, key)
+                    query_update =  '''
+                                    UPDATE sf.items
+                                    SET 
+                                    itm_business_uid = \'''' + itm_business_uid + '''\',
+                                    item_name = \'''' + item_name + '''\',
+                                    item_status = \'''' + item_status + '''\',
+                                    item_type = \'''' + item_type + '''\',
+                                    item_desc = \'''' + item_desc + '''\',
+                                    item_unit = \'''' + item_unit + '''\',
+                                    item_price = \'''' + item_price + '''\',
+                                    business_price = \'''' + business_price + '''\',
+                                    item_sizes = \'''' + item_sizes + '''\',
+                                    favorite = \'''' + favorite + '''\',
+                                    taxable = \'''' + taxable + '''\',
+                                    item_photo = \'''' + item_photo_url + '''\',
+                                    exp_date = \'''' + exp_date + '''\'
+                                    WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+
+                items = execute(query_update, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item updated successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
+
+            else:
+
+                # Update item_status
+                print('ELSE-------------')
+                item_uid = request.form.get('item_uid')
+                item_status = request.form.get('item_status')
+                query_status =  '''
+                                UPDATE sf.items
+                                SET 
+                                item_status = \'''' + item_status + '''\'
+                                WHERE item_uid = \'''' + item_uid + '''\';
+                                '''
+                items = execute(query_status, 'post', conn)
+                print(items)
+
+                if items['code'] == 281:
+                    items['message'] = 'Item updated successfully'
+                    items['code'] = 200
+                else:
+                    items['message'] = 'check sql query'
+                    items['code'] = 490
+                return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class all_businesses(Resource):
 
     def get(self):
@@ -3648,7 +4264,6 @@ class all_businesses(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
 
 class business_details_update(Resource):
     def post(self, action):
@@ -3769,10 +4384,6 @@ class business_image_upload(Resource):
             disconnect(conn)
             print('process completed')
 
-
-
-
-
 class orders_by_farm(Resource):
 
     def get(self):
@@ -3837,7 +4448,6 @@ class orders_by_farm(Resource):
         finally:
             disconnect(conn)
 
-
 class orders_info(Resource):
 
     def get(self):
@@ -3886,7 +4496,6 @@ class orderSummary(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
 
 class order_actions(Resource):
 
@@ -3995,8 +4604,6 @@ class order_actions(Resource):
         finally:
             disconnect(conn)
 
-
-
 class update_all_items(Resource):
 
     def post(self, uid):
@@ -4020,7 +4627,6 @@ class update_all_items(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
 
 class get_item_photos(Resource):
 
@@ -4055,7 +4661,6 @@ class get_item_photos(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
 
 class update_Coupons(Resource):
     def post(self, action):
@@ -4194,9 +4799,6 @@ class update_Coupons(Resource):
                 disconnect(conn)
                 print('process completed')
 
-
-
-
 class get_s3_photos(Resource):
 
     def get(self):
@@ -4261,7 +4863,7 @@ class add_supply(Resource):
                     in_stock = single_item['item_status']
                     print('before insert')
                     query_insert = """
-                                   INSERT INTO sf.supply (supply_uid, sup_business_uid, sup_item_uid, sup_price, in_stock) VALUES (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + price + """\', \'""" + in_stock + """\');
+                                   INSERT INTO sf.supply (supply_uid, itm_business_uid, sup_item_uid, business_price, bus_item_status) VALUES (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + price + """\', \'""" + in_stock + """\');
                                    """
                     print(query_insert)
                     items_insert = execute(query_insert, 'post', conn)
@@ -4271,11 +4873,6 @@ class add_supply(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-
-
-
-
-
 
 
 # -- Farmers Queries End here -------------------------------------------------------------------------------
@@ -4293,8 +4890,9 @@ class admin_report(Resource):
         try:
             conn = connect()
             if uid == 'all':
+                #test
                 query = """
-                    SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
+                    SELECT purchase_date,delivery_first_name,delivery_last_name,pur_customer_uid,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
                     FROM sf.purchases, sf.items as itms, sf.payments, 
                          JSON_TABLE(items, '$[*]' COLUMNS (
                                     img VARCHAR(255)  PATH '$.img',
@@ -5314,12 +5912,13 @@ class farmer_revenue_inventory_report(Resource):
                     print(key)
                     itm_rev = 0
                     itm_qty = 0
+                    unit = vals[-1]
                     rr = []
                     for vals in result:
                         if vals['name'] == key:
                             itm_qty += vals['total_qty']
                             itm_rev += vals['total_qty']*vals['business_price']
-                    cw.writerow([key, itm_qty, itm_rev])
+                    cw.writerow([key+' ('+unit+')', itm_qty, itm_rev])
                     glob_rev += itm_rev
                     glob_qty += itm_qty
 
@@ -5423,9 +6022,7 @@ class farmer_revenue_inventory_report_all(Resource):
         try:
             conn = connect()
 
-
-
-            if report == 'summary':
+            if report == 'summary' or report == 'function':
 
                 query = """
                         SELECT business_uid, business_name 
@@ -5439,8 +6036,9 @@ class farmer_revenue_inventory_report_all(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
                 summ_arr = ''
+                func_out = {}
+                print('Starting looping')
                 for its in uids:
 
                     uid = its[0]
@@ -5453,23 +6051,19 @@ class farmer_revenue_inventory_report_all(Resource):
                     if items['code'] != 280:
                         items['message'] = "Business UID doesn't exists"
                         return items
-                    print(items)
                     business_name = items['result'][0]['business_name']
-                    print(business_name)
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
                             WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\' AND delivery_status = 'FALSE'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
-                    print(query)
                     items = execute(query, 'get', conn)
                     if items['code'] != 280:
                         items['message'] = 'Check sql query'
                         return items
 
                     result = items['result']
-                    print('RESULT-----', result, type(result))
                     if not len(result):
                         continue
 
@@ -5480,17 +6074,15 @@ class farmer_revenue_inventory_report_all(Resource):
                             itm_dict[vals['name']][0] += int(vals['total_qty'])
                         else:
                             itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
-                    print('dict------', itm_dict)
+                    
 
                     for vals in result:
                         unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
-                        print(unq)
                         if unq in itm_dict:
                             cust_dict[unq][0] += int(vals['total_qty'])
                         else:
                             cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
 
-                    print('cust_dict------', cust_dict)
                     si = io.StringIO()
                     cw = csv.writer(si)
                     cw.writerow([business_name])
@@ -5500,25 +6092,31 @@ class farmer_revenue_inventory_report_all(Resource):
                     glob_qty = 0
                     cw.writerow(['Item', 'Quantity', 'Revenue'])
                     for key, vals in itm_dict.items():
-                        print(key)
+                        print('dictionary',key,vals)
+                        unit = vals[-1]
+                        #print('error',vals['item_unit'])
                         itm_rev = 0
                         itm_qty = 0
                         rr = []
                         for vals in result:
+                            print('INSIDE', vals)
                             if vals['name'] == key:
                                 itm_qty += vals['total_qty']
                                 itm_rev += vals['total_qty']*vals['business_price']
-                        cw.writerow([key, itm_qty, itm_rev])
+                        cw.writerow([key+' ('+unit+')', itm_qty, itm_rev])
                         glob_rev += itm_rev
                         glob_qty += itm_qty
 
                     cw.writerow(['TOTAL', glob_qty,glob_rev])
                     orders = si.getvalue()
                     summ_arr += orders + "\n"
+                    func_out[business_name] = glob_rev
 
                 output = make_response(summ_arr)
                 output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + delivery_date + ".csv"
                 output.headers["Content-type"] = "text/csv"
+                if report == 'function':
+                    return func_out
                 return output
 
             elif report == 'packing':
@@ -5859,26 +6457,29 @@ class drivers_report_check_sort(Resource):
 
 
             elif report == "sorting":
+                #test
+                get_fun = farmer_revenue_inventory_report_all()
+                total_revenue = get_fun.get('function',date)
                 uni_dict = {}
                 print("in SORTING")
-                for vals in items['result']:
 
+                for vals in items['result']:
                     address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_zip']
                     name = vals['delivery_first_name'] + "_" + vals['delivery_last_name']
                     address = name + "--" + address
                     if vals['business_name'] not in uni_dict:
                         #check business
-                        uni_dict[vals['business_name']] = {address:{vals['item_name']:float(vals['qty'])}}
+                        uni_dict[vals['business_name']] = {address:{vals['item_name']+" ("+str(vals['business_price'])+"/"+vals['item_unit']+")":float(vals['qty'])}}
                     else:
                         #check address
                         if address not in uni_dict[vals['business_name']]:
-                            uni_dict[vals['business_name']][address] = {vals['item_name']:float(vals['qty'])}
+                            uni_dict[vals['business_name']][address] = {vals['item_name']+" ("+str(vals['business_price'])+"/"+vals['item_unit']+")":float(vals['qty'])}
                         else:
                             #check item
-                            if vals['item_name'] not in uni_dict[vals['business_name']][address]:
-                                uni_dict[vals['business_name']][address][vals['item_name']] = float(vals['qty'])
+                            if vals['item_name']+" ("+str(vals['business_price'])+"/"+vals['item_unit']+")" not in uni_dict[vals['business_name']][address]:
+                                uni_dict[vals['business_name']][address][vals['item_name']+" ("+str(vals['business_price'])+"/"+vals['item_unit']+")"] = float(vals['qty'])
                             else:
-                                uni_dict[vals['business_name']][address][vals['item_name']] += float(vals['qty'])
+                                uni_dict[vals['business_name']][address][vals['item_name']+" ("+str(vals['business_price'])+"/"+vals['item_unit']+")"] += float(vals['qty'])
 
                 si = io.StringIO()
                 cw = csv.writer(si)
@@ -5924,18 +6525,16 @@ class drivers_report_check_sort(Resource):
                 for key, vals in uni_dict.items():
                     bus_itm = []
                     cw.writerow([])
-                    cw.writerow([key])
+                    
+                    cw.writerow([key, total_revenue[key]])
                     res_dict[key] = {}
                     for add_key, add_val in vals.items():
                         bus_itm.append(list(add_val.keys()))
                     bus_itm = [item for sublist in bus_itm for item in sublist]
-                    print(bus_itm)
                     bus_itm = list(set(bus_itm))
                     bus_itm = sorted(bus_itm)
                     cw.writerow(bus_itm)
                     for add_key, add_val in vals.items():
-                        print('SHOWKEY', add_key)
-                        print(add_val)
                         res = []
                         address_items = list(add_val.keys())
                         for z_itm in bus_itm:
@@ -5949,17 +6548,17 @@ class drivers_report_check_sort(Resource):
 
                                 if z_itm not in res_dict[key]:
                                     res_dict[key][z_itm] = [str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit)]
-                                    print('RESSSSS----IF')
+                                    
                                 else:
                                     res_dict[key][z_itm].append(str(add_val[z_itm]) + "--" + str(address_name) + "--" + str(address_first_digit))
-                                    print('RESSSSS----ELSE')
+                                    
 
                     #update report
                     inter_dict = res_dict[key]
-                    print('INTER', inter_dict)
+                    
 
                     arr = [vals for keys, vals in sorted(inter_dict.items())]
-                    print('ARRR',arr)
+                    
                     max = 0
                     for vals in arr:
                         if max < len(vals):
@@ -6654,6 +7253,8 @@ class notification_groups(Resource):
 # -- NOTIFICATIONS Queries End here -------------------------------------------------------------------------------
 
 
+
+
 # -- CRON JOBS Start here -----------------------------------------------------------------------------------------------------
 
 def print_date_time():
@@ -6704,6 +7305,8 @@ api.add_resource(MSPurchaseData, '/api/v2/MSpurchaseData')
 api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>')
 #api.add_resource(SignUp, '/api/v2/SignUp') -- Note : for some reason does not work on SF xamarin code
 api.add_resource(createAccount, '/api/v2/createAccount')
+api.add_resource(createAccountGuestToCustomer, '/api/v2/createAccountGuestToCustomer')
+api.add_resource(email_info, '/api/v2/email_info/<string:email>')
 api.add_resource(email_verification, '/api/v2/email_verification')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')
@@ -6712,6 +7315,7 @@ api.add_resource(AppleLogin, '/api/v2/AppleLogin', '/')
 api.add_resource(access_refresh_update, '/api/v2/access_refresh_update')
 api.add_resource(Profile, '/api/v2/Profile/<string:id>')
 api.add_resource(update_Profile, '/api/v2/update_Profile')
+api.add_resource(set_temp_password, '/api/v2/set_temp_password')
 api.add_resource(update_email_password, '/api/v2/update_email_password')
 api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<string:role>,<string:action>')
 api.add_resource(Refund, '/api/v2/Refund')
@@ -6730,7 +7334,7 @@ api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
 api.add_resource(Paypal_Payment_key_checker, '/api/v2/Paypal_Payment_key_checker')
-
+api.add_resource(calculateOrderAmount, '/api/v2/calculateOrderAmount')
 
 # Farmer Endpoints
 
@@ -6776,7 +7380,6 @@ api.add_resource(Update_Registration_With_GUID_Android, '/api/v2/Update_Registra
 api.add_resource(Get_Tags_With_GUID_iOS, '/api/v2/Get_Tags_With_GUID_iOS/<string:tag>')
 api.add_resource(notifications, '/api/v2/notifications/<string:action>')
 api.add_resource(notification_groups, '/api/v2/notification_groups/<string:action>')
-
 
 
 #Create_or_Update_Registration_iOS
