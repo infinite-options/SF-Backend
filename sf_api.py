@@ -72,7 +72,7 @@ import random
 # Import Bing API key into bing_api_key.py
 
 #  NEED TO SOLVE THIS
-# from env_keys import BING_API_KEY, RDS_PW
+#from env_keys import BING_API_KEY, RDS_PW
 
 import decimal
 import sys
@@ -472,7 +472,7 @@ class ItemsbyBusiness(Resource):
         # http://localhost:4000/api/v2/itemsByBusiness/200-000003
         # https://tsx3rnuidi.execute-api.us-west-1.amazonaws.com/dev/api/v2/itemsByBusiness/200-000003
 # copy
-class ItemsbyBusiness_copy(Resource):
+class ItemsbyBusiness_Prime(Resource):
     # RETURNS ALL ITEMS FOR A SPECIFIC BUSINESS
     def get(self, business_uid):
         response = {}
@@ -481,8 +481,8 @@ class ItemsbyBusiness_copy(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT * FROM sf.sf_items as itm, sf.supply as sup
-                    WHERE sup.itm_business_uid = \'""" + business_uid + """\' AND sup.sup_item_uid = itm.item_uid; 
+                    SELECT * FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as tmp
+                    WHERE itm_business_uid = \'""" + business_uid + """\'; 
                     """
             items = execute(query, 'get', conn)
 
@@ -2584,6 +2584,26 @@ class brandAmbassador(Resource):
                 if not items_amb['result']:
                     return {"message":'No code exists',"code":501,"discount":"","uids":""}
                 
+                # check for SFGiftCard
+
+                query_gift = """
+                        SELECT * FROM sf.coupons
+                        WHERE email_id = \'""" + code + """\' AND coupon_id = 'SFGiftCard';
+                        """
+                items_gift = execute(query_gift,'get',conn)
+                print(items_gift)
+                if items_gift['code'] != 280:
+                    items_gift['message'] = 'check sql query'
+                    return items_gift
+                
+                if items_gift['result'] != ():
+                    if items_gift['result'][0]['discount_amount'] <= 0:
+                        return {"message":'Gift card amount left is 0',"code":521,"discount":"","uids":""}
+                    
+                    return {"message":'Let the customer use gift  card', "code": 200, "discount":items_gift['result'][0]['discount_amount'],"uids":[items_gift['result'][0]['coupon_uid']],"sub":items_gift['result'][0]}
+                
+                print('not gift card')
+                
                 final_res = ''
                 for vals in items_amb['result']:
                     if vals['notes'] == 'SFAmbassador':
@@ -2890,6 +2910,8 @@ class getItems(Resource):
 
             items['message'] = 'Items sent successfully'
             items['code'] = 200
+
+            
             """
             # get max profit
 
@@ -2991,6 +3013,30 @@ class getItems_Prime(Resource):
             """
             return items
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class getItemsByUid(Resource):
+    def get(self, uid):
+        response = {}
+        items = {}
+        print("user_uid: ", uid)
+        try:
+            conn = connect()
+            query = """
+                    SELECT *
+                    FROM sf.sf_items
+                    WHERE item_uid = \'""" + uid + """\';
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'Check sql query for history'
+                return items
+            items['result'] = items['result'][0]
+            return items
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -3592,6 +3638,7 @@ class purchase_Data_SF(Resource):
             delivery_longitude = data['delivery_longitude']
             delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
             purchase_notes = data['purchase_notes']
+            
 
             isCopy = data['isCopy'] if data.get('isCopy') is not None or "" else "False"
 
@@ -3667,6 +3714,7 @@ class purchase_Data_SF(Resource):
             delivery_fee = data['delivery_fee'] if data.get('delivery_fee') is not None else "0"
             driver_tip = data['driver_tip'] if data.get('driver_tip') is not None else "0"
             taxes = data['taxes'] if data.get('taxes') is not None else "0"
+            ambassador_code = data['ambassador_code'] if data.get('ambassador_code') is not None else "0"
 
 
 
@@ -3697,7 +3745,8 @@ class purchase_Data_SF(Resource):
                                 service_fee = \'""" + service_fee + """\',
                                 delivery_fee = \'""" + delivery_fee + """\',
                                 driver_tip = \'""" + driver_tip + """\',
-                                taxes = \'""" + taxes + """\';
+                                taxes = \'""" + taxes + """\',
+                                ambassador_code = \'""" + ambassador_code + """\';
                             """]
 
             print(query_insert)
@@ -3729,10 +3778,16 @@ class purchase_Data_SF(Resource):
                         items['message'] = "Coupon uid doesn't exists"
                         items['code'] = 404
                         return items
-
-                    query = """
-                            UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + vals + """\');
+                    
+                    if items['result'][0]['coupon_id'] == 'SFGiftCard':
+                        query = """
+                            UPDATE sf.coupons SET discount_amount = discount_amount - \'""" + ambassador_code + """\' WHERE (coupon_uid = \'""" + vals + """\');
                             """
+                        print(query)
+                    else:
+                        query = """
+                                UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + vals + """\');
+                                """
                     items = execute(query, 'post', conn)
                     items['message'] = 'purchase, payments and coupons info updated'
                     items['code'] = 200
@@ -4076,8 +4131,6 @@ class calculateOrderAmount_Prime(Resource):
             
             conn = connect()
             data = request.get_json(force=True)
-
-            
             
             query_price = """
                             select item_uid, item_price
@@ -4282,7 +4335,7 @@ class addItems_Prime(Resource):
         items = {}
         try:
             conn = connect()
-
+            print('In addItems')
             if action == 'Insert':
                 
                 ##### new
@@ -4319,6 +4372,7 @@ class addItems_Prime(Resource):
                 
                 # add new item and supply
                 else:
+                    
                     item_name = request.form.get('item_name') if request.form.get('item_name') is not None else 'NULL'
                     item_info = request.form.get('item_info') if request.form.get('item_info') is not None else 'NULL'
                     item_type = request.form.get('item_type') if request.form.get('item_type') is not None else 'NULL'
@@ -4330,14 +4384,14 @@ class addItems_Prime(Resource):
                     item_photo = request.files.get('item_photo')
                     exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
                     taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
-                    
+                    print('data done')
                     query = ["CALL sf.new_sf_items_uid;"]
                     NewIDresponse = execute(query[0], 'get', conn)
                     NewID = NewIDresponse['result'][0]['new_id']
                     key = "items/" + NewID
                     item_photo_url = helper_upload_meal_img(item_photo, key)
                     TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    
+                    print('before query',item_photo_url,exp_date)
                     query_insert =  '''
                                 INSERT INTO sf.sf_items
                                 SET 
@@ -4355,15 +4409,17 @@ class addItems_Prime(Resource):
                                 exp_date = \'''' + exp_date + '''\',
                                 taxable = \'''' + taxable + '''\';
                                 '''
+                    print(query)
                     items = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
                         return items
+                    print('first query done',items)
                     
                     # add to supply table
 
                     bus_uid = request.form.get('bus_uid')
-                    itm_uid = request.form.get('itm_uid')
+                    itm_uid = NewID
                     bus_price = request.form.get('bus_price')
                     item_status = request.form.get('item_status')
                     
@@ -4381,12 +4437,38 @@ class addItems_Prime(Resource):
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
                     return items
-                
-
+            
+            
             elif action == 'Update':
                 # Update query
-                item_update = request.form.get('item_update')
-                if item_update == 'TRUE':
+                print('In Update')
+                item_uid = request.form.get('item_uid')
+                print('item_uid',item_uid)
+                bus_uid = request.form.get('bus_uid')
+                print('bus_uid',bus_uid)
+                bus_price = request.form.get('bus_price')
+                print('bus_price',bus_price)
+                item_status = request.form.get('item_status')
+                print('status',item_status)
+                
+                query = """
+                        SELECT * FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itm
+                        WHERE itm.item_uid = \'""" + item_uid + """\' AND itm.itm_business_uid = \'""" + bus_uid + """\';
+                        """
+                items = execute(query,'get',conn)
+                print(items)
+                if items['code'] != 280:
+                    items['message'] = 'check sql query'
+                    return items
+                
+                flag = 0
+                print(items['result'][0]['item_status'],item_status,items['result'][0]['business_price'],bus_price)
+                if items['result'][0]['item_status'] == item_status and items['result'][0]['business_price'] == float(bus_price):
+                    flag = 1
+                
+                print(flag)
+                
+                if flag == 1:
                     
                     item_uid = request.form.get('item_uid')
                     item_name = request.form.get('item_name')
@@ -5166,6 +5248,74 @@ class add_supply(Resource):
                                    """
                     print(query_insert)
                     items_insert = execute(query_insert, 'post', conn)
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class UpdateProduceToNewDB(Resource):
+    
+    def get(self):
+        try:
+            print('Endpoint start')
+            conn = connect()
+
+            #create product dictionary
+
+            query = """
+                    SELECT * FROM sf.sf_items;
+                    """
+            
+            items = execute(query,'get',conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            
+            product_dict = {}
+            for vals in items['result']:
+                product_dict[vals['item_name']] = vals
+            
+            # get all purchase orders
+
+            query = """
+                    SELECT * FROM sf.purchases;
+                    """
+            items = execute(query,'get',conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            
+            # logic starts
+
+            for order in items['result']:
+                
+                flag = 0
+                print('IN')
+                produce = json.loads(order['items'])
+                purchase_uid = order['purchase_uid']
+                ans = []
+                for product in produce:
+                    tmp = product
+                    if product['name'] in product_dict:
+                        flag = 1
+                        tmp['img'] = product_dict[product['name']]['item_photo']
+                        tmp['item_uid'] = product_dict[product['name']]['item_uid']
+                    ans.append(tmp)
+                    print('APPENDED')
+                if flag == 1:
+                    ans = str(ans)
+                    ans = ans.replace("'", '"')
+                    query_update = """
+                                    UPDATE sf.purchases SET items = \'""" + ans + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                                    """
+                    print('FLAGGGGGGG', query_update)
+                    items_update = execute(query_update, 'post', conn)
+                    if items_update['code'] != 281:
+                        items_update['message'] = 'check sql query for updating items in purchase'
+                        return items_update
+            return items_update
 
 
         except:
@@ -7212,6 +7362,118 @@ class farmer_revenue_inventory_report_all_month(Resource):
                     #hexa
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
+                            FROM sf.orders_by_farm AS obf, sf.payments AS pay, sf.items AS itm
+                            WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND pay.start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\' AND obf.itm_business_uid = \'""" + uid + """\'
+                            GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
+                            """
+                    print(query)
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = 'Check sql query'
+                        return items
+
+                    result = items['result']
+                    print('RESULT-----', result, type(result))
+                    if not len(result):
+                        continue
+
+                    itm_dict = {}
+                    cust_dict = {}
+                    for vals in result:
+                        if vals['name'] in itm_dict:
+                            itm_dict[vals['name']][0] += int(vals['total_qty'])
+                        else:
+                            itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+                    print('dict------', itm_dict)
+
+                    for vals in result:
+                        unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
+                        print(unq)
+                        if unq in itm_dict:
+                            cust_dict[unq][0] += int(vals['total_qty'])
+                        else:
+                            cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
+
+                    print('cust_dict------', cust_dict)
+                    si = io.StringIO()
+                    cw = csv.writer(si)
+                    cw.writerow([business_name])
+                    cw.writerow([])
+                    itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
+                    glob_rev = 0
+                    glob_qty = 0
+                    cw.writerow(['Item', 'Quantity', 'Revenue'])
+                    for key, vals in itm_dict.items():
+                        print(key)
+                        itm_rev = 0
+                        itm_qty = 0
+                        rr = []
+                        for vals in result:
+                            if vals['name'] == key:
+                                itm_qty += vals['total_qty']
+                                itm_rev += vals['total_qty']*vals['business_price']
+                        cw.writerow([key, itm_qty, itm_rev])
+                        glob_rev += itm_rev
+                        glob_qty += itm_qty
+
+                    cw.writerow(['TOTAL', glob_qty,glob_rev])
+                    orders = si.getvalue()
+                    summ_arr += orders + "\n"
+
+                output = make_response(summ_arr)
+                output.headers["Content-Disposition"] = "attachment; filename=Produce Summary Report all farms - " + start + " to " +end+ ".csv"
+                output.headers["Content-type"] = "text/csv"
+                return output
+
+            else:
+                return 'choose correct report'
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class farmer_revenue_inventory_report_all_month_Prime(Resource):
+
+    def get(self, report, start, end):
+
+        try:
+            conn = connect()
+
+            if report == 'summary':
+
+                query = """
+                        SELECT business_uid, business_name 
+                        FROM sf.businesses
+                        """
+                items = execute(query, 'get', conn)
+
+                if items['code'] != 280:
+                    items['message'] = 'unable to fetch business uids'
+                    return items
+
+                uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
+                uids.sort(key=lambda x: x[1])
+                print(uids)
+                summ_arr = ''
+                for its in uids:
+
+                    uid = its[0]
+
+                    query = """
+                            SELECT business_name FROM sf.businesses
+                            WHERE business_uid = \'""" + uid + """\';
+                            """
+                    items = execute(query, 'get', conn)
+                    if items['code'] != 280:
+                        items['message'] = "Business UID doesn't exists"
+                        return items
+                    print(items)
+                    business_name = items['result'][0]['business_name']
+                    print(business_name)
+                    #hexa
+                    query = """
+                            SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
                             FROM sf.orders_by_farm AS obf, sf.payments AS pay, (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) AS itm
                             WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND obf.itm_business_uid = itm.itm_business_uid AND pay.start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\' AND obf.itm_business_uid = \'""" + uid + """\'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
@@ -7409,7 +7671,7 @@ class drivers_report_check_sort(Resource):
 
             elif report == "sorting":
                 #test
-                get_fun = farmer_revenue_inventory_report_all()
+                get_fun = farmer_revenue_inventory_report_all_()
                 total_revenue = get_fun.get('function',date)
                 uni_dict = {}
                 print("in SORTING")
@@ -7666,10 +7928,9 @@ class drivers_report_check_sort_Prime(Resource):
                 output.headers["Content-type"] = "text/csv"
                 return output
 
-
             elif report == "sorting":
                 #test
-                get_fun = farmer_revenue_inventory_report_all()
+                get_fun = farmer_revenue_inventory_report_all_Prime()
                 total_revenue = get_fun.get('function',date)
                 uni_dict = {}
                 print("in SORTING")
@@ -7696,7 +7957,6 @@ class drivers_report_check_sort_Prime(Resource):
                 cw = csv.writer(si)
                 cw.writerow(['Driver Sorting Report'])
                 print(uni_dict)
-
                 print("start")
                 """
                 for key, vals in uni_dict.items():
@@ -7834,6 +8094,23 @@ class getAllItem_Prime(Resource):
                     FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itm, sf.businesses as bus
                     WHERE itm.itm_business_uid = bus.business_uid
                     ORDER BY item_name;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = "check sql query"
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class getDistinctItems(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.sf_items ORDER BY item_name;
                     """
             items = execute(query, 'get', conn)
 
@@ -8053,6 +8330,7 @@ class UpdatePurchaseBusiness_Prime(Resource):
             disconnect(conn)
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
+
 
 
 # -- Queries end here -------------------------------------------------------------------------------
@@ -8548,7 +8826,73 @@ class notification_groups(Resource):
         else:
             return 'choose correct option'
 
+
 # -- NOTIFICATIONS Queries End here -------------------------------------------------------------------------------
+
+# Misc Endpoints start here
+
+
+class try_catch_storage(Resource):
+    
+    def post(self):
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+            customer_uid = data['customer_uid']
+            caught_problems = data['caught_output']
+            functions = data['functions']
+            files = data['files']
+            line_number = data['line_number']
+            types = data['types']
+            new_problem_uid = "CALL new_try_catch_id();"
+            problem_id = execute(new_problem_uid, 'get', conn)
+            query = """
+                    insert into try_catch (problem_id, customer_uid, caught_problems, problem_timestamp,functions, files, line_number, types)
+                    values(
+                        '""" + problem_id["result"][0]["new_id"] + """',
+                        '""" + customer_uid + """',
+                        '""" + caught_problems + """',
+                        now(),
+                        '""" + functions + """',
+                        '""" + files + """',
+                        '""" + line_number + """',
+                        '""" + types + """'
+                    );
+                    """
+            items = execute(query, 'post', conn)
+            if items['code'] != 281:
+                items['message'] = 'Check sql query'
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn) 
+
+class alert_message(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.alert_message;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+            
+            alert_dict = {}
+            for vals in items['result']:
+                alert_dict[vals['alert_uid']] = vals['alert_message']
+            
+            items['alert'] = alert_dict
+            return items
+        
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+        
+# Misc Endpoints end here -------------------------------------------------------------------------------
 
 # -- CRON JOBS Start here -----------------------------------------------------------------------------------------------------
 
@@ -8586,8 +8930,9 @@ def print_date_time():
 # Define API routes
 
 api.add_resource(Businesses, '/api/v2/businesses')
-api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
-api.add_resource(ItemsbyBusiness_copy, '/api/v2/ItemsbyBusiness_copy/<string:business_uid>')
+#api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
+#new
+api.add_resource(ItemsbyBusiness_Prime, '/api/v2/itemsByBusiness/<string:business_uid>')
 api.add_resource(SubscriptionsbyBusiness, '/api/v2/subscriptionsByBusiness/<string:business_uid>')
 api.add_resource(CouponDetails, '/api/v2/couponDetails/<string:coupon_id>', '/api/v2/couponDetails')
 api.add_resource(RefundDetails, '/api/v2/refundDetails')
@@ -8615,13 +8960,14 @@ api.add_resource(update_guid_notification, '/api/v2/update_guid_notification/<st
 api.add_resource(Refund, '/api/v2/Refund')
 api.add_resource(business_delivery_details, '/api/v2/business_delivery_details/<string:id>')
 api.add_resource(categoricalOptions, '/api/v2/categoricalOptions/<string:long>,<string:lat>')
-api.add_resource(ProduceByLocation, '/api/v2/ProduceByLocation/<string:long>,<string:lat>')
+#api.add_resource(ProduceByLocation, '/api/v2/ProduceByLocation/<string:long>,<string:lat>')
 #new
-api.add_resource(ProduceByLocation_Prime, '/api/v2/ProduceByLocation_Prime/<string:long>,<string:lat>')
+api.add_resource(ProduceByLocation_Prime, '/api/v2/ProduceByLocation/<string:long>,<string:lat>')
 api.add_resource(brandAmbassador, '/api/v2/brandAmbassador/<string:action>')
-api.add_resource(getItems, '/api/v2/getItems')
+#api.add_resource(getItems, '/api/v2/getItems')
 #new
-api.add_resource(getItems_Prime, '/api/v2/getItems_Prime')
+api.add_resource(getItems_Prime, '/api/v2/getItems')
+api.add_resource(getItemsByUid, '/api/v2/getItemsByUid/<string:uid>')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
 api.add_resource(favorite_produce, '/api/v2/favorite_produce/<string:action>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
@@ -8632,9 +8978,10 @@ api.add_resource(purchase_Data_SF, '/api/v2/purchase_Data_SF')
 api.add_resource(Stripe_Intent, '/api/v2/Stripe_Intent')
 api.add_resource(Stripe_Payment_key_checker, '/api/v2/Stripe_Payment_key_checker')
 api.add_resource(Paypal_Payment_key_checker, '/api/v2/Paypal_Payment_key_checker')
-api.add_resource(calculateOrderAmount, '/api/v2/calculateOrderAmount')
+#api.add_resource(calculateOrderAmount, '/api/v2/calculateOrderAmount')
 #new
-api.add_resource(calculateOrderAmount_Prime, '/api/v2/calculateOrderAmount_Prime')
+api.add_resource(calculateOrderAmount_Prime, '/api/v2/calculateOrderAmount')
+
 
 # Farmer Endpoints
 
@@ -8648,54 +8995,56 @@ api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(orderSummary, '/api/v2/orderSummary')
 api.add_resource(order_actions, '/api/v2/order_actions/<string:action>')
-api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
+#api.add_resource(update_all_items, '/api/v2/update_all_items/<string:uid>')
 #new
-api.add_resource(update_all_items_Prime, '/api/v2/update_all_items_Prime/<string:uid>')
-api.add_resource(get_item_photos, '/api/v2/get_item_photos')
+api.add_resource(update_all_items_Prime, '/api/v2/update_all_items/<string:uid>')
+#api.add_resource(get_item_photos, '/api/v2/get_item_photos')
 #new
-api.add_resource(get_item_photos_Prime, '/api/v2/get_item_photos_Prime')
+api.add_resource(get_item_photos_Prime, '/api/v2/get_item_photos')
 api.add_resource(update_Coupons, '/api/v2/update_Coupons/<string:action>')
 api.add_resource(get_s3_photos, '/api/v2/get_s3_photos')
 api.add_resource(add_supply, '/api/v2/add_supply')
+api.add_resource(UpdateProduceToNewDB, '/api/v2/UpdateProduceToNewDB')
 
 # Admin Endpoints
 
-api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
+#api.add_resource(admin_report, '/api/v2/admin_report/<string:uid>')
 #new
-api.add_resource(admin_report_Prime, '/api/v2/admin_report_Prime/<string:uid>')
-api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
+api.add_resource(admin_report_Prime, '/api/v2/admin_report/<string:uid>')
+#api.add_resource(admin_report_groupby, '/api/v2/admin_report_groupby/<string:uid>')
 #new
-api.add_resource(admin_report_groupby_Prime, '/api/v2/admin_report_groupby_Prime/<string:uid>')
-api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
+api.add_resource(admin_report_groupby_Prime, '/api/v2/admin_report_groupby/<string:uid>')
+#api.add_resource(summary_reports, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
 #new
-api.add_resource(summary_reports_Prime, '/api/v2/summary_reports_Prime/<string:category>,<string:start>,<string:end>')
-api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
+api.add_resource(summary_reports_Prime, '/api/v2/summary_reports/<string:category>,<string:start>,<string:end>')
+#api.add_resource(profits_reports, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 #new
-api.add_resource(profits_reports_Prime, '/api/v2/profits_reports_Prime/<string:category>,<string:start>,<string:end>')
+api.add_resource(profits_reports_Prime, '/api/v2/profits_reports/<string:category>,<string:start>,<string:end>')
 api.add_resource(update_zones, '/api/v2/update_zones/<string:action>')
 api.add_resource(report_order_customer_pivot_detail, '/api/v2/report_order_customer_pivot_detail/<string:report>,<string:uid>,<string:date>')
-api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
+#api.add_resource(farmer_revenue_inventory_report, '/api/v2/farmer_revenue_inventory_report/<string:report>')
 #new
-api.add_resource(farmer_revenue_inventory_report_Prime, '/api/v2/farmer_revenue_inventory_report_Prime/<string:report>')
-api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
+api.add_resource(farmer_revenue_inventory_report_Prime, '/api/v2/farmer_revenue_inventory_report/<string:report>')
+#api.add_resource(farmer_revenue_inventory_report_all, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
 #new
-api.add_resource(farmer_revenue_inventory_report_all_Prime, '/api/v2/farmer_revenue_inventory_report_all_Prime/<string:report>,<string:delivery_date>')
-api.add_resource(farmer_revenue_inventory_report_all_month, '/api/v2/farmer_revenue_inventory_report_all_month/<string:report>,<string:start>,<string:end>')
+api.add_resource(farmer_revenue_inventory_report_all_Prime, '/api/v2/farmer_revenue_inventory_report_all/<string:report>,<string:delivery_date>')
+#api.add_resource(farmer_revenue_inventory_report_all_month, '/api/v2/farmer_revenue_inventory_report_all_month/<string:report>,<string:start>,<string:end>')
 #new
-api.add_resource(farmer_revenue_inventory_report_all_month_Prime, '/api/v2/farmer_revenue_inventory_report_all_month_Prime/<string:report>,<string:start>,<string:end>')
-api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
+api.add_resource(farmer_revenue_inventory_report_all_month_Prime, '/api/v2/farmer_revenue_inventory_report_all_month/<string:report>,<string:start>,<string:end>')
+#api.add_resource(drivers_report_check_sort, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
 #new
-api.add_resource(drivers_report_check_sort_Prime, '/api/v2/drivers_report_check_sort_Prime/<string:date>,<string:report>')
-api.add_resource(getAllItem, '/api/v2/getAllItem')
+api.add_resource(drivers_report_check_sort_Prime, '/api/v2/drivers_report_check_sort/<string:date>,<string:report>')
+#api.add_resource(getAllItem, '/api/v2/getAllItem')
 #new
-api.add_resource(getAllItem_Prime, '/api/v2/getAllItem_Prime')
-api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
+api.add_resource(getAllItem_Prime, '/api/v2/getAllItem')
+#api.add_resource(getBusinessItems, '/api/v2/getBusinessItems/<string:name>')
+api.add_resource(getDistinctItems, '/api/v2/getDistinctItems')
 #new
-api.add_resource(getBusinessItems_Prime, '/api/v2/getBusinessItems_Prime/<string:name>')
+api.add_resource(getBusinessItems_Prime, '/api/v2/getBusinessItems/<string:name>')
 api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
-api.add_resource(UpdatePurchaseBusiness, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
+#api.add_resource(UpdatePurchaseBusiness, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 #new
-api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness_Prime/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
+api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
@@ -8708,6 +9057,11 @@ api.add_resource(Update_Registration_With_GUID_Android, '/api/v2/Update_Registra
 api.add_resource(Get_Tags_With_GUID_iOS, '/api/v2/Get_Tags_With_GUID_iOS/<string:tag>')
 api.add_resource(notifications, '/api/v2/notifications/<string:action>')
 api.add_resource(notification_groups, '/api/v2/notification_groups/<string:action>')
+
+# Misc Endpoints
+
+api.add_resource(try_catch_storage, '/api/v2/try_catch_storage')
+api.add_resource(alert_message, '/api/v2/alert_message')
 
 
 #Create_or_Update_Registration_iOS
