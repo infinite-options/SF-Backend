@@ -2956,20 +2956,21 @@ class getItems_Prime(Resource):
         try:
             conn = connect()
 
-            data = request.get_json(force=True)
-            ids = data['ids']
-            type = data['type']
-            type.append('Random')
-            type.append('Random2')
-            ids.append('Random')
-            ids.append('Random2')
-
-            
-            
+            '''
             query = """
                     SELECT * 
                     FROM (select * from sf.sf_items left join sf.supply on item_uid = sup_item_uid) as tt
                     WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
+                    ORDER BY item_name;
+                    """
+            '''
+
+            #updated query
+            query = """
+                    SELECT  *
+                    FROM (select * from sf.sf_items left join sf.supply on item_uid = sup_item_uid) as tt
+                    WHERE item_display = 'TRUE' AND item_status = 'Active'
+                    GROUP BY item_name
                     ORDER BY item_name;
                     """
             
@@ -2982,35 +2983,7 @@ class getItems_Prime(Resource):
 
             items['message'] = 'Items sent successfully'
             items['code'] = 200
-            """
-            # get max profit
-
-            dict_items = {}
-            rm_idx = []
-            result = items['result']
-            print('RESULT-----------')
-            print(result[0])
-            for i, vals in enumerate(result):
-                if vals['item_name'] + vals["item_type"] + vals["item_unit"] in dict_items.keys():
-                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][0] < vals["item_price"] - vals["business_price"]:
-                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][1])
-                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
-                    else:
-                        rm_idx.append(i)
-                else:
-                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
-
-            print('VALS---------')
-            print(dict_items)
-            print(rm_idx)
-
-            for dd in rm_idx:
-                print(result[dd])
-
-            result = [i for j, i in enumerate(result) if j not in rm_idx]
-
-            items['result'] = result
-            """
+            
             return items
 
         except:
