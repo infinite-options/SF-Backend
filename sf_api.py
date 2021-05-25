@@ -6057,20 +6057,34 @@ class report_order_customer_pivot_detail(Resource):
                              ) AS deconstruct
                         WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                         """
-
+                print(query)
                 items = execute(query, 'get', conn)
-
+                print(items)
                 if items['code'] != 280:
                     items['message'] = 'Check sql query'
                     return items
                 else:
+                    if items['result'] == ():
+                        si = io.StringIO()
+                        cw = csv.writer(si)
+                        cw.writerow(['No Open Orders for date ' + date])
+                        print('1')
+                        orders = si.getvalue()
+                        print('1')
+                        output = make_response(orders)
+                        print('1')
+                        output.headers["Content-Disposition"] = "attachment; filename=order_details_"+date+".csv"
+                        print('1')
+                        output.headers["Content-type"] = "text/csv"
+                        return output
+                        
 
                     items['message'] = 'Report data successful'
                     items['code'] = 200
                     result = items['result']
                     dict = {}
 
-                    bus_name = result[0]['business_name']
+                    
                     for vals in result:
                         if vals['purchase_uid'] in dict:
                             dict[vals['purchase_uid']].append(vals)
@@ -6101,7 +6115,7 @@ class report_order_customer_pivot_detail(Resource):
                                         items['price']
                                         ])
 
-
+                    bus_name = result[0]['business_name']
                     si = io.StringIO()
                     cw = csv.writer(si)
                     cw.writerow(['Open Orders'])
@@ -6136,6 +6150,17 @@ class report_order_customer_pivot_detail(Resource):
                     items['message'] = 'Check sql query'
                     return items
                 else:
+                    
+                    if items['result'] == ():
+                        si = io.StringIO()
+                        cw = csv.writer(si)
+                        cw.writerow(['No Open Orders for date ' + date])
+                        orders = si.getvalue()
+                        output = make_response(orders)
+                        output.headers["Content-Disposition"] = "attachment; filename=_customer_details_"+date+".csv"
+                        output.headers["Content-type"] = "text/csv"
+                        return output
+
 
                     items['message'] = 'Report data successful'
                     items['code'] = 200
@@ -6191,7 +6216,16 @@ class report_order_customer_pivot_detail(Resource):
                     items['message'] = 'Check sql query'
                     return items
                 else:
-
+                    if items['result'] == ():
+                        si = io.StringIO()
+                        cw = csv.writer(si)
+                        cw.writerow(['No Open Orders for date ' + date])
+                        orders = si.getvalue()
+                        output = make_response(orders)
+                        output.headers["Content-Disposition"] = "attachment; filename=pivot_table_"+date+".csv"
+                        output.headers["Content-type"] = "text/csv"
+                        return output
+                    
                     items['message'] = 'Report data successful'
                     items['code'] = 200
                     result = items['result']
@@ -8269,8 +8303,8 @@ class UpdatePurchaseBusiness_Prime(Resource):
 
             query_prod = """
                         SELECT item_uid, business_price, item_photo
-                        FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid)
-                        WHERE item_name =  \'""" + name + """\' AND itm_business_uid = \'""" + businessTo + """\';
+                        FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itm
+                        WHERE itm.item_name =  \'""" + name + """\' AND itm.itm_business_uid = \'""" + businessTo + """\';
                         """ 
             
             items_prod = execute(query_prod, 'get', conn)
