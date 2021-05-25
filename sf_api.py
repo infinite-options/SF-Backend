@@ -3293,6 +3293,35 @@ class ProduceByLocation_Prime(Resource):
             items['code'] = 200
             items['business_details'] = business_details
 
+            # get max profit
+
+            dict_items = {}
+            rm_idx = []
+            result = items['result']
+            print('RESULT-----------')
+            print(result[0])
+            for i, vals in enumerate(result):
+                if vals['item_name'] + vals["item_type"] + vals["item_unit"] in dict_items.keys():
+                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][0] < vals["item_price"] - vals["business_price"]:
+                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][1])
+                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
+                    else:
+                        rm_idx.append(i)
+                else:
+                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
+
+            print('VALS---------')
+            print(dict_items)
+            print(rm_idx)
+
+            for dd in rm_idx:
+                print(result[dd])
+
+            result = [i for j, i in enumerate(result) if j not in rm_idx]
+
+            items['result'] = result
+            
+
 
             #item_type = set()
             item_type = set()
