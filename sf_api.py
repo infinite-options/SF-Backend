@@ -3511,19 +3511,41 @@ class favorite_produce(Resource):
             disconnect(conn)
 
 class available_Coupons(Resource):
-    def get(self, email):
+    def get(self,email):
         response = {}
         items = []
         try:
             conn = connect()
-
             if email == 'guest':
                 email = ''
-
+            
             query = """
                     SELECT *
                     FROM sf.coupons
                     WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > num_used AND expire_date> CURDATE();;
+                    """
+            
+                
+            items = execute(query, 'get', conn)
+            items['message'] = 'Coupons sent successfully'
+            items['code'] = 200
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class available_Coupons_temp(Resource):
+    def get(self):
+        response = {}
+        items = []
+        try:
+            conn = connect()
+            
+            query = """
+                    SELECT *
+                    FROM sf.coupons
+                    WHERE email_id = '' AND limits > num_used AND expire_date> CURDATE();;
                     """
             items = execute(query, 'get', conn)
             items['message'] = 'Coupons sent successfully'
@@ -9005,6 +9027,7 @@ api.add_resource(brandAmbassador, '/api/v2/brandAmbassador/<string:action>')
 api.add_resource(getItems_Prime, '/api/v2/getItems')
 api.add_resource(getItemsByUid, '/api/v2/getItemsByUid/<string:uid>')
 api.add_resource(available_Coupons, '/api/v2/available_Coupons/<string:email>')
+api.add_resource(available_Coupons_temp, '/api/v2/available_Coupons/')
 api.add_resource(favorite_produce, '/api/v2/favorite_produce/<string:action>')
 api.add_resource(history, '/api/v2/history/<string:uid>')
 api.add_resource(get_Fee_Tax, '/api/v2/get_Fee_Tax/<string:z_id>,<string:day>')
