@@ -3740,8 +3740,6 @@ class purchase_Data_SF(Resource):
             taxes = data['taxes'] if data.get('taxes') is not None else "0"
             ambassador_code = data['ambassador_code'] if data.get('ambassador_code') is not None else "0"
 
-
-
             print("data------")
             print(data)
 
@@ -3815,6 +3813,55 @@ class purchase_Data_SF(Resource):
                     items = execute(query, 'post', conn)
                     items['message'] = 'purchase, payments and coupons info updated'
                     items['code'] = 200
+            
+
+            # check for gift cards
+            query_gift = """
+                        SELECT item_uid FROM sf.sf_items WHERE item_type = 'giftcard';
+                        """
+            items_gift = execute(query_gift,'get',conn)
+            gift_dict = []
+            for gift_card in items_gift['result']:
+                gift_dict.append(gift_card['item_uid'])
+            print('gift card uids are ',gift_dict)
+            for vals in data['items']:
+                if vals['item_uid'] in gift_dict:
+                    # gift card logic
+                    qty = int(vals['qty'])
+                    for i in range(qty):
+                        lettersAndDigits = string.ascii_letters + string.digits
+                        code = "".join([random.choice(lettersAndDigits) for i in range(8)])
+
+                        # insert in database
+
+                        query_coupon = "call sf.new_coupons_uid();"
+                        items_coupon = execute(query_coupon,'get',conn)
+                        print(items_coupon)
+                        new_id = items_coupon['result'][0]['new_id']
+                        print(new_id)
+                        TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+                        query_card = """
+                                    INSERT INTO 
+                                    sf.coupons 
+                                    (coupon_uid, coupon_id, valid, threshold, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid) 
+                                    VALUES 
+                                    (\'""" + new_id + """\', 'SFGiftCard', 'TRUE', '0', '0', \'""" + str(vals['price']) + """\', '0', \'""" + TimeStamp + """\', '100', 'SF Gift Card', '0', 'F', \'""" + code + """\', 'null');
+                                    """
+                        print(query_card)
+                        items_card = execute(query_card,'post',conn)
+
+                        # email
+                        msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
+                        msg.body = "Hi " + delivery_first_name + "!\n\n" \
+                                "Your giftcard code is "+ code +  \
+                                "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
+                                "Thx - The Serving Fresh Team\n\n"
+                        mail.send(msg)
+ 
+
+
+            
                     
 
 
