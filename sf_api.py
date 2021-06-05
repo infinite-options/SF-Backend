@@ -30,7 +30,11 @@ import stripe
 import pandas as pd
 import io
 import csv
+from PIL import Image, ImageDraw, ImageFont
+import requests
 
+from apscheduler.schedulers.background import BackgroundScheduler
+import atexit
 from flask import Flask, request, render_template, redirect, url_for, make_response
 from flask_restful import Resource, Api
 from flask_cors import CORS
@@ -126,9 +130,14 @@ app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
 
-app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
-app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
+#app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
+#app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+#app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
+
+app.config['MAIL_USERNAME'] = "support@servingfresh.me"
+app.config['MAIL_PASSWORD'] = "SupportFresh1"
+app.config['MAIL_DEFAULT_SENDER'] = "support@servingfresh.me"
+
 
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
@@ -2956,15 +2965,23 @@ class getItems_Prime(Resource):
         try:
             conn = connect()
 
-            '''
+            data = request.get_json(force=True)
+            ids = data['ids']
+            type = data['type']
+            type.append('Random')
+            type.append('Random2')
+            ids.append('Random')
+            ids.append('Random2')
+
+            #old query
             query = """
                     SELECT * 
                     FROM (select * from sf.sf_items left join sf.supply on item_uid = sup_item_uid) as tt
                     WHERE item_type IN """ + str(tuple(type)) + """ AND itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
                     ORDER BY item_name;
                     """
+            
             '''
-
             #updated query
             query = """
                     SELECT  *
@@ -2973,6 +2990,7 @@ class getItems_Prime(Resource):
                     GROUP BY item_name
                     ORDER BY item_name;
                     """
+            '''
             
             print(query)
             items = execute(query, 'get', conn)
@@ -3815,6 +3833,15 @@ class purchase_Data_SF(Resource):
                     items['code'] = 200
             
 
+            
+            
+            
+            ## don't send email if we are copying order
+            print("isCopy---------------",isCopy)
+            if isCopy != "False":
+                print("In no email")
+                return items
+            
             # check for gift cards
             query_gift = """
                         SELECT item_uid FROM sf.sf_items WHERE item_type = 'giftcard';
@@ -3823,7 +3850,6 @@ class purchase_Data_SF(Resource):
             gift_dict = []
             for gift_card in items_gift['result']:
                 gift_dict.append(gift_card['item_uid'])
-            print('gift card uids are ',gift_dict)
             for vals in data['items']:
                 if vals['item_uid'] in gift_dict:
                     # gift card logic
@@ -3851,39 +3877,86 @@ class purchase_Data_SF(Resource):
                         print(query_card)
                         items_card = execute(query_card,'post',conn)
 
+                        
+
                         # email
-                        msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
-                        msg.body = "Hi " + delivery_first_name + "!\n\n" \
-                                "Your giftcard code is "+ code +  \
-                                "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
-                                "Thx - The Serving Fresh Team\n\n"
+
+                        img = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+                        image_editable = ImageDraw.Draw(img)
+                        title_text = code
+                        title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
+                        image_editable.text((270,555), title_text, (255, 255, 255), font=title_font_rob)
+                        img.save("result.png")
+                        key = "giftcards/"+code
+                        bucket = 'servingfresh'
+                        filename = 'https://s3-us-west-1.amazonaws.com/' \
+                                + str(bucket) + '/' + str(key)
+
+                        s3.upload_file('result.png', bucket, key,ExtraArgs={'ACL': 'public-read'})
+                        ht = """
+                                <html>
+                                <head>
+                                <style>
+                                .container {
+                                position: absolute;
+                                font-family: Arial;
+                                }
+
+                                .text-block {
+                                position: absolute;
+                                bottom: 135px;
+                                right: 300px;
+                                color: white;
+                                padding-left: 20px;
+                                padding-right: 20px;
+                                }
+                                </style>
+                                </head>
+                                <body>
+
+                                <div class="container">
+                                    <div style="display:table-cell; vertical-align:middle; text-align:center">
+                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                                        
+                                        <br>
+                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
+                                        <br>
+                                        <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
+                                    </div>
+                                
+                                <p>
+                                Hi """+delivery_first_name+""",
+                                <br><br>
+                                We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
+                                <br><br>
+                                Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
+                                <br><br>
+                                Keep an eye out in the coming weeks for stories on local produce, farmers and more.
+                                <br><br>
+                                We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
+                                <br><br>
+                                Regards,
+                                <br>
+                                Serving Fresh Team
+                                </p>
+                                </div>
+
+                                </body>
+                                </html> 
+
+                            """
+                        
+                        msg = Message("Serving Fresh Gift Card", sender='support@servingfresh.me', recipients=[delivery_email])
+                        msg.html = ht
                         mail.send(msg)
- 
-
-
-            
-                    
-
-
-
-            ## don't send email if we are copying order
-            print("isCopy---------------",isCopy)
-            if isCopy != "False":
-                print("In no email")
-                return items
 
 
             ### SEND EMAIL
-
 
             print('IN Email')
 
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
             #delivery_email
-            print(msg)
-
-            #msg.body = "Click on the link {} to verify your email address.".format(link)
-
             msg.body = "Hi " + delivery_first_name + "!\n\n" \
                        "We are pleased to send you your order details " \
                        "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
@@ -3892,8 +3965,6 @@ class purchase_Data_SF(Resource):
 
             print('MSG BODY')
             its = json.dumps(data['items'])
-            print('items', its)
-            print('INN')
             st_init = "<html>" \
                       "<body>" \
                       "<p> Hi " + delivery_first_name + "," + "<br><br>" \
@@ -3908,7 +3979,6 @@ class purchase_Data_SF(Resource):
                         "<td><b>Price</td>"\
                       "</tr>"
 
-            print('MID_1')
             arr = st_init
             sub = ''
             i = 0
@@ -3920,10 +3990,7 @@ class purchase_Data_SF(Resource):
                         i += 1
                         sub += its[i]
                     prod = json.loads(sub)
-                    print(prod['name'])
                     amount = float(prod['qty'])*float(prod['price'])
-                    #tot_amt += amount
-                    print(prod['name'])
                     tmp_str = "<tr>"\
                                 "<td><img src=" + "'" + prod['img'] + "'" + "style='width:150px;height:100px;'/></td>"\
                                 "<td>" + prod['name'] + "</td>"\
@@ -3934,8 +4001,7 @@ class purchase_Data_SF(Resource):
                 sub = ''
                 i += 1
 
-            print('OuTTT')
-
+            
             #""" Carlos and jeremy needs to implement new variables
             
             end_str = "<tr>"\
@@ -4001,11 +4067,7 @@ class purchase_Data_SF(Resource):
             """
             arr += end_str
             msg.html = arr
-            print('msg-bd----', msg.body)
-            print('msg-', msg)
-            print('INNNNNNN')
             mail.send(msg)
-            print('OUTTTTTT')
             return items
 
         except:
@@ -4037,11 +4099,13 @@ class history(Resource):
                 items['message'] = 'Check sql query for history'
                 return items
             print('res')
-
+            '''
             for i in range(len(items['result'])):
 
 
                 if items['result'][i]['pay_coupon_id'] and items['result'][i]['pay_coupon_id'] != 'undefined':
+
+
                     print('IN',items['result'][i]['pay_coupon_id'])
 
                     query_cp = """
@@ -4064,7 +4128,7 @@ class history(Resource):
                     items['result'][i]['coupon_uid'] = ''
                     items['result'][i]['coupon_id'] = ''
                     items['result'][i]['notes'] = ''
-
+            '''
 
             items['message'] = 'History Loaded successful'
             items['code'] = 200
@@ -8978,25 +9042,101 @@ class alert_message(Resource):
         try:
             conn = connect()
             query = """
-                    SELECT * FROM sf.alert_message;
+                    SELECT * FROM sf.alert_messages;
                     """
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
                 items['message'] = 'check sql query'
             
-            alert_dict = {}
-            for vals in items['result']:
-                alert_dict[vals['alert_uid']] = vals['alert_message']
-            
-            items['alert'] = alert_dict
             return items
         
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-        
+
+class test_html(Resource):
+    def get(self):
+        try:
+
+            #create image
+
+            img = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+            image_editable = ImageDraw.Draw(img)
+            title_text = "XCGTY8"
+            title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
+            image_editable.text((270,555), title_text, (255, 255, 255), font=title_font_rob)
+            #img.show()
+            img.save("result.png")
+            key = "giftcards/gg2.png"
+            bucket = 'servingfresh'
+            
+            filename = 'https://s3-us-west-1.amazonaws.com/' \
+                    + str(bucket) + '/' + str(key)
+
+            s3.upload_file('result.png', bucket, key,ExtraArgs={'ACL': 'public-read'})
+            ht = """
+                    <html>
+                    <head>
+                    <style>
+                    .container {
+                    position: absolute;
+                    font-family: Arial;
+                    }
+
+                    .text-block {
+                    position: absolute;
+                    bottom: 135px;
+                    right: 300px;
+                    color: white;
+                    padding-left: 20px;
+                    padding-right: 20px;
+                    }
+                    </style>
+                    </head>
+                    <body>
+
+                    <div class="container">
+                        <div style="display:table-cell; vertical-align:middle; text-align:center">
+                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                            
+                            <br>
+                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
+                            <br>
+                            <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
+                        </div>
+                    
+                    <p>
+                    Hi John,
+                    <br><br>
+                    We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
+                    <br><br>
+                    Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
+                    <br><br>
+                    Keep an eye out in the coming weeks for stories on local produce, farmers and more.
+                    <br><br>
+                    We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
+                    <br><br>
+                    Regards,
+                    <br>
+                    Serving Fresh Team
+                    </p>
+                    </div>
+
+                    </body>
+                    </html> 
+
+                """
+            
+            msg = Message("Serving Fresh Gift Card", sender='support@servingfresh.me', recipients=['parva.shah808@gmail.com'])
+            msg.html = ht
+            mail.send(msg)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            print("done")
+      
 # Misc Endpoints end here -------------------------------------------------------------------------------
 
 # -- CRON JOBS Start here -----------------------------------------------------------------------------------------------------
@@ -9004,8 +9144,9 @@ class alert_message(Resource):
 def print_date_time():
 
     try:
-
-        conn = connect()
+        print('in time function')
+        #conn = connect()
+        '''
         query = """
                 UPDATE sf.coupons SET notes = \'""" + str(datetime.now()) + """\' WHERE (coupon_uid = '600-000100');
                 """
@@ -9013,18 +9154,20 @@ def print_date_time():
         if items['code'] != 281:
             items['message'] = 'check sql query for coupons'
         return items
+        '''
     except:
         return 'error occured'
 
     finally:
-        disconnect(conn)
+        print('done')
+        #disconnect(conn)
+
+
 
 #scheduler = BackgroundScheduler()
 #scheduler.add_job(func=print_date_time, trigger="cron", day_of_week='fri', second=1, minute=3, hour=11)
-#scheduler.add_job(func=print_date_time, trigger="interval", seconds=15)
-
+#scheduler.add_job(func=print_date_time, trigger="interval", seconds=3)
 #scheduler.start()
-
 # Shut down the scheduler when exiting the app
 #atexit.register(lambda: scheduler.shutdown())
 
@@ -9168,6 +9311,7 @@ api.add_resource(notification_groups, '/api/v2/notification_groups/<string:actio
 
 api.add_resource(try_catch_storage, '/api/v2/try_catch_storage')
 api.add_resource(alert_message, '/api/v2/alert_message')
+api.add_resource(test_html, '/api/v2/test_html')
 
 
 #Create_or_Update_Registration_iOS
