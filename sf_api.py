@@ -130,9 +130,13 @@ app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
 
-app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
-app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
+# app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
+# app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+# app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
+
+app.config['MAIL_USERNAME'] = "support@servingfresh.me"
+app.config['MAIL_PASSWORD'] = "SupportFresh1"
+app.config['MAIL_DEFAULT_SENDER'] = "support@servingfresh.me"
 
 
 app.config['MAIL_USE_TLS'] = False
@@ -3873,72 +3877,134 @@ class purchase_Data_SF(Resource):
                         print(query_card)
                         items_card = execute(query_card,'post',conn)
 
-                        
-
-                        # email
-
-                        img = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
-                        image_editable = ImageDraw.Draw(img)
-                        title_text = code
-                        title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
-                        image_editable.text((270,555), title_text, (255, 255, 255), font=title_font_rob)
-                        img.save("result.png")
+                        #send email
                         key = "giftcards/"+code
                         bucket = 'servingfresh'
                         filename = 'https://s3-us-west-1.amazonaws.com/' \
                                 + str(bucket) + '/' + str(key)
 
-                        s3.upload_file('result.png', bucket, key,ExtraArgs={'ACL': 'public-read'})
+                        pil_image = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+                        in_mem_file = io.BytesIO()
+                        image_editable = ImageDraw.Draw(pil_image)
+                        title_text = code
+                        title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
+                        image_editable.text((260,555), title_text, (255, 255, 255), font=title_font_rob)
+                        pil_image.save(in_mem_file, format=pil_image.format)
+                        in_mem_file.seek(0)
+                        s3.upload_fileobj(
+                            in_mem_file, # This is what i am trying to upload
+                            bucket,
+                            key,
+                            ExtraArgs={
+                                'ACL': 'public-read'
+                            }
+                        )
                         ht = """
                                 <html>
-                                <head>
-                                <style>
-                                .container {
-                                position: absolute;
-                                font-family: Arial;
-                                }
+                                    <head>
+                                        <style>
+                                            .column {
+                                                float: left;
+                                                width: 10%;
+                                                }
+                                        </style>
+                                    </head>
+                                    
+                                    <body>
 
-                                .text-block {
-                                position: absolute;
-                                bottom: 135px;
-                                right: 300px;
-                                color: white;
-                                padding-left: 20px;
-                                padding-right: 20px;
-                                }
-                                </style>
-                                </head>
-                                <body>
-
-                                <div class="container">
-                                    <div style="display:table-cell; vertical-align:middle; text-align:center">
-                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
-                                        
-                                        <br>
-                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
-                                        <br>
-                                        <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
-                                    </div>
-                                
-                                <p>
-                                Hi """+delivery_first_name+""",
-                                <br><br>
-                                We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
-                                <br><br>
-                                Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
-                                <br><br>
-                                Keep an eye out in the coming weeks for stories on local produce, farmers and more.
-                                <br><br>
-                                We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
-                                <br><br>
-                                Regards,
-                                <br>
-                                Serving Fresh Team
-                                </p>
-                                </div>
-
-                                </body>
+                                        <div class="container">
+                                            <table style='width:50%;margin-left:45%;'>
+                                                <tr>
+                                                    <td>
+                                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <table style='width:50%;margin-left:35%;'>
+                                                <tr>
+                                                    <td>
+                                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <table style='width:50%;margin-left:35%;'>
+                                                <tr>
+                                                    <td>
+                                                        <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                            	
+                                            <p>
+                                                Hi """+delivery_first_name+""",
+                                                <br><br>
+                                                We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
+                                                <br><br>
+                                                Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
+                                                <br><br>
+                                                Keep an eye out in the coming weeks for stories on local produce, farmers and more.
+                                                <br><br>
+                                                We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
+                                                <br><br>
+                                                Regards,
+                                                <br>
+                                                Serving Fresh Team
+                                            </p>
+                                            <br><br><br>
+                                            <!-->
+                                            <table style='width:20%;margin-left:15%;'>
+                                                <tr>
+                                                    <td>
+                                                        <a href="https://www.facebook.com/ServingFresh">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/Icon+simple-facebook.png" style="width:50%;">
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <a href="https://www.instagram.com/servingfresh/">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/Icon+simple-instagram.png" style="width:50%;">
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <table style='width:50%'>
+                                                <tr>
+                                                    <td>
+                                                        <a href="https://play.google.com/store/apps/details?id=com.servingfresh">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/google_play.png" style="width:100%;">
+                                                        </a>
+                                                    </td>
+                                                    <td>
+                                                        <a href="https://apps.apple.com/us/app/serving-fresh/id1488267727">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/google_play.png" style="width:100%;">
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <p style="margin-left:10%"> 6123 Corte De La Reina, San Jose, CA 95120 </p>
+                                            <table style='width:20%; margin-left:15%;'>
+                                                <tr>
+                                                    <td>
+                                                        <a href="https://servingfresh.me/">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/sf_logo.png" style="width:60%;">
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                            <-->
+                                            <table style='width:50;margin-left:30%;'>
+                                                <tr>
+                                                    <td>
+                                                        <a href="https://www.facebook.com/ServingFresh">
+                                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/whole.PNG" style="width:70%;">
+                                                        </a>
+                                                    </td>
+                                                    
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </body>
                                 </html> 
+ 
 
                             """
                         
@@ -3947,6 +4013,9 @@ class purchase_Data_SF(Resource):
                         mail.send(msg)
 
 
+                        
+
+                        
             ### SEND EMAIL
 
             print('IN Email')
@@ -9058,69 +9127,138 @@ class test_html(Resource):
 
             #create image
 
-            img = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
-            image_editable = ImageDraw.Draw(img)
-            title_text = "XCGTY8"
-            title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
-            image_editable.text((270,555), title_text, (255, 255, 255), font=title_font_rob)
-            #img.show()
-            img.save("result.png")
-            key = "giftcards/gg2.png"
+            key = "giftcards/gg5.png"
             bucket = 'servingfresh'
             
             filename = 'https://s3-us-west-1.amazonaws.com/' \
                     + str(bucket) + '/' + str(key)
+            print(filename)
 
-            s3.upload_file('result.png', bucket, key,ExtraArgs={'ACL': 'public-read'})
+            pil_image = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+            in_mem_file = io.BytesIO()
+            image_editable = ImageDraw.Draw(pil_image)
+            title_text = "XCGTY8"
+            title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
+            image_editable.text((260,555), title_text, (255, 255, 255), font=title_font_rob)
+            pil_image.save(in_mem_file, format=pil_image.format)
+            in_mem_file.seek(0)
+            s3.upload_fileobj(
+                in_mem_file, # This is what i am trying to upload
+                bucket,
+                key,
+                ExtraArgs={
+                    'ACL': 'public-read'
+                }
+            )
+            print('upload done')
             ht = """
                     <html>
-                    <head>
-                    <style>
-                    .container {
-                    position: absolute;
-                    font-family: Arial;
-                    }
-
-                    .text-block {
-                    position: absolute;
-                    bottom: 135px;
-                    right: 300px;
-                    color: white;
-                    padding-left: 20px;
-                    padding-right: 20px;
-                    }
-                    </style>
-                    </head>
-                    <body>
-
-                    <div class="container">
-                        <div style="display:table-cell; vertical-align:middle; text-align:center">
-                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                        <head>
                             
-                            <br>
-                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
-                            <br>
-                            <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
-                        </div>
-                    
-                    <p>
-                    Hi John,
-                    <br><br>
-                    We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
-                    <br><br>
-                    Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
-                    <br><br>
-                    Keep an eye out in the coming weeks for stories on local produce, farmers and more.
-                    <br><br>
-                    We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
-                    <br><br>
-                    Regards,
-                    <br>
-                    Serving Fresh Team
-                    </p>
-                    </div>
+                        </head>
+                        
+                        <body>
 
-                    </body>
+                            <div class="container">
+                                
+                                <table style='width:50%;margin-left:45%;'>
+                                    <tr>
+                                        <td>
+                                         	<img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table style='width:50%;margin-left:35%;'>
+                                    <tr>
+                                        <td>
+                                         	<img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table style='width:50%;margin-left:35%;'>
+                                    <tr>
+                                        <td>
+                                         	<img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            	<br><br>
+                                
+                            
+                                <p>
+                                    Hi John,
+                                    <br><br>
+                                    We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
+                                    <br><br>
+                                    Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
+                                    <br><br>
+                                    Keep an eye out in the coming weeks for stories on local produce, farmers and more.
+                                    <br><br>
+                                    We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
+                                    <br><br>
+                                    Regards,
+                                    <br>
+                                    Serving Fresh Team
+                                    <br><br>
+                                </p>
+                                <br><br>
+                                <!-->
+                                <table style='width:50;margin-left:42%;'>
+                                    <tr>
+                                        <td>
+                                            <a href="https://www.facebook.com/ServingFresh">
+                                                <img src="https://servingfresh.s3-us-west-1.amazonaws.com/Icon+simple-facebook.png" style="width:70%;">
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="https://www.instagram.com/servingfresh/">
+                                                <img src="https://servingfresh.s3-us-west-1.amazonaws.com/Icon+simple-instagram.png" style="width:70%;">
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table style='width:50;margin-left:35%;'>
+                                    <tr>
+                                        <td>
+                                            <a href="https://servingfresh.me/">
+                                                <img src="https://servingfresh.s3-us-west-1.amazonaws.com/visit.PNG" style="width:50%;">
+                                            </a>
+                                        </td>
+                                    </tr>
+                                </table>
+                              <table style='width:50;margin-left:33%;'>
+                                    <tr>
+                                        <td>
+                                            <a href="https://play.google.com/store/apps/details?id=com.servingfresh">
+                                                <img src="https://servingfresh.s3-us-west-1.amazonaws.com/combined_image_social.png" style="width:60%;">
+                                            </a>
+                                        </td>
+                                        
+                                    </tr>
+                                </table>
+                            <p style="width:50;margin-left:38%"> 6123 Corte De La Reina, San Jose, CA 95120 </p>
+                            <table style='width:50; margin-left:42%;'>
+                                <tr>
+                                    <td>
+                                        <a href="https://servingfresh.me/">
+                                            <img src="https://servingfresh.s3-us-west-1.amazonaws.com/sf_logo.png" style="width:60%;">
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+                            <-->
+                            <table style='width:50;margin-left:30%;'>
+                                    <tr>
+                                        <td>
+                                            <a href="https://www.facebook.com/ServingFresh">
+                                                <img src="https://servingfresh.s3-us-west-1.amazonaws.com/whole.PNG" style="width:70%;">
+                                            </a>
+                                        </td>
+                                        
+                                    </tr>
+                                </table>
+                            </div>
+                        </body>
                     </html> 
 
                 """
@@ -9128,6 +9266,82 @@ class test_html(Resource):
             msg = Message("Serving Fresh Gift Card", sender='support@servingfresh.me', recipients=['parva.shah808@gmail.com'])
             msg.html = ht
             mail.send(msg)
+
+            '''
+            # email
+
+                        img = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+                        image_editable = ImageDraw.Draw(img)
+                        title_text = code
+                        title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
+                        image_editable.text((270,555), title_text, (255, 255, 255), font=title_font_rob)
+                        img.save("result.png")
+                        key = "giftcards/"+code
+                        bucket = 'servingfresh'
+                        filename = 'https://s3-us-west-1.amazonaws.com/' \
+                                + str(bucket) + '/' + str(key)
+
+                        s3.upload_file('result.png', bucket, key,ExtraArgs={'ACL': 'public-read'})
+                        ht = """
+                                <html>
+                                <head>
+                                <style>
+                                .container {
+                                position: absolute;
+                                font-family: Arial;
+                                }
+
+                                .text-block {
+                                position: absolute;
+                                bottom: 135px;
+                                right: 300px;
+                                color: white;
+                                padding-left: 20px;
+                                padding-right: 20px;
+                                }
+                                </style>
+                                </head>
+                                <body>
+
+                                <div class="container">
+                                    <div style="display:table-cell; vertical-align:middle; text-align:center">
+                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_1.png" alt="Nature" style="width:30%;align:right;">
+                                        
+                                        <br>
+                                        <img src="https://servingfresh.s3-us-west-1.amazonaws.com/email_2.png" alt="Nature" style="width:70%;align:center;">
+                                        <br>
+                                        <img src='"""+ filename +"""' alt="Giftcard" style="width:70%;align:center;"/>
+                                    </div>
+                                
+                                <p>
+                                Hi """+delivery_first_name+""",
+                                <br><br>
+                                We hope you enjoy the local, organic produce offered by Serving Fresh.<b> To redeem the coupon, enter the Ambassador Code at checkout. You can place your order either via the app or on <a href="https://servingfresh.me/">ServingFresh.me</a>. You can also share the above picture that has the Ambassador with a friend to forward the gift to them.</b>
+                                <br><br>
+                                Serving Fresh partners with local farmers to bring their produce online which helps the farmers take more orders and brings the convenience of home deliveries to consumers who might not always be able to make it to the farmer’s markets.  
+                                <br><br>
+                                Keep an eye out in the coming weeks for stories on local produce, farmers and more.
+                                <br><br>
+                                We’d love to hear from you regarding your experience with Serving Fresh. Hit reply and send us a note anytime!
+                                <br><br>
+                                Regards,
+                                <br>
+                                Serving Fresh Team
+                                </p>
+                                </div>
+
+                                </body>
+                                </html> 
+
+                            """
+                        
+                        msg = Message("Serving Fresh Gift Card", sender='support@servingfresh.me', recipients=[delivery_email])
+                        msg.html = ht
+                        mail.send(msg)
+
+
+            '''
+
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
