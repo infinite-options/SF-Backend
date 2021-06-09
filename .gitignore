@@ -28,6 +28,7 @@ node_modules
 yarn.lock
 env
 venv
+sf_env
 sample.py
 
 # __ files

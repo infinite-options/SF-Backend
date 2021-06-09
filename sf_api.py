@@ -3883,12 +3883,14 @@ class purchase_Data_SF(Resource):
                         filename = 'https://s3-us-west-1.amazonaws.com/' \
                                 + str(bucket) + '/' + str(key)
 
-                        pil_image = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
+                        pil_image = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/email_3.png', stream=True).raw)
                         in_mem_file = io.BytesIO()
                         image_editable = ImageDraw.Draw(pil_image)
                         title_text = code
+                        price_text =  "$"+str(vals['price'])
                         title_font_rob = ImageFont.truetype('Roboto-Regular.ttf', 30)
-                        image_editable.text((260,555), title_text, (255, 255, 255), font=title_font_rob)
+                        image_editable.text((290,448), price_text, (255, 255, 255), font=title_font_rob)
+                        image_editable.text((260,548), title_text, (255, 255, 255), font=title_font_rob)
                         pil_image.save(in_mem_file, format=pil_image.format)
                         in_mem_file.seek(0)
                         s3.upload_fileobj(
