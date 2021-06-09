@@ -4156,7 +4156,7 @@ class history(Resource):
             query = """
                     SELECT *
                     FROM sf.purchases as pur, sf.payments as pay
-                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\'
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\' AND pur.purchase_status = 'ACTIVE'
                     ORDER BY pur.purchase_date DESC; 
                     """
             print(query)
@@ -5000,7 +5000,7 @@ class orders_info(Resource):
             query = """
                     SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
                     FROM sf.purchases as pur, sf.payments as pay
-                    WHERE pur.purchase_uid = pay.pay_purchase_uid;
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.purchase_status = 'ACTIVE';
                     """
             items = execute(query, 'get', conn)
             if items['code'] == 280:
@@ -5052,9 +5052,17 @@ class order_actions(Resource):
                 if purchase_uid == 'NULL':
                     return 'UID Incorrect'
 
+                #old query
+                '''
                 query_pur = """
                         DELETE FROM sf.purchases WHERE (purchase_uid = \'""" + purchase_uid + """\');
                         """
+                '''
+                query_pur = """
+                            UPDATE sf.purchases 
+                            SET purchase_status = 'DELETED' 
+                            WHERE purchase_uid = \'""" + purchase_uid + """\'; 
+                            """
                 item = execute(query_pur, 'post', conn)
                 if item['code'] == 281:
                     item['message'] = 'Order deleted'
@@ -8408,7 +8416,7 @@ class updateOrder(Resource):
             query = """
                     SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
                     FROM sf.purchases as pur, sf.payments as pay
-                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\';;
+                    WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\' AND pur.purchase_status = 'ACTIVE';
                     """
             items = execute(query, 'get', conn)
             if items['code'] == 280:
@@ -8449,7 +8457,7 @@ class UpdatePurchaseBusiness(Resource):
             query = """
                         SELECT pur.purchase_uid,pur.items, pay.start_delivery_date    
                         FROM sf.purchases as pur, sf.payments as pay
-                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\';
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\' AND pur.purchase_status = 'ACTIVE';
                         """
             items = execute(query, 'get', conn)
             if items['code'] != 280:
@@ -8520,7 +8528,7 @@ class UpdatePurchaseBusiness_Prime(Resource):
             query = """
                         SELECT pur.purchase_uid,pur.items, pay.start_delivery_date    
                         FROM sf.purchases as pur, sf.payments as pay
-                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\';
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + date + '%' + """\' AND pur.purchase_status = 'ACTIVE';
                         """
             items = execute(query, 'get', conn)
             if items['code'] != 280:
@@ -8632,7 +8640,7 @@ class customer_info_business(Resource):
                                                 item_uid VARCHAR(255)  PATH '$.item_uid',
                                                 itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                      ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
-                    WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid
+                    WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid AND purchase_status = 'ACTIVE'
                     GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
 					RIGHT JOIN sf.customers AS custom
                     ON DS.c_uid = custom.customer_uid 
@@ -8713,7 +8721,7 @@ class customer_info(Resource):
                                                 item_uid VARCHAR(255)  PATH '$.item_uid',
                                                 itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
                                      ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
-                        WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid
+                        WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid AND purchase_status = 'ACTIVE'
                         GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
                     RIGHT JOIN sf.customers AS custom
                     ON DS.c_uid = custom.customer_uid 
