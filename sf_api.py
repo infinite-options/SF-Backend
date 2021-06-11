@@ -9131,6 +9131,18 @@ class alert_message(Resource):
         finally:
             disconnect(conn)
 
+class version_details(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = "SELECT * FROM sf.version;"
+            items = execute(query,'get',conn)
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 class test_html(Resource):
     def get(self):
         try:
@@ -9531,6 +9543,7 @@ api.add_resource(notification_groups, '/api/v2/notification_groups/<string:actio
 
 api.add_resource(try_catch_storage, '/api/v2/try_catch_storage')
 api.add_resource(alert_message, '/api/v2/alert_message')
+api.add_resource(version_details, '/api/v2/version_details')
 api.add_resource(test_html, '/api/v2/test_html')
 
 
