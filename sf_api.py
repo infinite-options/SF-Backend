@@ -3660,29 +3660,29 @@ class purchase_Data_SF(Resource):
             purchase_date = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
             purchase_id = purchase_uid
             purchase_status = 'ACTIVE'
-            pur_customer_uid = data['pur_customer_uid']
-            pur_business_uid = data['pur_business_uid']
+            pur_customer_uid = data['pur_customer_uid'] if data.get('pur_customer_uid') is not None else 'NULL'
+            pur_business_uid = data['pur_business_uid'] if data.get('pur_business_uid') is not None else 'NULL'
             #items_pur = data['items']
             items_pur = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['items']]) + "]'"
-            order_instructions = data['order_instructions']
-            delivery_instructions = data['delivery_instructions']
-            order_type = data['order_type']
-            delivery_first_name = data['delivery_first_name']
-            delivery_last_name = data['delivery_last_name']
-            delivery_phone_num = data['delivery_phone_num']
-            delivery_email = data['delivery_email']
-            delivery_address = data['delivery_address']
-            delivery_unit = data['delivery_unit']
-            delivery_city = data['delivery_city']
-            delivery_state = data['delivery_state']
-            delivery_zip = data['delivery_zip']
-            delivery_latitude = data['delivery_latitude']
-            delivery_longitude = data['delivery_longitude']
+            order_instructions = data['order_instructions'] if data.get('order_instructions') is not None else 'NULL'
+            delivery_instructions = data['delivery_instructions'] if data.get('delivery_instructions') is not None else 'NULL'
+            order_type = data['order_type'] if data.get('order_type') is not None else 'NULL'
+            delivery_first_name = data['delivery_first_name'] if data.get('delivery_first_name') is not None else 'NULL'
+            delivery_last_name = data['delivery_last_name'] if data.get('delivery_last_name') is not None else 'NULL'
+            delivery_phone_num = data['delivery_phone_num'] if data.get('delivery_phone_num') is not None else 'NULL'
+            delivery_email = data['delivery_email'] if data.get('delivery_email') is not None else 'NULL'
+            delivery_address = data['delivery_address'] if data.get('delivery_address') is not None else 'NULL'
+            delivery_unit = data['delivery_unit'] if data.get('delivery_unit') is not None else 'NULL'
+            delivery_city = data['delivery_city'] if data.get('delivery_city') is not None else 'NULL'
+            delivery_state = data['delivery_state'] if data.get('delivery_state') is not None else 'NULL'
+            delivery_zip = data['delivery_zip'] if data.get('delivery_zip') is not None else 'NULL'
+            delivery_latitude = data['delivery_latitude'] if data.get('delivery_latitude') is not None else 'NULL'
+            delivery_longitude = data['delivery_longitude'] if data.get('delivery_longitude') is not None else 'NULL'
             delivery_status = data['delivery_status'] if data.get('delivery_status') is not None else 'FALSE'
-            purchase_notes = data['purchase_notes']
+            purchase_notes = data['purchase_notes'] if data.get('purchase_notes') is not None else 'NULL'
             
 
-            isCopy = data['isCopy'] if data.get('isCopy') is not None or "" else "False"
+            isCopy = data['isCopy'] if data.get('isCopy') is not None or "" else "NULL"
 
 
             print('in insert-------')
@@ -3738,18 +3738,18 @@ class purchase_Data_SF(Resource):
             pay_purchase_uid = newPurchaseUID
             pay_purchase_id = newPurchaseUID
             payment_time_stamp = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
-            start_delivery_date = data['start_delivery_date']
-            pay_coupon_id = data['pay_coupon_id']
-            amount_due = data['amount_due']
-            amount_discount = data['amount_discount']
-            amount_paid = data['amount_paid']
-            info_is_Addon = data['info_is_Addon']
-            cc_num = data['cc_num']
-            cc_exp_date = data['cc_exp_date']
-            cc_cvv = data['cc_cvv']
-            cc_zip = data['cc_zip']
-            charge_id = data['charge_id']
-            payment_type = data['payment_type']
+            start_delivery_date = data['start_delivery_date'] if data.get('start_delivery_date') is not None else 'NULL'
+            pay_coupon_id = data['pay_coupon_id'] if data.get('pay_coupon_id') is not None else 'NULL'
+            amount_due = data['amount_due'] if data.get('amount_due') is not None else 'NULL'
+            amount_discount = data['amount_discount'] if data.get('amount_discount') is not None else 'NULL'
+            amount_paid = data['amount_paid'] if data.get('amount_paid') is not None else 'NULL'
+            info_is_Addon = data['info_is_Addon'] if data.get('info_is_Addon') is not None else 'NULL'
+            cc_num = data['cc_num'] if data.get('cc_num') is not None else 'NULL'
+            cc_exp_date = data['cc_exp_date'] if data.get('cc_exp_date') is not None else 'NULL'
+            cc_cvv = data['cc_cvv'] if data.get('cc_cv') is not None else 'NULL'
+            cc_zip = data['cc_zip'] if data.get('cc_zip') is not None else 'NULL'
+            charge_id = data['charge_id'] if data.get('charge_id') is not None else 'NULL'
+            payment_type = data['payment_type'] if data.get('payment_type') is not None else 'NULL'
 
             subtotal = data['subtotal'] if data.get('subtotal') is not None else "0"
             service_fee = data['service_fee'] if data.get('service_fee') is not None else "0"
@@ -3838,7 +3838,7 @@ class purchase_Data_SF(Resource):
             
             ## don't send email if we are copying order
             print("isCopy---------------",isCopy)
-            if isCopy != "False":
+            if isCopy != "NULL":
                 print("In no email")
                 return items
             
@@ -5745,7 +5745,6 @@ class admin_report_groupby_Prime(Resource):
                         """
 
             items = execute(query, 'get', conn)
-            print(items)
             if items['code'] == 280:
                 items['message'] = 'Report data successful'
                 items['code'] = 200
@@ -9549,9 +9548,9 @@ api.add_resource(test_html, '/api/v2/test_html')
 
 #Create_or_Update_Registration_iOS
 #Update_Registration_With_GUID_Android
-
 # Run on below IP address and port
 # Make sure port number is unused (i.e. don't use numbers 0-1023)
+
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=4000)
     #app.run(host='0.0.0.0', port=2000)
