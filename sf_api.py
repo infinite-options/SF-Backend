@@ -380,7 +380,7 @@ class Businesses(Resource):
         try:
             conn = connect()
             query = """ # QUERY 1 RETURNS ALL BUSINESSES
-                SELECT * FROM sf.businesses; """
+                SELECT * FROM sf.businesses WHERE business_status='ACTIVE'; """
             items = execute(query, 'get', conn)
 
             response['message'] = 'Businesses successful'
@@ -389,6 +389,7 @@ class Businesses(Resource):
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
+
             disconnect(conn)
 
 
@@ -456,6 +457,25 @@ class Businesses(Resource):
         #  "{\"Monday\":\"11:00am-12:00pm\",\"Tuesday\":\"10:00am-12:00pm\",\"Wednesday\":\"10:00am-12:00pm\",\"Thursday\":\"10:00am-12:00pm\",\"Friday\":\"10:00am-12:00pm\",\"Saturday\":\"10:00am-12:00pm\",\"Sunday\":\"10:00am-12:00pm\"}"}
 
 # CUSTOMER QUERY 2
+class totalItems(Resource):
+    def get(self,customer_uid):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            query = """ 
+                SELECT * FROM sf.total_item where pur_customer_uid=\'""" + customer_uid + """\'
+                    """
+            items = execute(query, 'get', conn)
+
+            response['message'] = 'Items gathered'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 class ItemsbyBusiness(Resource):
     # RETURNS ALL ITEMS FOR A SPECIFIC BUSINESS
     def get(self, business_uid):
@@ -9409,6 +9429,7 @@ def print_date_time():
 # Define API routes
 
 api.add_resource(Businesses, '/api/v2/businesses')
+api.add_resource(totalItems, '/api/v2/totalItems/<string:customer_uid>')
 #api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
 #new
 api.add_resource(ItemsbyBusiness_Prime, '/api/v2/itemsByBusiness/<string:business_uid>')
