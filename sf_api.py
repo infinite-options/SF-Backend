@@ -5350,8 +5350,7 @@ class update_Coupons(Resource):
                     items['message'] = 'Coupon info updated'
                     items['code'] = 200
                     return items
-
-
+                
                 elif action == 'add':
 
                     query = """
@@ -5374,14 +5373,11 @@ class update_Coupons(Resource):
                     items['code'] = 200
                     return items
 
-
-
                 else:
 
                     items['message'] = 'Choose correct option'
                     items['code'] = 500
                     return items
-
 
             except:
                 print("Error happened while updating coupon table")
@@ -5540,6 +5536,7 @@ class UpdateProduceToNewDB(Resource):
 # -- Admin Queries Start here -------------------------------------------------------------------------------
 
 #-- Analytics
+
 class admin_report(Resource):
 
     def get(self, uid):
@@ -8566,6 +8563,34 @@ class UpdatePurchaseBusiness_Prime(Resource):
                         return items_update
             return items
 
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class payment_profit_customer(Resource):
+
+    def get(self, uid):
+        try:
+            conn = connect()
+            query = """
+                    SELECT *, sum(qty*(price-business_price)) as profit  
+                    FROM sf.purchases, sf.payments, 
+                    JSON_TABLE(items, '$[*]' COLUMNS (
+                                qty VARCHAR(255)  PATH '$.qty',
+                                name VARCHAR(255)  PATH '$.name',
+                                price VARCHAR(255)  PATH '$.price',
+                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid',
+                                business_price VARCHAR(255)  PATH '$.business_price')
+                    ) AS deconstruct
+                    WHERE purchase_uid = pay_purchase_id
+                    AND purchase_status = 'ACTIVE'
+                    AND pur_customer_uid = \'""" + uid + """\'
+                    GROUP BY purchase_uid;
+                    """
+            items = execute(query, 'get', conn)
+            return items
 
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -8573,8 +8598,6 @@ class UpdatePurchaseBusiness_Prime(Resource):
             disconnect(conn)
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
-
-
 
 # -- Queries end here -------------------------------------------------------------------------------
 
@@ -9074,7 +9097,6 @@ class notification_groups(Resource):
 
 # Misc Endpoints start here
 
-
 class try_catch_storage(Resource):
     
     def post(self):
@@ -9525,6 +9547,8 @@ api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 #api.add_resource(UpdatePurchaseBusiness, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 #new
 api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
+
+api.add_resource(payment_profit_customer, '/api/v2/payment_profit_customer/<string:uid>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
