@@ -32,6 +32,7 @@ import io
 import csv
 from PIL import Image, ImageDraw, ImageFont
 import requests
+import copy
 
 from apscheduler.schedulers.background import BackgroundScheduler
 import atexit
@@ -1357,7 +1358,7 @@ class createAccount(Resource):
             query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0');
+                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0',);
                     """
             print(query)
             item = execute(query, 'post', conn)
@@ -3208,17 +3209,13 @@ class ProduceByLocation_Prime(Resource):
                 RB_long = vals['RB_long']
                 RB_lat = vals['RB_lat']
 
-
                 point = Point(float(long),float(lat))
                 polygon = Polygon([(LB_long, LB_lat), (LT_long, LT_lat), (RT_long, RT_lat), (RB_long, RB_lat)])
                 res = polygon.contains(point)
-                print(res)
-
+                
                 if res:
                     zones.append(vals['zone'])
-
-
-            print('ZONES-----', zones)
+            
             query = """
                     SELECT      
                     rjzjt.zone_uid,
@@ -3254,26 +3251,31 @@ class ProduceByLocation_Prime(Resource):
                 return items
 
             business_details = items['result']
+            business_delivery_dict = {}
+            
             ids = set()
             for vals in business_details:
                 ids.add(vals['z_biz_id'])
-                
+                if vals['z_biz_id'] in business_delivery_dict:
+                    business_delivery_dict[vals['z_biz_id']].append(vals['z_delivery_day'])
+                else:
+                    business_delivery_dict[vals['z_biz_id']] = [vals['z_delivery_day']]
+            
+            for key, vals in business_delivery_dict.items():
+                business_delivery_dict[key] = sorted(vals)
+            
             ## get produce
 
             ids = list(ids)
             ids.append('Random')
             ids.append('Random2')
 
-           
-           
             query = """
                     SELECT * 
                     FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as tmp
                     WHERE itm_business_uid IN """ + str(tuple(ids)) + """ AND item_status = 'Active'
                     ORDER BY item_name;
                     """
-            
-            print(query)
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
@@ -3283,43 +3285,44 @@ class ProduceByLocation_Prime(Resource):
             items['message'] = 'Items sent successfully'
             items['code'] = 200
             items['business_details'] = business_details
+            final_produce = []
+            for vals in items['result']:
+                if vals['itm_business_uid'] in business_delivery_dict:
+                    if len(business_delivery_dict[vals['itm_business_uid']]) > 1:
+                        temp_1 = copy.deepcopy(vals)
+                        temp_2 = copy.deepcopy(vals)
+                        temp_1['delivery_day'] = business_delivery_dict[vals['itm_business_uid']][0]
+                        final_produce.append(temp_1)
+                        temp_2['delivery_day'] = business_delivery_dict[vals['itm_business_uid']][1]
+                        final_produce.append(temp_2)
+                        
+                    else:
+                        vals['delivery_day'] = business_delivery_dict[vals['itm_business_uid']][0]
+                        final_produce.append(vals)
+            
+            # add days to produce
 
             # get max profit
 
             dict_items = {}
             rm_idx = []
-            result = items['result']
-            print('RESULT-----------')
-            print(result[0])
+            result = final_produce
             for i, vals in enumerate(result):
-                if vals['item_name'] + vals["item_type"] + vals["item_unit"] in dict_items.keys():
-                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][0] < vals["item_price"] - vals["business_price"]:
-                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][1])
-                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
+                if vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"] in dict_items.keys():
+                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]][0] < vals["item_price"] - vals["business_price"]:
+                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]][1])
+                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]] = [vals["item_price"] - vals["business_price"], i]
                     else:
                         rm_idx.append(i)
                 else:
-                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
-
-            print('VALS---------')
-            print(dict_items)
-            print(rm_idx)
-
-            for dd in rm_idx:
-                print(result[dd])
+                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]] = [vals["item_price"] - vals["business_price"], i]
 
             result = [i for j, i in enumerate(result) if j not in rm_idx]
-
             items['result'] = result
-            
-
-
-            #item_type = set()
             item_type = set()
             
             for vals in items['result']:
                 item_type.add(vals['item_type'])
-            
             
             res = []
             if 'vegetable' in item_type and 'fruit' in item_type:
@@ -3343,7 +3346,6 @@ class ProduceByLocation_Prime(Resource):
                 print('4')
                 res = list(item_type)
 
-            #res = [vals[0].upper()+vals[1:]for vals in res]
             items['types'] = res
             return items
             
@@ -9414,7 +9416,6 @@ def print_date_time():
     finally:
         print('done')
         #disconnect(conn)
-
 
 
 #scheduler = BackgroundScheduler()
