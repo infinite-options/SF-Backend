@@ -515,27 +515,6 @@ class farmsSupported(Resource):
             finally:
                 disconnect(conn)
 
-class allCustomerInfo(Resource):
-    def get(self):
-        response = {}
-        items = {}
-        try:
-            conn = connect()
-            query = """ 
-                SELECT *,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
-                FROM sf.customers cus,sf.purchases pur ,sf.payments pay
-                where pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='active' and cus.customer_uid=pur.pur_customer_uid 
-                GROUP BY cus.customer_uid ;
-                    """
-            items = execute(query, 'get', conn)
-
-            response['message'] = 'Info Gathered'
-            response['result'] = items
-            return response, 200
-        except:
-            raise BadRequest('Request failed, please try again later.')
-        finally:
-            disconnect(conn)
 
 
 class ItemsbyBusiness(Resource):
@@ -3268,7 +3247,6 @@ class ProduceByLocation(Resource):
 class ProduceByLocation_Prime(Resource):
     def get(self, long, lat):
         
-
         try:
             conn = connect()
             print('IN')
@@ -8685,6 +8663,75 @@ class payment_profit_customer(Resource):
         finally:
             disconnect(conn)
 
+class adminCustomerInfo(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """ 
+                    SELECT customer_uid, customer_created_at, customer_first_name, customer_last_name, user_social_media, customer_phone_num, customer_email, customer_address, customer_unit, customer_city, customer_state, customer_zip, customer_lat, customer_long, favorite_produce, purchase_uid, purchase_date, purchase_id, purchase_status, pur_customer_uid, pur_business_uid,  delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, delivery_latitude, delivery_longitude, payment_uid, payment_id, pay_purchase_uid, pay_purchase_id, payment_time_stamp, subtotal, amount_discount, service_fee, delivery_fee, driver_tip, taxes, amount_due, amount_paid
+                    ,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
+                    FROM sf.customers cus,sf.purchases pur ,sf.payments pay
+                    where pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='ACTIVE' and cus.customer_uid=pur.pur_customer_uid 
+                    GROUP BY cus.customer_uid ;
+                    """
+            items = execute(query, 'get', conn)
+
+            items['message'] = 'Info Gathered'
+            
+            query = """
+                        SELECT * from sf.zones;
+                    """
+            items_zone = execute(query, 'get', conn)
+            if items_zone['code'] != 280:
+                items_zone['message'] = 'check sql query'
+                
+
+            final_res = []
+            # getting zones for customers
+
+            for vals_itm in items['result']:
+                longt = vals_itm['customer_long']
+                lat = vals_itm['customer_lat']
+                zones = ['Random', 'Random']
+                
+                for vals in items_zone['result']:
+                    LT_long = vals['LT_long']
+                    LT_lat = vals['LT_lat']
+                    LB_long = vals['LB_long']
+                    LB_lat = vals['LB_lat']
+                    RT_long = vals['RT_long']
+                    RT_lat = vals['RT_lat']
+                    RB_long = vals['RB_long']
+                    RB_lat = vals['RB_lat']
+
+                    point = Point(float(longt),float(lat))
+                    polygon = Polygon([(LB_long, LB_lat), (LT_long, LT_lat), (RT_long, RT_lat), (RB_long, RB_lat)])
+                    res = polygon.contains(point)
+                    
+                    if res:
+                        zones.append(vals['zone'])
+                
+                query = """
+                        SELECT DISTINCT zone_name
+                        FROM sf.zones     
+                        WHERE zone IN """ + str(tuple(zones)) + """;
+                        """
+                items_name = execute(query, 'get', conn)
+
+                zone_name = items_name['result'][0]['zone_name']
+
+                vals_itm['zone'] = zone_name
+                final_res.append(vals_itm)
+            
+            items['result'] = final_res
+
+            return items
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -9521,7 +9568,6 @@ def print_date_time():
 api.add_resource(Businesses, '/api/v2/businesses')
 api.add_resource(totalItems, '/api/v2/totalItems/<string:customer_uid>')
 api.add_resource(farmsSupported, '/api/v2/farmsSupported/<string:customer_uid>')
-api.add_resource(allCustomerInfo, '/api/v2/allCustomerInfo')
 #api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
 #new
 api.add_resource(ItemsbyBusiness_Prime, '/api/v2/itemsByBusiness/<string:business_uid>')
@@ -9641,6 +9687,7 @@ api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness/<
 
 api.add_resource(payment_profit_customer, '/api/v2/payment_profit_customer/<string:uid>')
 
+api.add_resource(adminCustomerInfo, '/api/v2/adminCustomerInfo')
 
 # Notification Endpoints
 
