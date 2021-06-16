@@ -437,11 +437,9 @@ class Businesses(Resource):
 # CUSTOMER QUERY 2
 class totalItems(Resource):
     def get(self,customer_uid):
-        response = {}
-        items = {}
-        if(customer_uid=='all'):
-            try:
-                conn = connect()
+        try:
+            conn = connect()
+            if customer_uid == 'all':
                 query = """ 
                     SELECT pur_customer_uid,SUM(item.qty),item.unit,item.name,item.item_uid,(item.price),item.img,itm_business_uid  FROM sf.purchases ,JSON_TABLE(
                         items,
@@ -458,17 +456,12 @@ class totalItems(Resource):
                     ) as item  GROUP BY item_uid ORDER BY pur_customer_uid;
                         """
                 items = execute(query, 'get', conn)
-
-                response['message'] = 'Items gathered'
-                response['result'] = items
-                return response, 200
-            except:
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
-        else:  
-            try:
-                conn = connect()
+                
+                items['message'] = 'Items gathered'
+                return items
+            
+            else :  
+            
                 query = """ 
                     SELECT pur_customer_uid,SUM(item.qty),item.unit,item.name,item.item_uid,(item.price),item.img,itm_business_uid  
                     FROM sf.purchases ,JSON_TABLE(
@@ -486,14 +479,12 @@ class totalItems(Resource):
                     ) as item where pur_customer_uid=\'""" + customer_uid + """\' GROUP BY item_uid ORDER BY pur_customer_uid;
                         """
                 items = execute(query, 'get', conn)
-
-                response['message'] = 'Items gathered'
-                response['result'] = items
-                return response, 200
-            except:
-                raise BadRequest('Request failed, please try again later.')
-            finally:
-                disconnect(conn)
+                items['message'] = 'Items gathered'
+                return items    
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 class farmsSupported(Resource):
@@ -524,12 +515,6 @@ class farmsSupported(Resource):
             finally:
                 disconnect(conn)
 
-
-
-
-
-
-
 class allCustomerInfo(Resource):
     def get(self):
         response = {}
@@ -537,7 +522,7 @@ class allCustomerInfo(Resource):
         try:
             conn = connect()
             query = """ 
-                SELECT *,COUNT(pur.purchase_uid),max(pur.purchase_date)
+                SELECT *,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
                 FROM sf.customers cus,sf.purchases pur ,sf.payments pay
                 where pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='active' and cus.customer_uid=pur.pur_customer_uid 
                 GROUP BY cus.customer_uid ;
@@ -3382,6 +3367,10 @@ class ProduceByLocation_Prime(Resource):
             items['message'] = 'Items sent successfully'
             items['code'] = 200
             items['business_details'] = business_details
+            
+            final_produce = items['result']
+            """
+            # new logic to have delivery days in items and have redundant data -- uncomment this once requirement is there
             final_produce = []
             for vals in items['result']:
                 if vals['itm_business_uid'] in business_delivery_dict:
@@ -3396,23 +3385,23 @@ class ProduceByLocation_Prime(Resource):
                     else:
                         vals['delivery_day'] = business_delivery_dict[vals['itm_business_uid']][0]
                         final_produce.append(vals)
-            
+            """
             # add days to produce
 
             # get max profit
-
+            # add vals["delivery_day"] to the enumerate logic
             dict_items = {}
             rm_idx = []
             result = final_produce
             for i, vals in enumerate(result):
-                if vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"] in dict_items.keys():
-                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]][0] < vals["item_price"] - vals["business_price"]:
-                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]][1])
-                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]] = [vals["item_price"] - vals["business_price"], i]
+                if vals['item_name'] + vals["item_type"] + vals["item_unit"] in dict_items.keys():
+                    if dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][0] < vals["item_price"] - vals["business_price"]:
+                        rm_idx.append(dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]][1])
+                        dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
                     else:
                         rm_idx.append(i)
                 else:
-                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"] + vals["delivery_day"]] = [vals["item_price"] - vals["business_price"], i]
+                    dict_items[vals['item_name'] + vals["item_type"] + vals["item_unit"]] = [vals["item_price"] - vals["business_price"], i]
 
             result = [i for j, i in enumerate(result) if j not in rm_idx]
             items['result'] = result
@@ -8696,6 +8685,7 @@ class payment_profit_customer(Resource):
         finally:
             disconnect(conn)
 
+
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
 # -- Queries end here -------------------------------------------------------------------------------
@@ -9650,6 +9640,8 @@ api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 
 api.add_resource(payment_profit_customer, '/api/v2/payment_profit_customer/<string:uid>')
+
+
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
