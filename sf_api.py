@@ -344,29 +344,6 @@ def allowed_file(filename):
     """Checks if the file is allowed to upload"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-def kitchenExists(kitchen_id):
-    # scan to check if the kitchen name exists
-    kitchen = db.scan(TableName='kitchens',
-        FilterExpression='kitchen_id = :val',
-        ExpressionAttributeValues={
-            ':val': {'S': kitchen_id}
-        }
-    )
-
-    return not kitchen.get('Items') == []
-
-def couponExists(coupon_id):
-    # scan to check if the kitchen name exists
-    coupon = db.scan(TableName='coupons',
-        FilterExpression='coupon_id = :val',
-        ExpressionAttributeValues={
-            ':val': {'S': coupon_id}
-        }
-    )
-
-    return not coupon.get('Items') == []
-
-
 # ===========================================================
 
 # -- Queries start here -------------------------------------------------------------------------------
@@ -657,6 +634,7 @@ class RefundDetailsNEW(Resource):
             client_email = request.form.get('client_email')
             client_message = request.form.get('client_message')
             client_phone = request.form.get('client_phone')
+            photo = request.file.get('photo')
             # data = request.get_json(force=True)
             # print to Received data to Terminal
             # print("Received:", data)
@@ -7913,7 +7891,7 @@ class drivers_report_check_sort(Resource):
 
             elif report == "sorting":
                 #test
-                get_fun = farmer_revenue_inventory_report_all_()
+                get_fun = farmer_revenue_inventory_report_all()
                 total_revenue = get_fun.get('function',date)
                 uni_dict = {}
                 print("in SORTING")
