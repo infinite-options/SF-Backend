@@ -461,20 +461,119 @@ class totalItems(Resource):
     def get(self,customer_uid):
         response = {}
         items = {}
+        if(customer_uid=='all'):
+            try:
+                conn = connect()
+                query = """ 
+                    SELECT pur_customer_uid,SUM(item.qty),item.unit,item.name,item.item_uid,(item.price),item.img,itm_business_uid  FROM sf.purchases ,JSON_TABLE(
+                        items,
+                        "$[*]"
+                        COLUMNS(
+                        name JSON PATH "$.name",
+                        item_uid JSON PATH "$.item_uid",
+                        price JSON PATH"$.price",
+                        qty JSON PATH"$.qty",
+                        unit JSON PATH"$.unit",
+                        img JSON PATH "$.img",
+                        itm_business_uid JSON PATH "$.itm_business_uid"
+                        )
+                    ) as item  GROUP BY item_uid ORDER BY pur_customer_uid;
+                        """
+                items = execute(query, 'get', conn)
+
+                response['message'] = 'Items gathered'
+                response['result'] = items
+                return response, 200
+            except:
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+        else:  
+            try:
+                conn = connect()
+                query = """ 
+                    SELECT pur_customer_uid,SUM(item.qty),item.unit,item.name,item.item_uid,(item.price),item.img,itm_business_uid  
+                    FROM sf.purchases ,JSON_TABLE(
+                        items,
+                        "$[*]"
+                        COLUMNS(
+                        name JSON PATH "$.name",
+                        item_uid JSON PATH "$.item_uid",
+                        price JSON PATH"$.price",
+                        qty JSON PATH"$.qty",
+                        unit JSON PATH"$.unit",
+                        img JSON PATH "$.img",
+                        itm_business_uid JSON PATH "$.itm_business_uid"
+                        )
+                    ) as item where pur_customer_uid=\'""" + customer_uid + """\' GROUP BY item_uid ORDER BY pur_customer_uid;
+                        """
+                items = execute(query, 'get', conn)
+
+                response['message'] = 'Items gathered'
+                response['result'] = items
+                return response, 200
+            except:
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+
+
+class farmsSupported(Resource):
+    def get(self,customer_uid):
+        response = {}
+        items = {}
+        if(customer_uid=='all'):
+            try:
+                conn = connect()
+                query = """ 
+                    SELECT itm_business_uid, busi.business_uid,pur.pur_customer_uid,busi.*
+                        FROM sf.purchases pur, sf.businesses busi,
+                        JSON_TABLE(
+                            items,
+                            "$[*]"
+                            COLUMNS(
+                            itm_business_uid JSON PATH "$.itm_business_uid"
+                            )
+                        ) as item where  itm_business_uid = busi.business_uid;
+                        """
+                items = execute(query, 'get', conn)
+
+                response['message'] = 'Items gathered'
+                response['result'] = items
+                return response, 200
+            except:
+                raise BadRequest('Request failed, please try again later.')
+            finally:
+                disconnect(conn)
+
+
+
+
+
+
+
+class allCustomerInfo(Resource):
+    def get(self):
+        response = {}
+        items = {}
         try:
             conn = connect()
             query = """ 
-                SELECT * FROM sf.total_item where pur_customer_uid=\'""" + customer_uid + """\'
+                SELECT *,COUNT(pur.purchase_uid),max(pur.purchase_date)
+                FROM sf.customers cus,sf.purchases pur ,sf.payments pay
+                where pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='active' and cus.customer_uid=pur.pur_customer_uid 
+                GROUP BY cus.customer_uid ;
                     """
             items = execute(query, 'get', conn)
 
-            response['message'] = 'Items gathered'
+            response['message'] = 'Info Gathered'
             response['result'] = items
             return response, 200
         except:
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
 
 class ItemsbyBusiness(Resource):
     # RETURNS ALL ITEMS FOR A SPECIFIC BUSINESS
@@ -9430,6 +9529,8 @@ def print_date_time():
 
 api.add_resource(Businesses, '/api/v2/businesses')
 api.add_resource(totalItems, '/api/v2/totalItems/<string:customer_uid>')
+api.add_resource(farmsSupported, '/api/v2/farmsSupported/<string:customer_uid>')
+api.add_resource(allCustomerInfo, '/api/v2/allCustomerInfo')
 #api.add_resource(ItemsbyBusiness, '/api/v2/itemsByBusiness/<string:business_uid>')
 #new
 api.add_resource(ItemsbyBusiness_Prime, '/api/v2/itemsByBusiness/<string:business_uid>')
