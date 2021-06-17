@@ -5333,12 +5333,11 @@ class update_Coupons(Resource):
                     query = ["CALL sf.new_coupons_uid;"]
                     couponIDresponse = execute(query[0], 'get', conn)
                     couponID = couponIDresponse['result'][0]['new_id']
-
                     query = """
-                    INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', \'""" + couponID + """\', \'""" + data['valid'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\', \'""" + data['notes'] + """\', \'""" + '0' + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\', \'""" + data['threshold'] + """\');
-                    """
+                            INSERT INTO sf.coupons 
+                            (coupon_uid, coupon_id, valid, threshold, discount_percent, discount_amount, discount_shipping, expire_date, limits, coupon_title, notes, num_used, recurring, email_id, cup_business_uid) 
+                            VALUES ( \'""" + couponID + """\', \'""" + data['coupon_id'] + """\', \'""" + data['valid'] + """\', \'""" + data['threshold'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\',  \'""" + data['coupon_title'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\');
+                            """
                     print(query)
                     items = execute(query, 'post', conn)
                     if items['code'] != 281:
@@ -5368,18 +5367,19 @@ class update_Coupons(Resource):
                     query = """
                     UPDATE sf.coupons 
                     SET 
-                    coupon_id = \'""" + data['coupon_uid'] + """\', 
+                    coupon_id = \'""" + data['coupon_id'] + """\', 
                     valid = \'""" + data['valid'] + """\', 
+                    threshold = \'""" + data['threshold'] + """\', 
                     discount_percent = \'""" + data['discount_percent'] + """\', 
                     discount_amount = \'""" + data['discount_amount'] + """\', 
                     discount_shipping = \'""" + data['discount_shipping'] + """\', 
                     expire_date = \'""" + data['expire_date'] + """\', 
                     limits = \'""" + data['limits'] + """\', 
+                    coupon_title = \'""" + data['coupon_title'] + """\', 
                     notes = \'""" + data['notes'] + """\', 
                     num_used = \'""" + data['num_used'] + """\', 
                     recurring = \'""" + data['recurring'] + """\', 
                     email_id = \'""" + data['email_id'] + """\',
-                    threshold = \'""" + data['threshold'] + """\', 
                     cup_business_uid = \'""" + data['cup_business_uid'] + """\' 
                     WHERE (coupon_uid = \'""" + data['coupon_uid'] + """\');
                     """
