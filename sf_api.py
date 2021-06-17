@@ -1418,10 +1418,9 @@ class createAccount(Resource):
 
             query = """
                     INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0',);
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold,'coupon_title') 
+                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0','Welcome Coupon');
                     """
-            print(query)
             item = execute(query, 'post', conn)
             if item['code'] != 281:
                 item['message'] = "check sql query for coupons"
@@ -2635,8 +2634,8 @@ class brandAmbassador(Resource):
                 exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
                 query = """
                         INSERT INTO sf.coupons 
-                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '0', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10');
+                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
+                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '0', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
                         """
                 print(query)
                 items = execute(query, 'post', conn)
@@ -2738,8 +2737,8 @@ class brandAmbassador(Resource):
                     print(final_res)
                     query = """
                     INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                    VALUES ( \'""" + couponID + """\', 'SFReferral', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + cust_email + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\');
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
+                    VALUES ( \'""" + couponID + """\', 'SFReferral', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + cust_email + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFReferral');
                     """
                     items = execute(query, 'post', conn)
                     if items['code'] != 281:
@@ -2796,8 +2795,8 @@ class brandAmbassador(Resource):
                         exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
                         query = """
                         INSERT INTO sf.coupons 
-                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
-                        VALUES ( \'""" + couponID + """\', 'SFDiscount', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + info + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\');
+                        (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
+                        VALUES ( \'""" + couponID + """\', 'SFDiscount', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + info + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFDiscount');
                         """
                         
                         items = execute(query, 'post', conn)
@@ -3936,9 +3935,9 @@ class purchase_Data_SF(Resource):
                         query_card = """
                                     INSERT INTO 
                                     sf.coupons 
-                                    (coupon_uid, coupon_id, valid, threshold, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid) 
+                                    (coupon_uid, coupon_id, valid, threshold, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, coupon_title) 
                                     VALUES 
-                                    (\'""" + new_id + """\', 'SFGiftCard', 'TRUE', '0', '0', \'""" + str(vals['price']) + """\', '0', \'""" + TimeStamp + """\', '100', 'SF Gift Card', '0', 'F', \'""" + code + """\', 'null');
+                                    (\'""" + new_id + """\', 'SFGiftCard', 'TRUE', '0', '0', \'""" + str(vals['price']) + """\', '0', \'""" + TimeStamp + """\', '100', 'SF Gift Card', '0', 'F', \'""" + code + """\', 'null', 'SFGiftCard');
                                     """
                         print(query_card)
                         items_card = execute(query_card,'post',conn)
