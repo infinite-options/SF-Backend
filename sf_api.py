@@ -131,19 +131,13 @@ app.config['DEBUG'] = True
 app.config['MAIL_SERVER'] = 'smtp.mydomain.com'
 app.config['MAIL_PORT'] = 465
 
-# app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
-# app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
-# app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
-
-app.config['MAIL_USERNAME'] = "support@servingfresh.me"
-app.config['MAIL_PASSWORD'] = "SupportFresh1"
-app.config['MAIL_DEFAULT_SENDER'] = "support@servingfresh.me"
+app.config['MAIL_USERNAME'] = os.environ.get('SUPPORT_EMAIL')
+app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
 
 
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
-
-
 
 
 # Setting for gmail
