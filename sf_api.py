@@ -7099,6 +7099,40 @@ class produce_ordered(Resource):
         finally:
             disconnect(conn)
 
+class order_summary_page(Resource):
+    def get(self,delivery_date):
+        try:
+            conn = connect()
+            query ="""
+                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit
+                    FROM sf.purchases, sf.payments, sf.businesses,
+                    JSON_TABLE(items, '$[*]' COLUMNS (
+                                img VARCHAR(255)  PATH '$.img',
+                                qty VARCHAR(255)  PATH '$.qty',
+                                name VARCHAR(255)  PATH '$.name',
+                                price VARCHAR(255)  PATH '$.price',
+                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid',
+                                business_price VARCHAR(255)  PATH '$.business_price',
+                                unit VARCHAR(255)  PATH '$.unit')
+                    ) AS deconstruct
+                    WHERE purchase_uid = pay_purchase_id
+                    AND purchase_status = 'ACTIVE'
+                    AND start_delivery_date LIKE \'""" + delivery_date + "%"+"""\'
+                    AND business_uid = itm_business_uid
+                    GROUP BY name;
+                    """
+            items = execute(query,'get',conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+            
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -8018,7 +8052,7 @@ api.add_resource(adminCustomerInfo, '/api/v2/adminCustomerInfo')
 api.add_resource(all_coupons, '/api/v2/all_coupons')
 api.add_resource(farms_supported, '/api/v2/farms_supported/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(produce_ordered, '/api/v2/produce_ordered/<string:customer_uid>,<string:purchase_uid>')
-
+api.add_resource(order_summary_page, '/api/v2/order_summary_page/<string:delivery_date>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
