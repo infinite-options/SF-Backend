@@ -235,7 +235,7 @@ def serializeResponse(response):
                     row[key] = row[key].strftime("%Y-%m-%d")
                 elif type(row[key]) is datetime:
                     row[key] = row[key].strftime("%Y-%m-%d %H:%M:%S")
-        #print("In Serialize JSON response", response)
+        ##print("In Serialize JSON response", response)
         return response
     except:
         raise Exception("Bad query JSON")
@@ -318,12 +318,12 @@ def helper_upload_meal_img(file, key):
     return None
 
 def helper_upload_refund_img(file, bucket, key):
-    print("Bucket = ", bucket)
-    print("Key = ", key)
+    #print("Bucket = ", bucket)
+    #print("Key = ", key)
     if file:
         filename = 'https://s3-us-west-1.amazonaws.com/' \
                    + str(bucket) + '/' + str(key)
-        #print('bucket:{}'.format(bucket))
+        ##print('bucket:{}'.format(bucket))
         upload_file = s3.put_object(
                             Bucket=bucket,
                             Body=file,
@@ -405,7 +405,7 @@ class Businesses(Resource):
             data = request.get_json(force=True)
             BusinessId = data['business_id']
             updatedAcceptingHours = data['business_accepting_hours']
-            print("updatedAcceptingHours= ",  updatedAcceptingHours)
+            #print("updatedAcceptingHours= ",  updatedAcceptingHours)
             query =  '''
                     UPDATE  sf.businesses
                     SET business_accepting_hours = \'''' + updatedAcceptingHours + '''\'
@@ -436,7 +436,7 @@ class ItemsbyBusiness_Prime(Resource):
     def get(self, business_uid):
         response = {}
         items = {}
-        print("business_uid", business_uid)
+        #print("business_uid", business_uid)
         try:
             conn = connect()
             query = """
@@ -513,8 +513,8 @@ class CouponDetails(Resource):
 
             coupon_uid = data['coupon_uid']
             num_used = (data['num_used'])
-            print("coupon_uid", coupon_uid)
-            print("num_used",  num_used)
+            #print("coupon_uid", coupon_uid)
+            #print("num_used",  num_used)
 
 
 
@@ -542,28 +542,28 @@ class RefundDetails(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            # print to Received data to Terminal
-            print("Received:", data)
+            # #print to Received data to Terminal
+            #print("Received:", data)
 
             email = data['email_id']
             phone = data['phone_num']
             image = data['image_url']
             note = data['customer_note']
-            print('email:', email)
-            print('phone_num:', phone)
-            print('image_url:', image)
-            print('note:', note)
+            #print('email:', email)
+            #print('phone_num:', phone)
+            #print('image_url:', image)
+            #print('note:', note)
 
 
             # Query [0]  Get New Refund UID
             query = ["CALL new_refund_uid;"]
             NewIDresponse = execute(query[0], 'get', conn)
             NewID = NewIDresponse['result'][0]['new_id']
-            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
-            print("NewRefundID = ", NewID)
+            # #print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            #print("NewRefundID = ", NewID)
 
             TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print("TimeStamp = ", TimeStamp)
+            #print("TimeStamp = ", TimeStamp)
 
             #Query [1]  Main Query to Insert Data Into Table
             query =  '''
@@ -608,38 +608,38 @@ class RefundDetailsNEW(Resource):
             client_phone = request.form.get('client_phone')
             photo = request.file.get('photo')
             # data = request.get_json(force=True)
-            # print to Received data to Terminal
-            # print("Received:", data)
+            # #print to Received data to Terminal
+            # #print("Received:", data)
 
             # email = data['client_email']
             # phone = data['phone_num']
             # image = data['image_url']
             # note = data['client_message']
-            print('email:', client_email)
-            # print('phone_num:', phone)
-            # print('image_url:', image)
-            print('note:', client_message)
-            print('phone:', client_phone)
+            #print('email:', client_email)
+            # #print('phone_num:', phone)
+            # #print('image_url:', image)
+            #print('note:', client_message)
+            #print('phone:', client_phone)
 
 
             # Query [0]  Get New Refund UID
             query = ["CALL new_refund_uid;"]
             NewIDresponse = execute(query[0], 'get', conn)
             NewID = NewIDresponse['result'][0]['new_id']
-            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
-            print("NewRefundID = ", NewID)
+            # #print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            #print("NewRefundID = ", NewID)
 
             photo_key = 'refund_imgs/{}'.format(NewID)
-            print("Photo Key = ", photo_key)
+            #print("Photo Key = ", photo_key)
 
-            print("Photo = ", photo)
+            #print("Photo = ", photo)
             photo_path = helper_upload_refund_img(photo, BUCKET_NAME, photo_key)
-            print("Photo Path = ", photo_path)
+            #print("Photo Path = ", photo_path)
 
 
 
             TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print("TimeStamp = ", TimeStamp)
+            #print("TimeStamp = ", TimeStamp)
 
             #Query [1]  Main Query to Insert Data Into Table
             query =  '''
@@ -670,8 +670,8 @@ class PurchaseData(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            # print to Received data to Terminal
-            print("Received:", data)
+            # #print to Received data to Terminal
+            #print("Received:", data)
 
             customer_uid = data['customer_uid']
             business_uid = data['business_uid']
@@ -694,47 +694,47 @@ class PurchaseData(Resource):
             amount_discount = data['amount_discount']
             amount_paid = data['amount_paid']
 
-            print("customer_uid:", customer_uid)
-            print("business_uid:", business_uid)
+            #print("customer_uid:", customer_uid)
+            #print("business_uid:", business_uid)
 
-            print (business_uid )
-            print (customer_uid )
-            print (delivery_first_name )
-            print (delivery_last_name )
-            print (delivery_email )
-            print (delivery_phone )
-            print (delivery_address )
-            print (delivery_unit )
-            print (delivery_city )
-            print (delivery_state )
-            print (delivery_zip )
-            print (delivery_instructions )
-            print (delivery_longitude )
-            print (delivery_latitude )
-            print (items )
-            print (order_instructions )
-            print (purchase_notes )
-            print (amount_due )
-            print (amount_discount )
-            print (amount_paid )
+            #print (business_uid )
+            #print (customer_uid )
+            #print (delivery_first_name )
+            #print (delivery_last_name )
+            #print (delivery_email )
+            #print (delivery_phone )
+            #print (delivery_address )
+            #print (delivery_unit )
+            #print (delivery_city )
+            #print (delivery_state )
+            #print (delivery_zip )
+            #print (delivery_instructions )
+            #print (delivery_longitude )
+            #print (delivery_latitude )
+            #print (items )
+            #print (order_instructions )
+            #print (purchase_notes )
+            #print (amount_due )
+            #print (amount_discount )
+            #print (amount_paid )
 
             # Query [0]  Get New Purchase UID
             query = ["CALL new_purchase_uid;"]
             NewPurIDresponse = execute(query[0], 'get', conn)
             NewPurID = NewPurIDresponse['result'][0]['new_id']
-            print("NewPurID:", NewPurID)
+            #print("NewPurID:", NewPurID)
 
             # Query [1]  Get New PaymentUID
             query = ["CALL new_payment_uid;"]
             NewPayIDresponse = execute(query[0], 'get', conn)
             NewPayID = NewPayIDresponse['result'][0]['new_id']
-            print("NewPayID:", NewPayID)
-            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            #print("NewPayID:", NewPayID)
+            # #print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
 
             TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             DateStamp = datetime.now().strftime("%Y-%m-%d")
-            print("TimeStamp:", TimeStamp)
-            print("DateStamp:", DateStamp)
+            #print("TimeStamp:", TimeStamp)
+            #print("DateStamp:", DateStamp)
 
             # Query [2]  Main Query to Insert in Purchases Table
             query = '''
@@ -817,8 +817,8 @@ class MSPurchaseData(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            # print to Received data to Terminal
-            print("Received:", data)
+            # #print to Received data to Terminal
+            #print("Received:", data)
 
             customer_id = data['customer_id']
             business_id = data['business_id']
@@ -849,51 +849,51 @@ class MSPurchaseData(Resource):
             cc_cvv = data['cc_cvv']
             cc_zip = data['billing_zip']
 
-            print("customer_id:", customer_id)
-            print("business_id:", business_id)
+            #print("customer_id:", customer_id)
+            #print("business_id:", business_id)
 
-            print (business_id )
-            print (customer_id )
-            print (delivery_first_name )
-            print (delivery_last_name )
-            print (delivery_email )
-            print (delivery_phone )
-            print (delivery_address )
-            print (delivery_unit )
-            print (delivery_city )
-            print (delivery_state )
-            print (delivery_zip )
-            print (delivery_instructions )
-            print (delivery_longitude )
-            print (delivery_latitude )
-            print (items )
-            print (order_instructions )
-            print (purchase_notes )
-            print (amount_due )
-            print (amount_discount )
-            print (amount_paid )
-            print (cc_num)
-            print (cc_exp_date)
-            print (cc_cvv)
-            print (cc_zip)
+            #print (business_id )
+            #print (customer_id )
+            #print (delivery_first_name )
+            #print (delivery_last_name )
+            #print (delivery_email )
+            #print (delivery_phone )
+            #print (delivery_address )
+            #print (delivery_unit )
+            #print (delivery_city )
+            #print (delivery_state )
+            #print (delivery_zip )
+            #print (delivery_instructions )
+            #print (delivery_longitude )
+            #print (delivery_latitude )
+            #print (items )
+            #print (order_instructions )
+            #print (purchase_notes )
+            #print (amount_due )
+            #print (amount_discount )
+            #print (amount_paid )
+            #print (cc_num)
+            #print (cc_exp_date)
+            #print (cc_cvv)
+            #print (cc_zip)
 
             # Query [0]  Get New Purchase UID
             query = ["CALL new_purchase_uid;"]
             NewPurIDresponse = execute(query[0], 'get', conn)
             NewPurID = NewPurIDresponse['result'][0]['new_id']
-            print("NewPurID:", NewPurID)
+            #print("NewPurID:", NewPurID)
 
             # Query [1]  Get New PaymentUID
             query = ["CALL new_payment_uid;"]
             NewPayIDresponse = execute(query[0], 'get', conn)
             NewPayID = NewPayIDresponse['result'][0]['new_id']
-            print("NewPayID:", NewPayID)
-            # print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
+            #print("NewPayID:", NewPayID)
+            # #print("NewID = ", NewID)  NewID is an Array and new_id is the first element in that array
 
             TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             DateStamp = datetime.now().strftime("%Y-%m-%d")
-            print("TimeStamp:", TimeStamp)
-            print("DateStamp:", DateStamp)
+            #print("TimeStamp:", TimeStamp)
+            #print("DateStamp:", DateStamp)
 
             # Query [2]  Main Query to Insert in Purchases Table
             query = '''
@@ -989,7 +989,7 @@ class token_fetch_update (Resource):
             conn = connect()
             data = request.get_json(force=True)
             uid = data['uid']
-            print(data)
+            #print(data)
 
             if action == 'get':
                 query = """
@@ -1020,10 +1020,10 @@ class token_fetch_update (Resource):
                         social_timestamp = DATE_ADD(social_timestamp , INTERVAL 14 DAY)
                         WHERE customer_uid = \'""" + uid + """\';
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
-                print(items)
-                print('code------', items['code'])
+                #print(items)
+                #print('code------', items['code'])
 
                 if items['code'] == 281:
 
@@ -1045,10 +1045,10 @@ class token_fetch_update (Resource):
                         social_timestamp = DATE_ADD(social_timestamp , INTERVAL 14 DAY)
                         WHERE customer_uid = \'""" + uid + """\';
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
-                print(items)
-                print('code------', items['code'])
+                #print(items)
+                #print('code------', items['code'])
 
                 if items['code'] == 281:
 
@@ -1078,7 +1078,7 @@ class createAccount(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            print(data)
+            #print(data)
             email = data['email']
             firstName = data['first_name']
             lastName = data['last_name']
@@ -1100,15 +1100,15 @@ class createAccount(Resource):
             else:
                 social_signup = True
 
-            print(social_signup)
+            #print(social_signup)
             get_user_id_query = "CALL new_customer_uid();"
             NewUserIDresponse = execute(get_user_id_query, 'get', conn)
 
             if NewUserIDresponse['code'] == 490:
                 string = " Cannot get new User id. "
-                print("*" * (len(string) + 10))
-                print(string.center(len(string) + 10, "*"))
-                print("*" * (len(string) + 10))
+                #print("*" * (len(string) + 10))
+                #print(string.center(len(string) + 10, "*"))
+                #print("*" * (len(string) + 10))
                 response['message'] = "Internal Server Error."
                 return response, 500
             NewUserID = NewUserIDresponse['result'][0]['new_id']
@@ -1118,7 +1118,7 @@ class createAccount(Resource):
                 salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
 
                 password = sha512((data['password'] + salt).encode()).hexdigest()
-                print('password------', password)
+                #print('password------', password)
                 algorithm = "SHA512"
                 mobile_access_token = 'NULL'
                 mobile_refresh_token = 'NULL'
@@ -1136,7 +1136,7 @@ class createAccount(Resource):
                 algorithm = 'NULL'
                 user_social_signup = data['social']
 
-                print('ELSE- OUT')
+                #print('ELSE- OUT')
 
             if cust_id != 'NULL' and cust_id:
 
@@ -1148,7 +1148,7 @@ class createAccount(Resource):
                             WHERE customer_uid = \'''' + cust_id + '''\';
                        '''
                 it = execute(query, 'get', conn)
-                print('it-------', it)
+                #print('it-------', it)
 
                 if it['result'][0]['user_access_token'] != 'FALSE':
                     user_access_token = it['result'][0]['user_access_token']
@@ -1193,7 +1193,7 @@ class createAccount(Resource):
                 query = """
                         SELECT customer_email FROM sf.customers
                         WHERE customer_email = \'""" + email + "\';"
-                print('email---------')
+                #print('email---------')
                 items = execute(query, 'get', conn)
                 if items['result']:
 
@@ -1269,7 +1269,7 @@ class createAccount(Resource):
                                             \'""" + mobile_access_token + """\',
                                             \'""" + mobile_refresh_token + """\',
                                             \'""" + social_id + """\');"""]
-            print(customer_insert_query[0])
+            #print(customer_insert_query[0])
             items = execute(customer_insert_query[0], 'post', conn)
 
             if items['code'] != 281:
@@ -1295,7 +1295,7 @@ class createAccount(Resource):
             items['message'] = 'Signup successful'
             items['code'] = 200
 
-            print('sss-----', social_signup)
+            #print('sss-----', social_signup)
 
             # generate coupon for new user
 
@@ -1318,7 +1318,7 @@ class createAccount(Resource):
             return items
 
         except:
-            print("Error happened while Sign Up")
+            #print("Error happened while Sign Up")
             if "NewUserID" in locals():
                 execute("""DELETE FROM customers WHERE customer_uid = '""" + NewUserID + """';""", 'post', conn)
             raise BadRequest('Request failed, please try again later.')
@@ -1332,7 +1332,7 @@ class createAccountGuestToCustomer(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
-            print(data)
+            #print(data)
             old_customer_uid = data['customer_uid']
             email = data['email']
             firstName = data['first_name']
@@ -1354,15 +1354,15 @@ class createAccountGuestToCustomer(Resource):
                 social_signup = False
             else:
                 social_signup = True
-            print('Done')
-            print(social_signup)
+            #print('Done')
+            #print(social_signup)
             
             if social_signup == False:
 
                 salt = (datetime.now()).strftime("%Y-%m-%d %H:%M:%S")
 
                 password = sha512((data['password'] + salt).encode()).hexdigest()
-                print('password------', password)
+                #print('password------', password)
                 algorithm = "SHA512"
                 mobile_access_token = 'NULL'
                 mobile_refresh_token = 'NULL'
@@ -1380,12 +1380,12 @@ class createAccountGuestToCustomer(Resource):
                 algorithm = 'NULL'
                 user_social_signup = data['social']
 
-                print('ELSE- OUT')
+                #print('ELSE- OUT')
             
             flag = 0
 
             if cust_id != 'NULL' and cust_id:
-                print('IN IF')
+                #print('IN IF')
                 flag = 1
                 NewUserID = cust_id
 
@@ -1395,7 +1395,7 @@ class createAccountGuestToCustomer(Resource):
                             WHERE customer_uid = \'''' + cust_id + '''\';
                        '''
                 it = execute(query, 'get', conn)
-                print('it-------', it)
+                #print('it-------', it)
 
                 if it['result'][0]['user_access_token'] != 'FALSE':
                     user_access_token = it['result'][0]['user_access_token']
@@ -1470,7 +1470,7 @@ class createAccountGuestToCustomer(Resource):
 
                 return items
             if flag == 1:
-                print('IN DELETE')
+                #print('IN DELETE')
                 execute("""DELETE FROM customers WHERE customer_uid = '""" + cust_id + """';""", 'post', conn)
 
             items['result'] = {
@@ -1488,12 +1488,12 @@ class createAccountGuestToCustomer(Resource):
             items['message'] = 'Signup successful'
             items['code'] = 200
 
-            print('sss-----', social_signup)
+            #print('sss-----', social_signup)
 
             return items
 
         except:
-            print("Error happened while Sign Up")
+            #print("Error happened while Sign Up")
             
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -1523,7 +1523,7 @@ class email_verification(Resource):
             conn = connect()
 
             data = request.get_json(force=True)
-            print(data)
+            #print(data)
             email = data['email']
             query = """
                     SELECT password_hashed
@@ -1531,7 +1531,7 @@ class email_verification(Resource):
                     WHERE customer_email = \'""" + email + """\'
                     """
             items = execute(query, 'get', conn)
-            print(items)
+            #print(items)
             if not items['result']:
 
                 items['message'] = "Customer email doesn't exists"
@@ -1547,15 +1547,15 @@ class email_verification(Resource):
 
 
             token = s.dumps(email)
-            print(token)
+            #print(token)
             password = items['result'][0]['password_hashed']
-            print(password)
+            #print(password)
             msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email])
 
-            print('MESSAGE----', msg)
-            print('message complete')
+            #print('MESSAGE----', msg)
+            #print('message complete')
             link = url_for('confirm', token=token, hashed=password, _external=True)
-            print('link---', link)
+            #print('link---', link)
             #msg.body = "Click on the link {} to verify your email address.".format(link)
             msg.body =  "Congratulations for signing up with ServingFresh.me!\n\n"\
                         "Please click on the link below to be redirected to our website.\n"\
@@ -1564,7 +1564,7 @@ class email_verification(Resource):
                         "Thx - The Serving Fresh Team"
 
 
-            print('msg-bd----', msg.body)
+            #print('msg-bd----', msg.body)
             mail.send(msg)
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -1577,7 +1577,7 @@ def confirm():
     try:
         token = request.args['token']
         hashed = request.args['hashed']
-        print("hased: ", hashed)
+        #print("hased: ", hashed)
         email = s.loads(token)  # max_age = 86400 = 1 day
 
         # marking email confirmed in database, then...
@@ -1590,7 +1590,7 @@ def confirm():
             #return redirect('http://localhost:3000/login?email={}&hashed={}'.format(email, hashed))
             return redirect('https://servingfresh.me/login?email={}&hashed={}'.format(email, hashed))
         else:
-            print("Error happened while confirming an email address.")
+            #print("Error happened while confirming an email address.")
             error = "Confirm error."
             err_code = 401  # Verification code is incorrect
             return error, err_code
@@ -1608,7 +1608,7 @@ class AccountSalt(Resource):
             conn = connect()
 
             data = request.get_json(force=True)
-            print(data)
+            #print(data)
             email = data['email']
             query = """
                     SELECT password_algorithm, 
@@ -1618,7 +1618,7 @@ class AccountSalt(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-            print(items)
+            #print(items)
             if not items['result']:
                 items['message'] = "Email doesn't exists"
                 items['code'] = 404
@@ -1663,8 +1663,8 @@ class Login(Resource):
                     WHERE customer_email = \'""" + email + """\';
                     """
             items = execute(query, 'get', conn)
-            print('Password', password)
-            print(items)
+            #print('Password', password)
+            #print(items)
 
             if items['code'] != 280:
                 response['message'] = "Internal Server Error."
@@ -1676,8 +1676,8 @@ class Login(Resource):
                 items['code'] = 404
                 return items
             else:
-                print(items['result'])
-                print('sc: ', items['result'][0]['user_social_media'])
+                #print(items['result'])
+                #print('sc: ', items['result'][0]['user_social_media'])
 
 
                 # checks if login was by social media
@@ -1716,7 +1716,7 @@ class Login(Resource):
                         return items
 
                     if (items['result'][0]['social_id'] != social_id):
-                        print(items['result'][0]['social_id'])
+                        #print(items['result'][0]['social_id'])
 
                         items['message'] = "Cannot Authenticated. Social_id is invalid"
                         items['result'] = ''
@@ -1725,9 +1725,9 @@ class Login(Resource):
 
                 else:
                     string = " Cannot compare the password or social_id while log in. "
-                    print("*" * (len(string) + 10))
-                    print(string.center(len(string) + 10, "*"))
-                    print("*" * (len(string) + 10))
+                    #print("*" * (len(string) + 10))
+                    #print(string.center(len(string) + 10, "*"))
+                    #print("*" * (len(string) + 10))
                     response['message'] = string
                     response['code'] = 500
                     return response
@@ -1761,17 +1761,17 @@ class AppleEmail(Resource):
                     WHERE social_id = \'""" + social_id + """\'
                     """
 
-            print(query)
+            #print(query)
 
             items = execute(query, 'get', conn)
-            print("Items:", items)
-            print(items['code'])
-            print(items['result'])
+            #print("Items:", items)
+            #print(items['code'])
+            #print(items['result'])
 
             if items['code'] == 280:
                 items['message'] = 'Email Returned'
                 items['result'] = items['result']
-                print(items['code'])
+                #print(items['code'])
                 items['code'] = 200
             else:
                 items['message'] = 'Check sql query'
@@ -1793,14 +1793,14 @@ class AppleLogin (Resource):
             conn = connect()
             token = request.form.get('id_token')
             access_token = request.form.get('code')
-            print(token)
+            #print(token)
             if token:
-                print('INN')
+                #print('INN')
                 data = jwt.decode(token, verify=False)
-                print('data-----', data)
+                #print('data-----', data)
                 email = data.get('email')
 
-                print(data, email)
+                #print(data, email)
                 if email is not None:
                     sub = data['sub']
                     query = """
@@ -1818,7 +1818,7 @@ class AppleLogin (Resource):
                     WHERE social_id = \'""" + sub + """\';
                     """
                     items = execute(query, 'get', conn)
-                    print(items)
+                    #print(items)
 
                     if items['code'] != 280:
                         items['message'] = "Internal error"
@@ -1829,23 +1829,23 @@ class AppleLogin (Resource):
 
 
                     if not items['result']:
-                        print('New customer')
+                        #print('New customer')
                         items['message'] = "Social_id doesn't exists Please go to the signup page"
                         get_user_id_query = "CALL new_customer_uid();"
                         NewUserIDresponse = execute(get_user_id_query, 'get', conn)
 
                         if NewUserIDresponse['code'] == 490:
                             string = " Cannot get new User id. "
-                            print("*" * (len(string) + 10))
-                            print(string.center(len(string) + 10, "*"))
-                            print("*" * (len(string) + 10))
+                            #print("*" * (len(string) + 10))
+                            #print(string.center(len(string) + 10, "*"))
+                            #print("*" * (len(string) + 10))
                             response['message'] = "Internal Server Error."
                             response['code'] = 500
                             return response
 
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
-                        print('NewUserID', NewUserID)
+                        #print('NewUserID', NewUserID)
 
 
                         customer_insert_query = """
@@ -1875,35 +1875,35 @@ class AppleLogin (Resource):
 
                         item = execute(customer_insert_query, 'post', conn)
 
-                        print('INSERT')
+                        #print('INSERT')
 
                         if item['code'] != 281:
                             item['message'] = 'Check insert sql query'
                             return item
-                        print('successful redirect to signup')
+                        #print('successful redirect to signup')
                         return redirect("https://servingfresh.me/socialsignup?id=" + NewUserID)
 
 
                     # Existing customer
 
-                    print('existing-------')
-                    print(items['result'][0]['user_social_media'])
-                    print(items['result'][0]['social_id'])
+                    #print('existing-------')
+                    #print(items['result'][0]['user_social_media'])
+                    #print(items['result'][0]['social_id'])
 
                     if items['result'][0]['user_social_media'] != "APPLE":
-                        print('1-----')
+                        #print('1-----')
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['code'] = 400
                         return redirect("https://servingfresh.me/?media=" + items['result'][0]['user_social_media'])
 
                     elif items['result'][0]['social_id'] != sub:
-                        print('20-----')
+                        #print('20-----')
                         items['message'] = "social_id mismatch"
                         items['code'] = 400
                         return redirect("https://servingfresh.me/")
 
                     else:
-                        print('successful redirect to farms')
+                        #print('successful redirect to farms')
                         return redirect("https://servingfresh.me/?id=" + items['result'][0]['customer_uid'])
 
 
@@ -1933,11 +1933,11 @@ class access_refresh_update(Resource):
             query = """
                     UPDATE sf.customers SET user_access_token = \'""" + data['access_token'] + """\', user_refresh_token = \'""" + data['refresh_token'] + """\', social_timestamp =  \'""" + data['social_timestamp'] + """\' WHERE (customer_uid = \'""" + data['uid'] + """\'); ;
                     """
-            print(query)
+            #print(query)
             items = execute(query, 'post', conn)
             if items['code'] == 281:
                 items['message'] = 'Access and refresh token updated successfully'
-                print(items['code'])
+                #print(items['code'])
                 items['code'] = 200
             else:
                 items['message'] = 'Check sql query'
@@ -2048,7 +2048,7 @@ class set_temp_password(Resource):
             pass_temp = self.get_random_string()
             salt = getNow()
             pass_temp_hashed = sha512((pass_temp + salt).encode()).hexdigest()
-            print(pass_temp_hashed)
+            #print(pass_temp_hashed)
             query = """
                     UPDATE sf.customers SET password_hashed = '""" + pass_temp_hashed + """'
                      , password_salt = '""" + salt + """' 
@@ -2060,21 +2060,21 @@ class set_temp_password(Resource):
                 query_result['message'] = 'check sql query'
                 return query_result
             # send an email to client
-            print("mail 1") 
+            #print("mail 1") 
             msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email], bcc='support@servingfresh.me')
             msg.body = "Your temporary password is {}. Please use it to reset your password".format(pass_temp)
-            print("mail 2")
+            #print("mail 2")
             # msg2 = Message("Email Verification", sender='support@mealsfor.me', recipients='support@mealsfor.me')
             # supportmessage = str(email) + " has requested a temporary password, and it is {}."
-            # #print(supportmessage)
+            # ##print(supportmessage)
             # msg2.body = supportmessage.format(pass_temp)
-            print("ready to send")
+            #print("ready to send")
             mail.send(msg)
-            # print("sending 2")
-            # print(msg2.body)
-            # print("actual sending 2")
+            # #print("sending 2")
+            # #print(msg2.body)
+            # #print("actual sending 2")
             # mail.send(msg2)
-            print("both sent")
+            #print("both sent")
             response['message'] = "A temporary password has been sent"
             return response, 200
         except:
@@ -2140,7 +2140,7 @@ class update_guid_notification(Resource):
             conn = connect()
             data = request.get_json(force=True)
 
-            print(data)
+            #print(data)
             if role == 'customer' and action == 'add':
                 uid = data['uid']
                 guid = data['guid']
@@ -2153,10 +2153,10 @@ class update_guid_notification(Resource):
                 items = execute(query, 'get', conn)
                 del data['uid']
                 test = str(data).replace("'", "\"")
-                print('test---------', test)
+                #print('test---------', test)
                 data = "'" + test + "'"
 
-                print(data)
+                #print(data)
                 if items['result']:
 
                     query = " " \
@@ -2166,7 +2166,7 @@ class update_guid_notification(Resource):
                             ""
 
                     items = execute(query, 'post', conn)
-                    print(items)
+                    #print(items)
                     if items['code'] == 281:
                         items['code'] = 200
                         items['message'] = 'Device_id notification and GUID updated'
@@ -2190,7 +2190,7 @@ class update_guid_notification(Resource):
 
                 del data['uid']
                 test = str(data).replace("'", "\"")
-                print('test---------', test)
+                #print('test---------', test)
                 data = "'" + test + "'"
 
                 if items['result']:
@@ -2224,33 +2224,33 @@ class update_guid_notification(Resource):
                     """
                 items = execute(query, 'get', conn)
                 json_guid = json.loads(items['result'][0]['cust_guid_device_id_notification'])
-                print('0', json_guid)
+                #print('0', json_guid)
                 for i, vals in enumerate(json_guid):
-                    print(i, vals)
+                    #print(i, vals)
                     if vals == None or vals == 'null':
                         continue
                     if vals['guid'] == data['guid']:
-                        print(vals)
+                        #print(vals)
                         json_guid[i]['notification'] = data['notification']
                         break
                 if json_guid[0] == None:
-                    print('none')
+                    #print('none')
                     json_guid[0] = 'null'
 
-                print('1', json_guid)
+                #print('1', json_guid)
                 guid = str(json_guid)
                 guid = guid.replace("'", '"')
-                print('2', guid)
-                print(guid)
+                #print('2', guid)
+                #print(guid)
                 guid = "[null," + guid[8:]
-                print('replace',guid)
+                #print('replace',guid)
                 query = """
                         UPDATE  sf.customers  
                         SET
                         cust_guid_device_id_notification = \'""" + guid + """\'
                         WHERE ( customer_uid  = '""" + data['uid'] + """' );
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
                 if items['code'] != 281:
                     items['message'] = 'guid not updated check sql query and data'
@@ -2268,11 +2268,11 @@ class update_guid_notification(Resource):
                 items = execute(query, 'get', conn)
                 json_guid = json.loads(items['result'][0]['bus_guid_device_id_notification'])
                 for i, vals in enumerate(json_guid):
-                    print(i, vals)
+                    #print(i, vals)
                     if vals == None or vals == 'null':
                         continue
                     if vals['guid'] == data['guid']:
-                        print(vals)
+                        #print(vals)
                         json_guid[i]['notification'] = data['notification']
                         break
                 if json_guid[0] == None:
@@ -2280,7 +2280,7 @@ class update_guid_notification(Resource):
 
                 guid = str(json_guid)
                 guid = guid.replace("'", '"')
-                print(guid)
+                #print(guid)
                 guid = "[null," + guid[8:]
                 query = """
                         UPDATE  sf.businesses
@@ -2398,14 +2398,14 @@ class brandAmbassador(Resource):
                 (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold) 
                 VALUES ( \'""" + couponID + """\', 'Referral', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '2', 'Referral', '0', 'F', \'""" + cust_email + """\', 'null', '0');
                 """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
                 if items['code'] != 281:
                     items['message'] = "check sql query"
                     return items
 
                 # Now update ambasaddor coupon
-                print('updating amb')
+                #print('updating amb')
                 query = """
                         UPDATE sf.coupons SET limits = limits + 2 
                         WHERE coupon_id = 'SFAmbassador' AND email_id = \'""" + data['amb_email'] + """\'
@@ -2440,7 +2440,7 @@ class brandAmbassador(Resource):
                 items = execute(query, 'get', conn)
                 #return items
                 for vals in items['result']:
-                    print(vals,vals['customer_note'])
+                    #print(vals,vals['customer_note'])
                     if vals['customer_note'] == address:
                         return {"message":"customer has already used ambassador code", "response":400} 
                     
@@ -2506,17 +2506,17 @@ class brandAmbassador(Resource):
             if action == 'create_ambassador':
                 
                 for vals in items_amb['result']:
-                    print(vals)
+                    #print(vals)
                     if vals['coupon_id'] == 'SFAmbassador':
                         return 'Customer already an Ambassador'
                 
                 # all check done, now make the custoamer a ambassador and issue them a coupon
-                print("first")
+                #print("first")
                 query = ["CALL sf.new_coupons_uid;"]
                 
                 couponIDresponse = execute(query[0], 'get', conn)
                 couponID = couponIDresponse['result'][0]['new_id']
-                print('all checks done')
+                #print('all checks done')
                 dateObject = datetime.now()
 
                 exp_date = dateObject.replace(year=dateObject.year + 5)
@@ -2526,7 +2526,7 @@ class brandAmbassador(Resource):
                         (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
                         VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '0', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
                 if items['code'] != 281:
                     items['message'] = "check sql query"
@@ -2550,7 +2550,7 @@ class brandAmbassador(Resource):
                         WHERE email_id = \'""" + code + """\' AND coupon_id = 'SFGiftCard';
                         """
                 items_gift = execute(query_gift,'get',conn)
-                print(items_gift)
+                #print(items_gift)
                 if items_gift['code'] != 280:
                     items_gift['message'] = 'check sql query'
                     return items_gift
@@ -2561,7 +2561,7 @@ class brandAmbassador(Resource):
                     
                     return {"message":'Let the customer use gift  card', "code": 200, "discount":items_gift['result'][0]['discount_amount'],"uids":[items_gift['result'][0]['coupon_uid']],"sub":items_gift['result'][0]}
                 
-                print('not gift card')
+                #print('not gift card')
                 
                 final_res = ''
                 for vals in items_amb['result']:
@@ -2623,7 +2623,7 @@ class brandAmbassador(Resource):
                     dateObject = datetime.now()
                     exp_date = dateObject.replace(year=dateObject.year + 1)
                     exp_date = datetime.strftime(exp_date,"%Y-%m-%d %H:%M:%S")
-                    print(final_res)
+                    #print(final_res)
                     query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
@@ -2635,7 +2635,7 @@ class brandAmbassador(Resource):
                         return items
 
                     # Now update ambasaddor coupon
-                    print('updating amb')
+                    #print('updating amb')
                     query = """
                             UPDATE sf.coupons SET limits = limits + 2 
                             WHERE coupon_id = 'SFAmbassador' AND email_id = \'""" + code + """\'
@@ -2658,7 +2658,7 @@ class brandAmbassador(Resource):
                     return retu
 
                 elif type_code == 'SFDiscount':
-                    print('in sfdiscount')
+                    #print('in sfdiscount')
                     
                     if num_used == limits:
                         return {"message":'Limit exceeded cannot use this coupon',"code":507,"discount":"","uids":""}
@@ -2667,7 +2667,7 @@ class brandAmbassador(Resource):
                                  SELECT * FROM sf.coupons
                                  WHERE email_id = \'""" + info + """\' AND notes = \'""" + code + """\'
                                 """
-                    print(query_dis)
+                    #print(query_dis)
                     items_dis = execute(query_dis, 'get', conn)
                     if items_dis['code'] != 280:
                         items_dis['message'] = 'Check sql query'
@@ -2675,7 +2675,7 @@ class brandAmbassador(Resource):
                     
                     if not items_dis['result']:
                         # create row
-                        print('in first if')
+                        #print('in first if')
                         query = ["CALL sf.new_coupons_uid;"]
                         couponIDresponse = execute(query[0], 'get', conn)
                         couponID = couponIDresponse['result'][0]['new_id']
@@ -2732,7 +2732,7 @@ class categoricalOptions(Resource):
 
         try:
             conn = connect()
-            print('IN')
+            #print('IN')
             '''
             # query for businesses serving in customer's zone
             query = """
@@ -2763,11 +2763,11 @@ class categoricalOptions(Resource):
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
-            print(items)
+            #print(items)
             for vals in items['result']:
                 zones.append(vals['zone'])
             '''
-            print('START')
+            #print('START')
             zones = ['Random', 'Random']
             query = """
                     SELECT * from sf.zones;
@@ -2791,13 +2791,13 @@ class categoricalOptions(Resource):
                 point = Point(float(long),float(lat))
                 polygon = Polygon([(LB_long, LB_lat), (LT_long, LT_lat), (RT_long, RT_lat), (RB_long, RB_lat)])
                 res = polygon.contains(point)
-                print(res)
+                #print(res)
 
                 if res:
                     zones.append(vals['zone'])
 
 
-            print('ZONES-----', zones)
+            #print('ZONES-----', zones)
             query = """
                     SELECT      
                     rjzjt.zone_uid,
@@ -2872,7 +2872,7 @@ class getItems_Prime(Resource):
                     """
             '''
             
-            print(query)
+            #print(query)
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
@@ -2893,7 +2893,7 @@ class getItemsByUid(Resource):
     def get(self, uid):
         response = {}
         items = {}
-        print("user_uid: ", uid)
+        #print("user_uid: ", uid)
         try:
             conn = connect()
             query = """
@@ -2918,7 +2918,7 @@ class ProduceByLocation_Prime(Resource):
         
         try:
             conn = connect()
-            print('IN')
+            #print('IN')
             zones = ['Random', 'Random']
             query = """
                     SELECT * from sf.zones;
@@ -3059,24 +3059,24 @@ class ProduceByLocation_Prime(Resource):
             
             res = []
             if 'vegetable' in item_type and 'fruit' in item_type:
-                print('1')
+                #print('1')
                 item_type.remove('vegetable')
                 item_type.remove('fruit')
                 res = ['vegetable','fruit']
 
                 res.extend(list(item_type))
             elif 'vegetable' in item_type:
-                print('2')
+                #print('2')
                 item_type.remove('vegetable')
                 res = ['vegetable']
                 res.extend(list(item_type))
             elif 'fruit' in item_type:
-                print('3')
+                #print('3')
                 item_type.remove('fruit')
                 res = ['fruit']
                 res.extend(list(item_type))
             else:
-                print('4')
+                #print('4')
                 res = list(item_type)
 
             items['types'] = res
@@ -3107,13 +3107,13 @@ class Refund(Resource):
 
             NewRefundIDresponse = execute(query[0], 'get', conn)
             NewRefundID = NewRefundIDresponse['result'][0]['new_id']
-            print('INN')
+            #print('INN')
             query = """
                     SELECT customer_phone_num FROM sf.customers 
                     WHERE customer_email = \'""" + str(email) + """\';
                     """
             items = execute(query, 'get', conn)
-            print(items)
+            #print(items)
 
             if not items['result']:
 
@@ -3126,9 +3126,9 @@ class Refund(Resource):
             ## add photo
 
             key = "refund/" + NewRefundID
-            print(key)
+            #print(key)
             item_photo_url = helper_upload_meal_img(item_photo, key)
-            print(item_photo_url)
+            #print(item_photo_url)
 
             phone = items['result'][0]['customer_phone_num']
             query_email = ["SELECT customer_email FROM sf.customers WHERE customer_email = \'" + email + "\';"]
@@ -3152,9 +3152,9 @@ class Refund(Resource):
                             ]
 
             emailExists = execute(query_email[0], 'get', conn)
-            print('email_exists', emailExists)
+            #print('email_exists', emailExists)
             items = execute(query_insert[0], 'post', conn)
-            print(items)
+            #print(items)
             if items['code'] != 281:
                 items['message'] = 'check sql query and input'
                 return items
@@ -3210,17 +3210,17 @@ class Refund(Resource):
                           "</table>" \
                           "</body>" \
                           "</html>"
-                print('INN')
+                #print('INN')
                 mail.send(msg)
-                print('outt')
+                #print('outt')
                 return items
 
         except:
-            print("Error happened while generating refund ticket")
+            #print("Error happened while generating refund ticket")
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-            print('process completed')
+            #print('process completed')
 
 class favorite_produce(Resource):
     
@@ -3241,16 +3241,16 @@ class favorite_produce(Resource):
                 return items
             
             elif action == 'post':
-                print(data)
+                #print(data)
                 favorite = str(data['favorite']).replace("'", '"')
                 
-                print(favorite)
+                #print(favorite)
                 query = """
                         UPDATE sf.customers 
                         SET favorite_produce = \'""" + favorite + """\'
                         WHERE (customer_uid = \'""" + data['customer_uid'] + """\');
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'post', conn)
 
                 if items['code'] != 281:
@@ -3327,11 +3327,11 @@ class get_Fee_Tax(Resource):
 
 
         except:
-                print("Error happened while getting taxes")
+                #print("Error happened while getting taxes")
                 raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-            print('process completed')
+            #print('process completed')
 
 class last_delivery_instruction(Resource):
     def get(self, uid):
@@ -3350,11 +3350,11 @@ class last_delivery_instruction(Resource):
                 items['message'] = 'check sql query'
             return items
         except:
-                print("Error happened while getting taxes")
+                #print("Error happened while getting taxes")
                 raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-            print('process completed')
+            #print('process completed')
 
 class update_order_rating(Resource):
     def get(self, uid, score):
@@ -3371,11 +3371,11 @@ class update_order_rating(Resource):
                 items['message'] = 'check sql query'
             return items
         except:
-                print("Error happened while updating order rating")
+                #print("Error happened while updating order rating")
                 raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-            print('process completed')
+            #print('process completed')
 
 class purchase_Data_SF(Resource):
     def post(self):
@@ -3420,7 +3420,7 @@ class purchase_Data_SF(Resource):
             isCopy = data['isCopy'] if data.get('isCopy') is not None or "" else "NULL"
 
 
-            print('in insert-------')
+            #print('in insert-------')
 
             query_insert = """ 
                                 INSERT INTO sf.purchases
@@ -3451,7 +3451,7 @@ class purchase_Data_SF(Resource):
                             """
             items = execute(query_insert, 'post', conn)
 
-            print('execute')
+            #print('execute')
             if items['code'] == 281:
                 items['code'] = 200
                 items['message'] = 'Purchase info updated'
@@ -3493,8 +3493,8 @@ class purchase_Data_SF(Resource):
             taxes = data['taxes'] if data.get('taxes') is not None else "0"
             ambassador_code = data['ambassador_code'] if data.get('ambassador_code') is not None else "0"
 
-            print("data------")
-            print(data)
+            #print("data------")
+            #print(data)
 
             query_insert = [""" 
                                 INSERT INTO  sf.payments
@@ -3524,9 +3524,9 @@ class purchase_Data_SF(Resource):
                                 ambassador_code = \'""" + ambassador_code + """\';
                             """]
 
-            print(query_insert)
+            #print(query_insert)
             item = execute(query_insert[0], 'post', conn)
-            print(item)
+            #print(item)
 
             if item['code'] == 281:
                 item['code'] = 200
@@ -3535,13 +3535,13 @@ class purchase_Data_SF(Resource):
                 item['message'] = 'check sql query for payments'
                 item['code'] = 490
                 return items
-            print('PAYMENTS-----', item)
-            print('coupons')
+            #print('PAYMENTS-----', item)
+            #print('coupons')
 
             if pay_coupon_id != "":
                 coupons = pay_coupon_id.split(",")
                 for vals in coupons:
-                    print('IN coupons')
+                    #print('IN coupons')
                     query = """
                         SELECT *
                         FROM sf.coupons
@@ -3558,7 +3558,7 @@ class purchase_Data_SF(Resource):
                         query = """
                             UPDATE sf.coupons SET discount_amount = discount_amount - \'""" + ambassador_code + """\' WHERE (coupon_uid = \'""" + vals + """\');
                             """
-                        print(query)
+                        #print(query)
                     else:
                         query = """
                                 UPDATE sf.coupons SET num_used = num_used + 1 WHERE (coupon_uid = \'""" + vals + """\');
@@ -3572,9 +3572,9 @@ class purchase_Data_SF(Resource):
             
             
             ## don't send email if we are copying order
-            print("isCopy---------------",isCopy)
+            #print("isCopy---------------",isCopy)
             if isCopy != "NULL":
-                print("In no email")
+                #print("In no email")
                 return items
             
             # check for gift cards
@@ -3597,9 +3597,9 @@ class purchase_Data_SF(Resource):
 
                         query_coupon = "call sf.new_coupons_uid();"
                         items_coupon = execute(query_coupon,'get',conn)
-                        print(items_coupon)
+                        #print(items_coupon)
                         new_id = items_coupon['result'][0]['new_id']
-                        print(new_id)
+                        #print(new_id)
                         TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
                         query_card = """
@@ -3609,7 +3609,7 @@ class purchase_Data_SF(Resource):
                                     VALUES 
                                     (\'""" + new_id + """\', 'SFGiftCard', 'TRUE', '0', '0', \'""" + str(vals['price']) + """\', '0', \'""" + TimeStamp + """\', '100', 'SF Gift Card', '0', 'F', \'""" + code + """\', 'null', 'SFGiftCard');
                                     """
-                        print(query_card)
+                        #print(query_card)
                         items_card = execute(query_card,'post',conn)
 
                         #send email
@@ -3755,7 +3755,7 @@ class purchase_Data_SF(Resource):
                         
             ### SEND EMAIL
 
-            print('IN Email')
+            #print('IN Email')
 
             msg = Message("Order details", sender='support@servingfresh.me', recipients=[delivery_email])
             #delivery_email
@@ -3765,7 +3765,7 @@ class purchase_Data_SF(Resource):
                        "Thx - The Serving Fresh Team\n\n"
 
 
-            print('MSG BODY')
+            #print('MSG BODY')
             its = json.dumps(data['items'])
             st_init = "<html>" \
                       "<body>" \
@@ -3873,7 +3873,7 @@ class purchase_Data_SF(Resource):
             return items
 
         except:
-            print("Error happened while inserting in purchase table")
+            #print("Error happened while inserting in purchase table")
 
             raise BadRequest('Request failed, please try again later.')
         finally:
@@ -3885,7 +3885,7 @@ class history(Resource):
     def get(self, uid):
         response = {}
         items = {}
-        print("user_uid: ", uid)
+        #print("user_uid: ", uid)
         try:
             conn = connect()
             query = """
@@ -3894,13 +3894,13 @@ class history(Resource):
                     WHERE pur.purchase_uid = pay.pay_purchase_uid AND pur.pur_customer_uid = \'""" + uid + """\' AND pur.purchase_status = 'ACTIVE'
                     ORDER BY pur.purchase_date DESC; 
                     """
-            print(query)
+            #print(query)
             items = execute(query, 'get', conn)
 
             if items['code'] != 280:
                 items['message'] = 'Check sql query for history'
                 return items
-            print('res')
+            #print('res')
             '''
             for i in range(len(items['result'])):
 
@@ -3908,20 +3908,20 @@ class history(Resource):
                 if items['result'][i]['pay_coupon_id'] and items['result'][i]['pay_coupon_id'] != 'undefined':
 
 
-                    print('IN',items['result'][i]['pay_coupon_id'])
+                    #print('IN',items['result'][i]['pay_coupon_id'])
 
                     query_cp = """
                                 SELECT coupon_uid, coupon_id, notes
                                 FROM sf.coupons
                                 WHERE coupon_uid = \'""" + items['result'][i]['pay_coupon_id'] + """\';
                                """
-                    print(query_cp)
+                    #print(query_cp)
                     items_cp = execute(query_cp, 'get', conn)
                     if items_cp['code'] != 280:
                         items_cp['message'] = 'Check sql query for coupon'
                         return items_cp
 
-                    print(items_cp)
+                    #print(items_cp)
                     items['result'][i]['coupon_uid'] = items_cp['result'][0]['coupon_uid']
                     items['result'][i]['coupon_id'] = items_cp['result'][0]['coupon_id']
                     items['result'][i]['notes'] = items_cp['result'][0]['notes']
@@ -3946,13 +3946,13 @@ class Stripe_Intent(Resource):
 
         #stripe.api_key = stripe_secret_test_key
         note = request.form.get('note')
-        print(note, type(note))
+        #print(note, type(note))
         if note == "SFTEST":
             stripe.api_key = stripe_secret_test_key
-            print('TEST')
+            #print('TEST')
         else:
             stripe.api_key = stripe_secret_live_key
-            print('LIVE')
+            #print('LIVE')
 
         if request.form.get('amount') == None:
             raise BadRequest('Request failed. Please provide the amount field.')
@@ -3960,7 +3960,7 @@ class Stripe_Intent(Resource):
             amount = int(float(request.form.get('amount')) * 100)
         except:
             raise BadRequest('Request failed. Unable to convert amount to int')
-        print('AMOUNT------', amount)
+        #print('AMOUNT------', amount)
         
         intent = stripe.PaymentIntent.create(
         amount=amount,
@@ -3971,8 +3971,8 @@ class Stripe_Intent(Resource):
         response['client_secret'] = client_secret
         response['id'] = intent_id
         response['code'] = 200
-        print(response['client_secret'])
-        print(response['id'])
+        #print(response['client_secret'])
+        #print(response['id'])
         return response
 
 class Stripe_Payment_key_checker(Resource):
@@ -4066,16 +4066,16 @@ class addItems_Prime(Resource):
         items = {}
         try:
             conn = connect()
-            print('In addItems')
+            #print('In addItems')
             if action == 'Insert':
                 
                 ##### new
                 new_item = request.form.get('new_item')
-                print('Hello',new_item)
+                #print('Hello',new_item)
                 #Already an item then we just need to update supply table
                 if new_item == 'FALSE':
-                    print('IN IF')
-                    print(request.form)
+                    #print('IN IF')
+                    #print(request.form)
                     bus_uid = request.form.get('bus_uid')
                     itm_uid = request.form.get('itm_uid')
                     bus_price = request.form.get('bus_price')
@@ -4084,7 +4084,7 @@ class addItems_Prime(Resource):
                     query = ["CALL sf.new_supply_uid();"]
                     NewIDresponse = execute(query[0], 'get', conn)
                     supply_uid = NewIDresponse['result'][0]['new_id']
-                    print('BEFORE',supply_uid,itm_uid)
+                    #print('BEFORE',supply_uid,itm_uid)
                     query_insert = """
                                    INSERT INTO sf.supply (supply_uid, itm_business_uid, sup_item_uid, business_price, item_status) 
                                    VALUES 
@@ -4094,8 +4094,8 @@ class addItems_Prime(Resource):
                                       \'""" + bus_price + """\',
                                        \'""" + item_status + """\');
                                    """
-                    print('DONE')
-                    print(query_insert)
+                    #print('DONE')
+                    #print(query_insert)
                     items = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
@@ -4115,14 +4115,14 @@ class addItems_Prime(Resource):
                     item_photo = request.files.get('item_photo')
                     exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
                     taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
-                    print('data done')
+                    #print('data done')
                     query = ["CALL sf.new_sf_items_uid;"]
                     NewIDresponse = execute(query[0], 'get', conn)
                     NewID = NewIDresponse['result'][0]['new_id']
                     key = "items/" + NewID
                     item_photo_url = helper_upload_meal_img(item_photo, key)
                     TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    print('before query',item_photo_url,exp_date)
+                    #print('before query',item_photo_url,exp_date)
                     query_insert =  '''
                                 INSERT INTO sf.sf_items
                                 SET 
@@ -4140,12 +4140,12 @@ class addItems_Prime(Resource):
                                 exp_date = \'''' + exp_date + '''\',
                                 taxable = \'''' + taxable + '''\';
                                 '''
-                    print(query)
+                    #print(query)
                     items = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
                         return items
-                    print('first query done',items)
+                    #print('first query done',items)
                     
                     # add to supply table
 
@@ -4163,7 +4163,7 @@ class addItems_Prime(Resource):
                                    VALUES 
                                    (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + bus_price + """\', \'""" + item_status + """\');
                                    """
-                    print(query_insert)
+                    #print(query_insert)
                     items_insert = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
@@ -4172,32 +4172,32 @@ class addItems_Prime(Resource):
             
             elif action == 'Update':
                 # Update query
-                print('In Update')
+                #print('In Update')
                 item_uid = request.form.get('item_uid')
-                print('item_uid',item_uid)
+                #print('item_uid',item_uid)
                 bus_uid = request.form.get('bus_uid')
-                print('bus_uid',bus_uid)
+                #print('bus_uid',bus_uid)
                 bus_price = request.form.get('bus_price')
-                print('bus_price',bus_price)
+                #print('bus_price',bus_price)
                 item_status = request.form.get('item_status')
-                print('status',item_status)
+                #print('status',item_status)
                 
                 query = """
                         SELECT * FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itm
                         WHERE itm.item_uid = \'""" + item_uid + """\' AND itm.itm_business_uid = \'""" + bus_uid + """\';
                         """
                 items = execute(query,'get',conn)
-                print(items)
+                #print(items)
                 if items['code'] != 280:
                     items['message'] = 'check sql query'
                     return items
                 
                 flag = 0
-                print(items['result'][0]['item_status'],item_status,items['result'][0]['business_price'],bus_price)
+                #print(items['result'][0]['item_status'],item_status,items['result'][0]['business_price'],bus_price)
                 if items['result'][0]['item_status'] == item_status and items['result'][0]['business_price'] == float(bus_price):
                     flag = 1
                 
-                print(flag)
+                #print(flag)
                 
                 if flag == 1:
                     
@@ -4215,9 +4215,9 @@ class addItems_Prime(Resource):
                     exp_date = request.form.get('exp_date')
                     TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
                     key = "items/" + str(item_uid) + "_" + TimeStamp_test
-                    print('Phase 1')
+                    #print('Phase 1')
                     if item_photo == 'NULL':
-                        print('IF')
+                        #print('IF')
                         query_update =  '''
                                         UPDATE sf.sf_items
                                         SET 
@@ -4234,9 +4234,9 @@ class addItems_Prime(Resource):
                                         WHERE item_uid = \'''' + item_uid + '''\';
                                     '''
                     else:
-                        print('ELSE')
+                        #print('ELSE')
                         item_photo_url = helper_upload_meal_img(item_photo, key)
-                        print(request.form)
+                        #print(request.form)
                         query_update =  """
                                         UPDATE sf.sf_items
                                         SET 
@@ -4253,7 +4253,7 @@ class addItems_Prime(Resource):
                                         exp_date = \'""" + exp_date + """\'
                                         WHERE item_uid = \'""" + item_uid + """\';
                                     """
-                    print(query_update)
+                    #print(query_update)
                     items = execute(query_update, 'post', conn)
                     
                     if items['code'] != 281:
@@ -4285,7 +4285,7 @@ class addItems_Prime(Resource):
             else:
 
                 # Update item_status
-                print('ELSE-------------')
+                #print('ELSE-------------')
                 sup_uid = request.form.get('sup_uid')
                 item_status = request.form.get('item_status')
                 query_status =  '''
@@ -4295,7 +4295,7 @@ class addItems_Prime(Resource):
                                 WHERE supply_uid = \'''' + sup_uid + '''\';
                                 '''
                 items = execute(query_status, 'post', conn)
-                print(items)
+                #print(items)
 
                 if items['code'] == 281:
                     items['message'] = 'Item updated successfully'
@@ -4325,7 +4325,7 @@ class all_businesses(Resource):
                 items['code'] = 200
             else:
                 items['message'] = 'Check sql query'
-            print(items)
+            #print(items)
             return items
 
         except:
@@ -4353,9 +4353,9 @@ class business_details_update(Resource):
                         item['code'] = 490
                     return item
                 else:
-                    print("IN ELSE")
-                    print(data)
-                    print('IN')
+                    #print("IN ELSE")
+                    #print(data)
+                    #print('IN')
 
 
                     business_association = str(data['business_association'])
@@ -4366,7 +4366,7 @@ class business_details_update(Resource):
                     business_accepting_hours = "'" + business_accepting_hours.replace("'", "\"") + "'"
                     business_delivery_hours = str(data['business_delivery_hours'])
                     business_delivery_hours = "'" + business_delivery_hours.replace("'", "\"") + "'"
-                    print('OUT')
+                    #print('OUT')
                     query = """
                                UPDATE sf.businesses
                                SET 
@@ -4406,9 +4406,9 @@ class business_details_update(Resource):
                                profit_sharing = \'""" + data["profit_sharing"] + """\'
                                WHERE business_uid = \'""" + data["business_uid"] + """\' ;
                              """
-                    print(query)
+                    #print(query)
                     item = execute(query, 'post', conn)
-                    print(item)
+                    #print(item)
                     if item['code'] == 281:
                         item['code'] = 200
                         item['message'] = 'Business info updated'
@@ -4418,11 +4418,11 @@ class business_details_update(Resource):
                     return item
 
             except:
-                print("Error happened while outputting from business table")
+                #print("Error happened while outputting from business table")
                 raise BadRequest('Request failed, please try again later.')
             finally:
                 disconnect(conn)
-                print('process completed')
+                #print('process completed')
 
 class business_image_upload(Resource):
 
@@ -4446,11 +4446,11 @@ class business_image_upload(Resource):
                 items['message'] = 'check sql query'
             return items
         except:
-                print("Error happened while outputting from business table")
+                #print("Error happened while outputting from business table")
                 raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
-            print('process completed')
+            #print('process completed')
 
 class orders_by_farm(Resource):
 
@@ -4480,17 +4480,17 @@ class orders_by_farm(Resource):
                 items_bus['code'] = 200
             else:
                 items_bus['message'] = 'Check sql query'
-            print(items_bus)
+            #print(items_bus)
             data = items_bus['result']
             bus_dict = {}
             for vals in data:
                 bus_dict[vals["business_uid"]] = vals["business_name"]
 
 
-            print(df.itm_business_uid.unique())
+            #print(df.itm_business_uid.unique())
             bus_uids = df.itm_business_uid.unique()
             for ids in bus_uids:
-                print(ids)
+                #print(ids)
                 if ids == None:
                     continue
                 df_bus = df[df.itm_business_uid == ids]
@@ -4524,7 +4524,7 @@ class orders_info(Resource):
             conn = connect()
 
 
-            print('IN orders')
+            #print('IN orders')
 
             query = """
                     SELECT pur.*, pay.amount_due, pay.amount_paid, pay.start_delivery_date  
@@ -4574,7 +4574,7 @@ class order_actions(Resource):
             data = request.get_json(force=True)
             purchase_uid = data['purchase_uid'] if data.get('purchase_uid') is not None else 'NULL'
             if action == 'Delete':
-                print('IN DELETE')
+                #print('IN DELETE')
 
                 purchase_uid = data['purchase_uid'] if data.get('purchase_uid') is not None else 'NULL'
 
@@ -4610,16 +4610,16 @@ class order_actions(Resource):
                     item['message'] = 'Check sql query'
 
             elif action == 'delivery_status_YES':
-                print('DELIVERY_YES')
+                #print('DELIVERY_YES')
 
                 query = """
                         UPDATE sf.purchases 
                         SET delivery_status = 'TRUE' 
                         WHERE purchase_uid = \'""" + purchase_uid + """\';
                         """
-                print(query)
+                #print(query)
                 item = execute(query, 'post', conn)
-                print(item)
+                #print(item)
 
                 if item['code'] == 281:
                     item['code'] = 200
@@ -4630,7 +4630,7 @@ class order_actions(Resource):
 
             elif action == 'delivery_status_NO':
 
-                print('DELIVERY_NO')
+                #print('DELIVERY_NO')
                 query = """
                         UPDATE sf.purchases 
                         SET delivery_status = 'FALSE' 
@@ -4647,10 +4647,10 @@ class order_actions(Resource):
                     item['code'] = 490
 
             elif action == 'item_delete':
-                print('item_delete')
+                #print('item_delete')
                 #itm = str(data['item_data'])
                 itm = json.dumps(data['item_data'])
-                print(itm)
+                #print(itm)
                 itm = "'[" + ", ".join([str(val).replace("'", "\"") if val else "NULL" for val in data['item_data']]) + "]'"
 
                 query = """ 
@@ -4659,9 +4659,9 @@ class order_actions(Resource):
                         items = """ + itm + """
                         WHERE (purchase_uid = \'""" + purchase_uid + """\');
                         """
-                print(query)
+                #print(query)
                 item = execute(query, 'post', conn)
-                print(item)
+                #print(item)
 
                 if item['code'] == 281:
                     item['code'] = 200
@@ -4750,7 +4750,7 @@ class update_Coupons(Resource):
                             (coupon_uid, coupon_id, valid, threshold, discount_percent, discount_amount, discount_shipping, expire_date, limits, coupon_title, notes, num_used, recurring, email_id, cup_business_uid) 
                             VALUES ( \'""" + couponID + """\', \'""" + data['coupon_id'] + """\', \'""" + data['valid'] + """\', \'""" + data['threshold'] + """\', \'""" + data['discount_percent'] + """\', \'""" + data['discount_amount'] + """\', \'""" + data['discount_shipping'] + """\', \'""" + data['expire_date'] + """\', \'""" + data['limits'] + """\',  \'""" + data['coupon_title'] + """\', \'""" + data['notes'] + """\', \'""" + data['num_used'] + """\', \'""" + data['recurring'] + """\', \'""" + data['email_id'] + """\', \'""" + data['cup_business_uid'] + """\');
                             """
-                    print(query)
+                    #print(query)
                     items = execute(query, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = "check sql query"
@@ -4763,7 +4763,7 @@ class update_Coupons(Resource):
                     return items
 
                 elif action == 'update':
-                    print(data)
+                    #print(data)
                     query = """
                     SELECT *
                     FROM sf.coupons
@@ -4797,7 +4797,7 @@ class update_Coupons(Resource):
                     """
 
                     items = execute(query, 'post', conn)
-                    print(items)
+                    #print(items)
                     if items['code'] != 281:
                         items['message'] = "check sql query"
                         items['code'] = 400
@@ -4858,11 +4858,11 @@ class update_Coupons(Resource):
                     return items
 
             except:
-                print("Error happened while updating coupon table")
+                #print("Error happened while updating coupon table")
                 raise BadRequest('Request failed, please try again later.')
             finally:
                 disconnect(conn)
-                print('process completed')
+                #print('process completed')
 
 class get_s3_photos(Resource):
 
@@ -4870,20 +4870,20 @@ class get_s3_photos(Resource):
 
         try:
             arr = []
-            print('IN')
+            #print('IN')
             bucket_name = 'servingfresh'
             my_bucket = s3_res.Bucket(bucket_name)
-            print('Bucket done')
+            #print('Bucket done')
 
             for file in my_bucket.objects.all():
-                print('IN file', file)
+                #print('IN file', file)
                 params = {'Bucket': bucket_name, 'Key': file.key}
                 if 'items/' in file.key:
-                    print('params')
+                    #print('params')
                     url = s3_cl.generate_presigned_url('get_object', params)
                     res = url.split("?")
                     arr.append(res[0])
-                    print(res)
+                    #print(res)
 
             return arr[1:]
 
@@ -4914,7 +4914,7 @@ class add_supply(Resource):
             # got items
 
             for item_name, vals in itm_dict.items():
-                print(item_name)
+                #print(item_name)
                 itm_uid = vals[0]['item_uid']
                 for single_item in vals:
                     
@@ -4926,11 +4926,11 @@ class add_supply(Resource):
                     bus_uid = single_item['itm_business_uid']
                     price = str(single_item['business_price'])
                     in_stock = single_item['item_status']
-                    print('before insert')
+                    #print('before insert')
                     query_insert = """
                                    INSERT INTO sf.supply (supply_uid, itm_business_uid, sup_item_uid, business_price, bus_item_status) VALUES (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + price + """\', \'""" + in_stock + """\');
                                    """
-                    print(query_insert)
+                    #print(query_insert)
                     items_insert = execute(query_insert, 'post', conn)
 
 
@@ -4943,7 +4943,7 @@ class UpdateProduceToNewDB(Resource):
     
     def get(self):
         try:
-            print('Endpoint start')
+            #print('Endpoint start')
             conn = connect()
 
             #create product dictionary
@@ -4976,7 +4976,7 @@ class UpdateProduceToNewDB(Resource):
             for order in items['result']:
                 
                 flag = 0
-                print('IN')
+                #print('IN')
                 produce = json.loads(order['items'])
                 purchase_uid = order['purchase_uid']
                 ans = []
@@ -4987,14 +4987,14 @@ class UpdateProduceToNewDB(Resource):
                         tmp['img'] = product_dict[product['name']]['item_photo']
                         tmp['item_uid'] = product_dict[product['name']]['item_uid']
                     ans.append(tmp)
-                    print('APPENDED')
+                    #print('APPENDED')
                 if flag == 1:
                     ans = str(ans)
                     ans = ans.replace("'", '"')
                     query_update = """
                                     UPDATE sf.purchases SET items = \'""" + ans + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
                                     """
-                    print('FLAGGGGGGG', query_update)
+                    #print('FLAGGGGGGG', query_update)
                     items_update = execute(query_update, 'post', conn)
                     if items_update['code'] != 281:
                         items_update['message'] = 'check sql query for updating items in purchase'
@@ -5039,7 +5039,7 @@ class admin_report_Prime(Resource):
                     ORDER BY purchase_date DESC;
                     """
             else:
-                print('in orders info')
+                #print('in orders info')
                 query = """
                         SELECT *,deconstruct.*, business_price*qty as business_amount, price*qty as item_amount, pay_purchase_uid, start_delivery_date   
                         FROM sf.purchases, (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itms, sf.payments, 
@@ -5055,7 +5055,7 @@ class admin_report_Prime(Resource):
                         WHERE deconstruct.itm_business_uid = \'""" + uid + """\' AND deconstruct.item_uid = itms.item_uid AND deconstruct.itm_business_uid = itms.itm_business_uid AND purchase_status = 'ACTIVE' AND purchase_uid = pay_purchase_uid
                         ORDER BY purchase_date DESC;
                         """
-            print(query)
+            #print(query)
             items = execute(query, 'get', conn)
             if items['code'] == 280:
                 items['message'] = 'Report data successful'
@@ -5334,9 +5334,9 @@ class update_zones(Resource):
                 if items['code'] != 280:
                     items['message'] = 'check sql query for getting zone uid'
                     return items
-                print(items)
+                #print(items)
                 uid = items['result'][0]['new_id']
-                print(uid)
+                #print(uid)
                 z_businesses = str(data['z_businesses'])
                 z_businesses = "'" + z_businesses.replace("'", "\"") + "'"
                 query = """
@@ -5365,7 +5365,7 @@ class update_zones(Resource):
                             \'""" + data['RB_long'] + """\',
                             \'""" + data['RB_lat'] + """\')
                         """
-                print('QUERY--', query)
+                #print('QUERY--', query)
                 items = execute(query, 'post', conn)
                 if items['code'] != 281:
                     items['message'] = 'check sql query for creating zones'
@@ -5400,11 +5400,11 @@ class update_zones(Resource):
                         WHERE zone_uid = \'""" + data['zone_uid'] + """\';
                         """
 
-                print(query)
+                #print(query)
 
                 items = execute(query, 'post', conn)
 
-                print(items)
+                #print(items)
 
                 if items['code'] != 281:
                     items['message'] = 'check sql query to update zones'
@@ -5449,9 +5449,9 @@ class report_order_customer_pivot_detail(Resource):
                              ) AS deconstruct
                         WHERE purchase_uid = pay_purchase_uid AND purchase_status = 'ACTIVE' AND itm_business_uid = \'""" + uid + """\' AND start_delivery_date LIKE \'""" + date + '%' + """\' AND delivery_status = 'FALSE';
                         """
-                print(query)
+                #print(query)
                 items = execute(query, 'get', conn)
-                print(items)
+                #print(items)
                 if items['code'] != 280:
                     items['message'] = 'Check sql query'
                     return items
@@ -5460,13 +5460,13 @@ class report_order_customer_pivot_detail(Resource):
                         si = io.StringIO()
                         cw = csv.writer(si)
                         cw.writerow(['No Open Orders for date ' + date])
-                        print('1')
+                        #print('1')
                         orders = si.getvalue()
-                        print('1')
+                        #print('1')
                         output = make_response(orders)
-                        print('1')
+                        #print('1')
                         output.headers["Content-Disposition"] = "attachment; filename=order_details_"+date+".csv"
-                        print('1')
+                        #print('1')
                         output.headers["Content-type"] = "text/csv"
                         return output
                         
@@ -5488,7 +5488,7 @@ class report_order_customer_pivot_detail(Resource):
                     for key, vals in dict.items():
 
                         tmp = vals[0]
-                        print('tmp----', tmp)
+                        #print('tmp----', tmp)
                         data.append([tmp['purchase_date'],
                                      tmp['delivery_first_name'],
                                      tmp['delivery_last_name'],
@@ -5557,13 +5557,13 @@ class report_order_customer_pivot_detail(Resource):
                     items['message'] = 'Report data successful'
                     items['code'] = 200
                     result = items['result']
-                    print('result------', result)
+                    #print('result------', result)
                     data = []
                     bus_name = result[0]['business_name']
                     for vals in result:
 
                         tmp = vals
-                        print('tmp----', tmp)
+                        #print('tmp----', tmp)
                         data.append([tmp['delivery_first_name'],
                                      tmp['delivery_last_name'],
                                      tmp['delivery_phone_num'],
@@ -5629,7 +5629,7 @@ class report_order_customer_pivot_detail(Resource):
                             itm_dict[vals['name']] += int(vals['qty'])
                         else:
                             itm_dict[vals['name']] = int(vals['qty'])
-                    print('ddddddd------', itm_dict)
+                    #print('ddddddd------', itm_dict)
                     dict = {}
                     for vals in result:
                         if vals['pur_customer_uid'] in dict:
@@ -5637,14 +5637,14 @@ class report_order_customer_pivot_detail(Resource):
                         else:
                             dict[vals['pur_customer_uid']] = [vals]
 
-                    print('dict----', dict)
+                    #print('dict----', dict)
                     si = io.StringIO()
                     cw = csv.DictWriter(si, ['Name', 'Email', 'Phone', 'delivery_date', 'order_date', 'delivery_address', 'Total'] + list(itm_dict.keys()) + ['Delivery Date: ' + str(date)])
 
                     cw.writeheader()
                     glob_tot = 0
                     for key, vals in dict.items():
-                        print('VALSSS---', vals)
+                        #print('VALSSS---', vals)
                         #items = {groc['name']:groc['qty'] for groc in vals}
                         itm_input_dict = {}
                         for groc in vals:
@@ -5658,7 +5658,7 @@ class report_order_customer_pivot_detail(Resource):
                         for tp_key, tp_vals in items.items():
                             total_sum += int(tp_vals)
                         glob_tot += total_sum
-                        print('items-----------------', items)
+                        #print('items-----------------', items)
                         items['Name'] = vals[0]['delivery_first_name'] + " " + vals[0]['delivery_last_name']
                         items['Email'] = vals[0]['delivery_email']
                         items['Phone'] = vals[0]['delivery_phone_num']
@@ -5704,10 +5704,10 @@ class report_order_customer_pivot_detail(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
+                #print(uids)
                 res_arr = ''
                 for its in uids:
-                    print('IN', uid)
+                    #print('IN', uid)
                     uid = its[0]
                     bus_name = its[1]
                     query = """
@@ -5739,16 +5739,16 @@ class report_order_customer_pivot_detail(Resource):
 
                         if len(result) == 0:
                             continue
-                        #print('ressss----', items)
-                        print(len(result))
-                        print(uid)
+                        ##print('ressss----', items)
+                        #print(len(result))
+                        #print(uid)
                         itm_dict = {}
                         for vals in result:
                             if vals['name'] in itm_dict:
                                 itm_dict[vals['name']] += int(vals['qty'])
                             else:
                                 itm_dict[vals['name']] = int(vals['qty'])
-                        ##print('ddddddd------', itm_dict)
+                        ###print('ddddddd------', itm_dict)
                         dict = {}
                         for vals in result:
                             if vals['pur_customer_uid'] in dict:
@@ -5756,18 +5756,18 @@ class report_order_customer_pivot_detail(Resource):
                             else:
                                 dict[vals['pur_customer_uid']] = [vals]
 
-                        ##print('dict----', dict)
+                        ###print('dict----', dict)
                         si = io.StringIO()
                         cw = csv.DictWriter(si, [bus_name])
                         cw.writeheader()
-                        print('DD')
+                        #print('DD')
                         #cw.writerow({'name': [bus_name + '\n']+['Name', 'Email', 'Phone', 'delivery_date', 'order_date', 'delivery_address', 'Total'] + list(itm_dict.keys()) + ['Business_Name: ' + bus_name]})
                         cw = csv.DictWriter(si, ['Name', 'Email', 'Phone', 'delivery_date', 'order_date', 'delivery_address', 'Total'] + list(itm_dict.keys()))
                         cw.writeheader()
 
                         glob_tot = 0
                         for key, vals in dict.items():
-                            ##print('VALSSS---', vals)
+                            ###print('VALSSS---', vals)
                             #items = {groc['name']:groc['qty'] for groc in vals}
                             itm_input_dict = {}
                             for groc in vals:
@@ -5781,7 +5781,7 @@ class report_order_customer_pivot_detail(Resource):
                             for tp_key, tp_vals in items.items():
                                 total_sum += int(tp_vals)
                             glob_tot += total_sum
-                            ##print('items-----------------', items)
+                            ###print('items-----------------', items)
                             items['Name'] = vals[0]['delivery_first_name'] + " " + vals[0]['delivery_last_name']
                             items['Email'] = vals[0]['delivery_email']
                             items['Phone'] = vals[0]['delivery_phone_num']
@@ -5810,15 +5810,15 @@ class report_order_customer_pivot_detail(Resource):
                         cw.writerow({'Name': 'Total', 'Total': glob_tot, **itm_dict})
 
                         orders = si.getvalue()
-                        print('orders', orders,type(orders))
+                        #print('orders', orders,type(orders))
                         res_arr += orders + "\n"
-                        print(res_arr)
+                        #print(res_arr)
                 output = make_response(res_arr)
                 output.headers["Content-Disposition"] = "attachment; filename=pivot_table_all_"+date+".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
             elif report == 'customer_all':
-                print('IN customer_all')
+                #print('IN customer_all')
                 query = """
                         SELECT business_uid, business_name 
                         FROM sf.businesses
@@ -5831,7 +5831,7 @@ class report_order_customer_pivot_detail(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
+                #print(uids)
                 res_arr = ''
 
                 for its in uids:
@@ -5864,13 +5864,13 @@ class report_order_customer_pivot_detail(Resource):
                         items['message'] = 'Report data successful'
                         items['code'] = 200
                         result = items['result']
-                        #print('result------', result)
+                        ##print('result------', result)
                         data = []
 
                         for vals in result:
 
                             tmp = vals
-                            #print('tmp----', tmp)
+                            ##print('tmp----', tmp)
                             data.append([tmp['delivery_first_name'],
                                          tmp['delivery_last_name'],
                                          tmp['delivery_phone_num'],
@@ -5883,11 +5883,11 @@ class report_order_customer_pivot_detail(Resource):
                                          tmp['Amount']
                                          ])
 
-                        print('start')
+                        #print('start')
 
-                        print('mid')
+                        #print('mid')
 
-                        print('maybe')
+                        #print('maybe')
 
                         if data == []:
                             continue
@@ -5896,21 +5896,21 @@ class report_order_customer_pivot_detail(Resource):
                             cw = csv.writer(si)
                             cw.writerow([bus_name])
                             for item in data:
-                                print('ITEM---', item, type(item))
+                                #print('ITEM---', item, type(item))
                                 cw.writerow(item)
 
 
                         orders = si.getvalue()
-                        print('ORDERS----', orders)
+                        #print('ORDERS----', orders)
                         res_arr += orders + "\n"
-                        print('OTTT')
+                        #print('OTTT')
                 output = make_response(res_arr)
                 output.headers["Content-Disposition"] = "attachment; filename=customer_details_all_"+date+".csv"
                 output.headers["Content-type"] = "text/csv"
                 return output
             elif report == 'order_all':
 
-                print('IN order_all')
+                #print('IN order_all')
                 query = """
                         SELECT business_uid, business_name 
                         FROM sf.businesses
@@ -5923,7 +5923,7 @@ class report_order_customer_pivot_detail(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
+                #print(uids)
                 res_arr = ''
 
                 for its in uids:
@@ -5967,7 +5967,7 @@ class report_order_customer_pivot_detail(Resource):
                         for key, vals in dict.items():
 
                             tmp = vals[0]
-                            print('tmp----', tmp)
+                            #print('tmp----', tmp)
                             data.append([tmp['purchase_date'],
                                          tmp['delivery_first_name'],
                                          tmp['delivery_last_name'],
@@ -6026,7 +6026,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
             if items['code'] != 280:
                 items['message'] = "Business UID doesn't exists"
                 return items
-            print(items)
+            #print(items)
             business_name = items['result'][0]['business_name']
             query = """
                     SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
@@ -6034,7 +6034,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
                     WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND obf.itm_business_uid = itm.itm_business_uid AND pay.start_delivery_date LIKE \'""" + data['delivery_date'] + '%' + """\' AND obf.itm_business_uid = \'""" + data['uid'] + """\' AND delivery_status = 'FALSE'
                     GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                     """
-            print(query)
+            #print(query)
             items = execute(query, 'get', conn)
             if items['code'] != 280:
                 items['message'] = 'Check sql query'
@@ -6048,17 +6048,17 @@ class farmer_revenue_inventory_report_Prime(Resource):
                     itm_dict[vals['name']][0] += int(vals['total_qty'])
                 else:
                     itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
-            print('dict------', itm_dict)
+            #print('dict------', itm_dict)
 
             for vals in result:
                 unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
-                print(unq)
+                #print(unq)
                 if unq in itm_dict:
                     cust_dict[unq][0] += int(vals['total_qty'])
                 else:
                     cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
 
-            print('cust_dict------', cust_dict)
+            #print('cust_dict------', cust_dict)
             si = io.StringIO()
             cw = csv.writer(si)
             cw.writerow([business_name])
@@ -6073,7 +6073,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
                 glob_qty = 0
                 cw.writerow(['Item', 'Quantity', 'Revenue'])
                 for key, vals in itm_dict.items():
-                    print(key)
+                    #print(key)
                     itm_rev = 0
                     itm_qty = 0
                     unit = vals[-1]
@@ -6090,7 +6090,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
                 orders = si.getvalue()
 
                 ###
-                print(orders)
+                #print(orders)
                 query = """
                         SELECT business_email from sf.businesses WHERE business_uid = \'""" + data['uid'] + """\';
                         """
@@ -6100,7 +6100,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
                     items['message'] = 'business email query failed'
                     return items
                 email = items['result'][0]['business_email']
-                print(email)
+                #print(email)
                 #finder
                 msg = Message(business_name + " Summary Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
 
@@ -6112,8 +6112,8 @@ class farmer_revenue_inventory_report_Prime(Resource):
                            "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
                            "Thx - The Serving Fresh Team\n\n"
                 msg.attach('Produce Summary Report - ' + data['delivery_date'] + '.csv', 'text/csv', orders)
-                print('msg-bd----', msg.body)
-                print('msg-')
+                #print('msg-bd----', msg.body)
+                #print('msg-')
                 mail.send(msg)
 
                 ###
@@ -6125,7 +6125,7 @@ class farmer_revenue_inventory_report_Prime(Resource):
             elif report == 'packing':
 
                 for key, vals in itm_dict.items():
-                    print(key)
+                    #print(key)
                     rr = []
                     for vals in result:
                         if vals['name'] == key:
@@ -6143,10 +6143,10 @@ class farmer_revenue_inventory_report_Prime(Resource):
                     items['message'] = 'business email query failed'
                     return items
                 email = items['result'][0]['business_email']
-                print(email)
+                #print(email)
 
                 orders = si.getvalue()
-                print('Orders-------',orders)
+                #print('Orders-------',orders)
 
                 ###
                 msg = Message(business_name + " Packing Report for " + data['delivery_date'], sender='support@servingfresh.me', recipients=[email])
@@ -6159,8 +6159,8 @@ class farmer_revenue_inventory_report_Prime(Resource):
                            "Email support@servingfresh.me if you run into any problems or have any questions.\n" \
                            "Thx - The Serving Fresh Team\n\n"
                 msg.attach('Produce Packing Report - ' + data['delivery_date'] + '.csv', 'text/csv', orders)
-                print('msg-bd----', msg.body)
-                print('msg-')
+                #print('msg-bd----', msg.body)
+                #print('msg-')
                 mail.send(msg)
 
                 ###
@@ -6200,7 +6200,7 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                 uids.sort(key=lambda x: x[1])
                 summ_arr = ''
                 func_out = {}
-                print('Starting looping')
+                #print('Starting looping')
                 for its in uids:
 
                     uid = its[0]
@@ -6254,21 +6254,30 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                     glob_qty = 0
                     cw.writerow(['Item', 'Quantity', 'Revenue'])
                     for key, vals in itm_dict.items():
-                        print('dictionary',key,vals)
+                        #print('dictionary',key,vals)
                         unit = vals[-1]
-                        #print('error',vals['item_unit'])
+                        ##print('error',vals['item_unit'])
                         itm_rev = 0
                         itm_qty = 0
                         rr = []
+                        #print('start vals')
                         for vals in result:
-                            print('INSIDE', vals)
+                            ##print('INSIDE', vals)
+                            #print("************************************************")
+                            #print(key)
+                            #print(vals)
                             if vals['name'] == key:
+                                #print("done0")
                                 itm_qty += vals['total_qty']
+                                #print("done1")
                                 itm_rev += vals['total_qty']*vals['business_price']
+                                #print("done2")
+                        #print('end vals')
                         cw.writerow([key+' ('+unit+')', itm_qty, itm_rev])
                         glob_rev += itm_rev
                         glob_qty += itm_qty
 
+                    #print('in total')
                     cw.writerow(['TOTAL', glob_qty,glob_rev])
                     orders = si.getvalue()
                     summ_arr += orders + "\n"
@@ -6295,7 +6304,7 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
+                #print(uids)
                 inv_arr = ''
                 for its in uids:
 
@@ -6309,7 +6318,7 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                     if items['code'] != 280:
                         items['message'] = "Business UID doesn't exsist"
                         return items
-                    print(items)
+                    #print(items)
                     business_name = items['result'][0]['business_name']
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
@@ -6317,7 +6326,7 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                             WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND obf.itm_business_uid = itm.itm_business_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND obf.itm_business_uid = \'""" + uid + """\' AND delivery_status = 'FALSE'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
-                    print(query)
+                    #print(query)
                     items = execute(query, 'get', conn)
                     if items['code'] != 280:
                         items['message'] = 'Check sql query'
@@ -6335,17 +6344,17 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                             itm_dict[vals['name']][0] += int(vals['total_qty'])
                         else:
                             itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
-                    print('dict------', itm_dict)
+                    #print('dict------', itm_dict)
 
                     for vals in result:
                         unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
-                        print(unq)
+                        #print(unq)
                         if unq in itm_dict:
                             cust_dict[unq][0] += int(vals['total_qty'])
                         else:
                             cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
 
-                    print('cust_dict------', cust_dict)
+                    #print('cust_dict------', cust_dict)
                     si = io.StringIO()
                     cw = csv.writer(si)
                     cw.writerow([business_name])
@@ -6353,7 +6362,7 @@ class farmer_revenue_inventory_report_all_Prime(Resource):
                     itm_dict = dict(sorted(itm_dict.items(), key=lambda x: x[0].lower()))
 
                     for key, vals in itm_dict.items():
-                        print(key)
+                        #print(key)
                         rr = []
                         for vals in result:
                             if vals['name'] == key:
@@ -6400,7 +6409,7 @@ class farmer_revenue_inventory_report_all_month_Prime(Resource):
 
                 uids = [[vals['business_uid'], vals['business_name']] for vals in items['result']]
                 uids.sort(key=lambda x: x[1])
-                print(uids)
+                #print(uids)
                 summ_arr = ''
                 for its in uids:
 
@@ -6414,9 +6423,9 @@ class farmer_revenue_inventory_report_all_month_Prime(Resource):
                     if items['code'] != 280:
                         items['message'] = "Business UID doesn't exists"
                         return items
-                    print(items)
+                    #print(items)
                     business_name = items['result'][0]['business_name']
-                    print(business_name)
+                    #print(business_name)
                     #hexa
                     query = """
                             SELECT obf.*, pay.start_delivery_date, pay.payment_uid, itm.business_price, SUM(obf.qty) AS total_qty, SUM(itm.business_price) AS total_price, itm.item_unit
@@ -6424,14 +6433,14 @@ class farmer_revenue_inventory_report_all_month_Prime(Resource):
                             WHERE obf.purchase_uid = pay.pay_purchase_uid AND obf.item_uid = itm.item_uid AND obf.itm_business_uid = itm.itm_business_uid AND pay.start_delivery_date BETWEEN \'""" + start + ' 00:00:00'  """\'  AND '""" + end + ' 23:59:59'  """\' AND obf.itm_business_uid = \'""" + uid + """\'
                             GROUP BY  obf.delivery_address, obf.delivery_unit, obf.delivery_city, obf.delivery_state, obf.delivery_zip, obf.item_uid;
                             """
-                    print(query)
+                    #print(query)
                     items = execute(query, 'get', conn)
                     if items['code'] != 280:
                         items['message'] = 'Check sql query'
                         return items
 
                     result = items['result']
-                    print('RESULT-----', result, type(result))
+                    #print('RESULT-----', result, type(result))
                     if not len(result):
                         continue
 
@@ -6442,17 +6451,17 @@ class farmer_revenue_inventory_report_all_month_Prime(Resource):
                             itm_dict[vals['name']][0] += int(vals['total_qty'])
                         else:
                             itm_dict[vals['name']] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
-                    print('dict------', itm_dict)
+                    #print('dict------', itm_dict)
 
                     for vals in result:
                         unq = (vals['delivery_address'], vals['delivery_unit'], vals['delivery_city'], vals['delivery_state'], vals['delivery_zip'])
-                        print(unq)
+                        #print(unq)
                         if unq in itm_dict:
                             cust_dict[unq][0] += int(vals['total_qty'])
                         else:
                             cust_dict[unq] = [int(vals['total_qty']), vals['business_price'], vals['item_unit']]
 
-                    print('cust_dict------', cust_dict)
+                    #print('cust_dict------', cust_dict)
                     si = io.StringIO()
                     cw = csv.writer(si)
                     cw.writerow([business_name])
@@ -6462,7 +6471,7 @@ class farmer_revenue_inventory_report_all_month_Prime(Resource):
                     glob_qty = 0
                     cw.writerow(['Item', 'Quantity', 'Revenue'])
                     for key, vals in itm_dict.items():
-                        print(key)
+                        #print(key)
                         itm_rev = 0
                         itm_qty = 0
                         rr = []
@@ -6504,7 +6513,6 @@ class drivers_report_check_sort_Prime(Resource):
                     """
             items = execute(query, 'get', conn)
 
-
             if items['code'] != 280:
                 items['message'] = 'check sql query'
                 return items
@@ -6529,11 +6537,11 @@ class drivers_report_check_sort_Prime(Resource):
                     else:
                         sg_itm[(vals['item_name']+"_"+vals['business_name'])] += float(vals['qty'])
 
-                print("sd_items-----", sg_itm)
+                #print("sd_items-----", sg_itm)
                 for vals, v in sg_ord_itm.items():
                     dict1 = {}
                     for prod in v:
-                        #print(prod)
+                        ##print(prod)
                         if prod[0] in dict1:
                               dict1[prod[0]] += float(prod[1])
                         else:
@@ -6554,7 +6562,7 @@ class drivers_report_check_sort_Prime(Resource):
                 phones = [vals[1] for it, vals in sg_ord.items()]
                 tot_ord = [vals[0] for it, vals in sg_ord.items()]
                 cust_names = [vals[3] for it, vals in sg_ord.items()]
-                print('in')
+                #print('in')
 
                 si = io.StringIO()
                 cw = csv.writer(si)
@@ -6562,36 +6570,36 @@ class drivers_report_check_sort_Prime(Resource):
                 cw.writerow([])
                 cw.writerow([' '] + ['Name'] + cust_names + ['Total'])
 
-                print('IN!')
-                print(['Email'] + emails)
+                #print('IN!')
+                #print(['Email'] + emails)
                 cw.writerow([' '] + ['Email'] + emails)
                 cw.writerow([' '] + ['Phone'] + phones)
-                print('IN@')
+                #print('IN@')
 
-                print(type(sg_ord))
+                #print(type(sg_ord))
                 cw.writerow([' '] + ['Address'] + list(sg_ord.keys()))
                 cw.writerow([' '] + ['Delivery Instructions'] + del_instruct)
 
 
-                print('IN#')
+                #print('IN#')
                 cw.writerow(['Farm'] + ['Count'] + tot_ord)
 
                 ans = {}
                 for key, val in sg_itm.items():
-                    print('key:', key)
+                    #print('key:', key)
                     arr = []
                     tot = 0
                     for key_ord in sg_ord.keys():
                         flag = 'False'
                         if key_ord in sg_ord_itm:
                             for i in sg_ord_itm[key_ord]:
-                                #print('iii: ', i)
+                                ##print('iii: ', i)
                                 if i[0] == key:
                                     flag = 'True'
-                                    #print('INNN ', i[0], i[1])
+                                    ##print('INNN ', i[0], i[1])
                                     arr.append(float(i[1]))
                                     tot += float(i[1])
-                                    print('ARRRR', arr)
+                                    #print('ARRRR', arr)
 
                         if flag == 'False':
                             arr.append('')
@@ -6619,7 +6627,7 @@ class drivers_report_check_sort_Prime(Resource):
                 get_fun = farmer_revenue_inventory_report_all_Prime()
                 total_revenue = get_fun.get('function',date)
                 uni_dict = {}
-                print("in SORTING")
+                #print("in SORTING")
 
                 for vals in items['result']:
                     address = vals['delivery_address'] + "_" +vals['delivery_unit'] + "_" + vals['delivery_zip']
@@ -6642,8 +6650,8 @@ class drivers_report_check_sort_Prime(Resource):
                 si = io.StringIO()
                 cw = csv.writer(si)
                 cw.writerow(['Driver Sorting Report'])
-                print(uni_dict)
-                print("start")
+                ##print(uni_dict)
+                #print("start")
                 """
                 for key, vals in uni_dict.items():
                     bus_itm = []
@@ -6654,22 +6662,22 @@ class drivers_report_check_sort_Prime(Resource):
                     for add_key, add_val in vals.items():
                         bus_itm.append(list(add_val.keys()))
                     bus_itm = [item for sublist in bus_itm for item in sublist]
-                    print('BUS_ITM', bus_itm)
+                    #print('BUS_ITM', bus_itm)
                     cw.writerow(bus_itm)
 
                     for add_key, add_val in vals.items():
                         res = []
                         address_items = list(add_val.keys())
-                        print('address_items', address_items)
+                        #print('address_items', address_items)
                         for i in range(len(bus_itm)):
                             if bus_itm[i] in address_items:
-                                address_print = str(add_key).split("--")
-                                print('Address', address_print)
-                                address_name = str(address_print[0]).split("_")[0]
-                                print(address_name)
-                                address_first_digit = str(address_print[1]).split(" ")[0]
+                                address_#print = str(add_key).split("--")
+                                #print('Address', address_#print)
+                                address_name = str(address_#print[0]).split("_")[0]
+                                #print(address_name)
+                                address_first_digit = str(address_#print[1]).split(" ")[0]
 
-                                print(address_first_digit)
+                                #print(address_first_digit)
                                 res.append(str(add_val[bus_itm[i]]) + "--" + str(address_name) + "--" + str(address_first_digit))
                             else:
                                 res.append(' ')
@@ -6730,7 +6738,7 @@ class drivers_report_check_sort_Prime(Resource):
                                 wrt_arr.append(" ")
                         cw.writerow(wrt_arr)
 
-                print('RESSSSS----', res_dict)
+                ##print('RESSSSS----', res_dict)
                 #return res_dict
 
                 ########
@@ -6836,7 +6844,7 @@ class UpdatePurchaseBusiness_Prime(Resource):
     
     def post(self, date, name, businessFrom, businessTo):
         try:
-            print('Endpoint start')
+            #print('Endpoint start')
             conn = connect()
 
             # get info of produce
@@ -6854,7 +6862,7 @@ class UpdatePurchaseBusiness_Prime(Resource):
             img = items_prod['result'][0]['item_photo']
             item_uid = items_prod['result'][0]['item_uid']
             business_price = items_prod['result'][0]['business_price']
-            print('item details done')
+            #print('item details done')
             query = """
                         SELECT pur.purchase_uid,pur.items, pay.start_delivery_date    
                         FROM sf.purchases as pur, sf.payments as pay
@@ -6864,33 +6872,33 @@ class UpdatePurchaseBusiness_Prime(Resource):
             if items['code'] != 280:
                 items['message'] = 'Check sql query'
                 return items
-            print('purchases done')
-            print(items)
+            #print('purchases done')
+            #print(items)
             for vals in items['result']:
                 flag = 0
-                print('IN')
+                #print('IN')
                 produce = json.loads(vals['items'])
-                print('produce', produce)
+                #print('produce', produce)
                 purchase_uid = vals['purchase_uid']
                 ans = []
                 for product in produce:
                     tmp = product
                     if product['name'] == name:
-                        print('LOGIC', product)
+                        #print('LOGIC', product)
                         flag = 1
                         tmp['img'] = img
                         tmp['item_uid'] = item_uid
                         tmp['business_price'] = business_price
                         tmp['itm_business_uid'] = businessTo
                     ans.append(tmp)
-                    print('APPENDED')
+                    #print('APPENDED')
                 if flag == 1:
                     ans = str(ans)
                     ans = ans.replace("'", '"')
                     query_update = """
                                     UPDATE sf.purchases SET items = \'""" + ans + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
                                     """
-                    print('FLAGGGGGGG', query_update)
+                    #print('FLAGGGGGGG', query_update)
                     items_update = execute(query_update, 'post', conn)
                     if items_update['code'] != 281:
                         items_update['message'] = 'check sql query for updating items in purchase'
@@ -7273,11 +7281,11 @@ class Send_Twilio_SMS(Resource):
             raise BadRequest('Request failed. Please provide the recipients field.')
         if not message:
             raise BadRequest('Request failed. Please provide the message field.')
-        print('IN SMS----')
-        print(numbers)
+        #print('IN SMS----')
+        #print(numbers)
         numbers = list(set(numbers.split(',')))
-        print(numbers)
-        #print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+        #print(numbers)
+        ##print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         for destination in numbers:
             client.messages.create(
@@ -7294,7 +7302,7 @@ class Send_Notification(Resource):
     def post(self, role):
 
         def deconstruct(uids, role):
-            print('IN decon')
+            #print('IN decon')
             conn = connect()
             uids_array = uids.split(',')
             output = []
@@ -7323,36 +7331,36 @@ class Send_Notification(Resource):
                     json_val = items['result'][0]['bus_guid_device_id_notification']
 
                 if json_val != 'null':
-                    print("in deconstruct")
-                    print(type(json_val))
-                    print(json_val)
+                    #print("in deconstruct")
+                    #print(type(json_val))
+                    #print(json_val)
                     input_val = json.loads(json_val)
-                    print(type(input_val))
-                    print(input_val)
+                    #print(type(input_val))
+                    #print(input_val)
                     for vals in input_val:
-                        print('vals--', vals)
-                        print(type(vals))
+                        #print('vals--', vals)
+                        #print(type(vals))
                         if vals == None:
                             continue
-                        print('guid--', vals['guid'])
-                        print('notification---', vals['notification'])
+                        #print('guid--', vals['guid'])
+                        #print('notification---', vals['notification'])
                         if vals['notification'] == 'TRUE':
                             output.append('guid_' + vals['guid'])
             output = ",".join(output)
-            print('output-----', output)
+            #print('output-----', output)
             return output
-        print('IN---')
+        #print('IN---')
 
         hub = NotificationHub(NOTIFICATION_HUB_KEY, NOTIFICATION_HUB_NAME, isDebug)
 
 
-        print('role----', role)
+        #print('role----', role)
         uids = request.form.get('uids')
         message = request.form.get('message')
-        print('uids', uids)
-        print('role', role)
+        #print('uids', uids)
+        #print('role', role)
         tags = deconstruct(uids, role)
-        print('tags-----', tags)
+        #print('tags-----', tags)
 
         if tags == []:
             return 'No GUIDs found for the UIDs provided'
@@ -7363,11 +7371,11 @@ class Send_Notification(Resource):
             raise BadRequest('Request failed. Please provide the message field.')
         tags = tags.split(',')
         tags = list(set(tags))
-        print('tags11-----', tags)
-        print('RESULT-----',tags)
+        #print('tags11-----', tags)
+        #print('RESULT-----',tags)
         for tag in tags:
-            print('tag-----', tag)
-            print(type(tag))
+            #print('tag-----', tag)
+            #print(type(tag))
             alert_payload = {
                 "aps" : {
                     "alert" : message,
@@ -7389,7 +7397,7 @@ class Get_Registrations_From_Tag(Resource):
             raise BadRequest('Request failed. Please provide the tag field.')
         response = hub.get_all_registrations_with_a_tag(tag)
         response = str(response.read())
-        print(response)
+        #print(response)
         return response,200
 
 class Create_or_Update_Registration_iOS(Resource):
@@ -7430,7 +7438,7 @@ class Update_Registration_With_GUID_iOS(Resource):
         tags = tags.split(",")
         new_tags = set(old_tags + tags)
         new_tags = ','.join(new_tags)
-        print(f"tags: {old_tags}\ndevice_token: {device_token}\nregistration_id: {registration_id}")
+        #print(f"tags: {old_tags}\ndevice_token: {device_token}\nregistration_id: {registration_id}")
 
         if device_token is None or registration_id is None:
             raise BadRequest('Something went wrong in retriving device_token and registration_id')
@@ -7438,12 +7446,12 @@ class Update_Registration_With_GUID_iOS(Resource):
         response = hub.create_or_update_registration_iOS(registration_id, device_token, new_tags)
         # for type_tag in root.findall('feed/entry/content/AppleRegistrationDescription'):
         #     value = type_tag.get('Tags')
-        #     print(value)
-        # print("\n\n--- RESPONSE ---")
-        # print(str(response.status) + " " + response.reason)
-        # print(response.msg)
-        # print(response.read())
-        # print("--- END RESPONSE ---")
+        #     #print(value)
+        # #print("\n\n--- RESPONSE ---")
+        # #print(str(response.status) + " " + response.reason)
+        # #print(response.msg)
+        # #print(response.read())
+        # #print("--- END RESPONSE ---")
         return response.status
 
 class Update_Registration_With_GUID_Android(Resource):
@@ -7466,7 +7474,7 @@ class Update_Registration_With_GUID_Android(Resource):
         tags = tags.split(",")
         new_tags = set(old_tags + tags)
         new_tags = ','.join(new_tags)
-        print(f"tags: {old_tags}\nregistration_id: {registration_id}\ngcm_registration_id: {gcm_registration_id}")
+        #print(f"tags: {old_tags}\nregistration_id: {registration_id}\ngcm_registration_id: {gcm_registration_id}")
 
         if gcm_registration_id is None or registration_id is None:
             raise BadRequest('Something went wrong in retriving gcm_registration_id and registration_id')
@@ -7481,7 +7489,7 @@ class Get_Tags_With_GUID_iOS(Resource):
         if guid is None:
             raise BadRequest('Request failed. Please provide the guid field.')
         response = hub.get_all_registrations_with_a_tag(guid)
-        print(response)
+        #print(response)
         xml_response = str(response.read())[2:-1]
         # root = ET.fromstring(xml_response)
         xml_response_soup = BeautifulSoup(xml_response,features="html.parser")
@@ -7530,7 +7538,7 @@ class notifications(Resource):
                     VALUES 
                     (\'""" + id + """\', \'""" + content + """\',\'""" + type + """\',""" + uids + """);
                     """
-            print(query)
+            #print(query)
             items = execute(query, 'post', conn)
             if items['code'] != 281:
                 items['message'] = 'check sql query'
@@ -7578,7 +7586,7 @@ class notification_groups(Resource):
                     VALUES 
                     (\'""" + id + """\', \'""" + name + """\',\'""" + type + """\',""" + uids + """);
                     """
-            print(query)
+            #print(query)
             items = execute(query, 'post', conn)
             if items['code'] != 281:
                 items['message'] = 'check sql query'
@@ -7670,7 +7678,7 @@ class test_html(Resource):
             
             filename = 'https://s3-us-west-1.amazonaws.com/' \
                     + str(bucket) + '/' + str(key)
-            print(filename)
+            #print(filename)
 
             pil_image = Image.open(requests.get('https://servingfresh.s3-us-west-1.amazonaws.com/Group+816.png', stream=True).raw)
             in_mem_file = io.BytesIO()
@@ -7688,7 +7696,7 @@ class test_html(Resource):
                     'ACL': 'public-read'
                 }
             )
-            print('upload done')
+            #print('upload done')
             ht = """
                     <html>
                         <head>
@@ -7912,8 +7920,8 @@ def print_date_time():
 
 
 #scheduler = BackgroundScheduler()
-#scheduler.add_job(func=print_date_time, trigger="cron", day_of_week='fri', second=1, minute=3, hour=11)
-#scheduler.add_job(func=print_date_time, trigger="interval", seconds=3)
+#scheduler.add_job(func=#print_date_time, trigger="cron", day_of_week='fri', second=1, minute=3, hour=11)
+#scheduler.add_job(func=#print_date_time, trigger="interval", seconds=3)
 #scheduler.start()
 # Shut down the scheduler when exiting the app
 #atexit.register(lambda: scheduler.shutdown())

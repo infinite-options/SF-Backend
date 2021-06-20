@@ -84,16 +84,16 @@ class NotificationHub:
             connection.set_debuglevel(self.Debug)
             # adding this querystring parameter gets detailed information about the PNS send notification outcome
             url += self.DEBUG_SEND
-            print("--- REQUEST ---")
-            print("URI: " + url)
-            print("Headers: " + json.dumps(headers, sort_keys=True, indent=4, separators=(' ', ': ')))
-            print("--- END REQUEST ---\n")
+            #print("--- REQUEST ---")
+            #print("URI: " + url)
+            #print("Headers: " + json.dumps(headers, sort_keys=True, indent=4, separators=(' ', ': ')))
+            #print("--- END REQUEST ---\n")
 
         connection.request('POST', url, payload, headers)
         response = connection.getresponse()
 
         if self.Debug > 0:
-            # print out detailed response information for debugging purpose
+            # #print out detailed response information for debugging purpose
             print("\n\n--- RESPONSE ---")
             print(str(response.status) + " " + response.reason)
             print(response.msg)
@@ -116,10 +116,10 @@ class NotificationHub:
         #     connection.set_debuglevel(self.Debug)
         #     # adding this querystring parameter gets detailed information about the PNS send notification outcome
         #     url += self.DEBUG_SEND
-        #     print("--- REQUEST ---")
-        #     print("URI: " + url)
-        #     print("Headers: " + json.dumps(headers, sort_keys=True, indent=4, separators=(' ', ': ')))
-        #     print("--- END REQUEST ---\n")
+        #     #print("--- REQUEST ---")
+        #     #print("URI: " + url)
+        #     #print("Headers: " + json.dumps(headers, sort_keys=True, indent=4, separators=(' ', ': ')))
+        #     #print("--- END REQUEST ---\n")
         headers = {
             'Authorization': self.generate_sas_token(),
             'x-ms-version': '2015-01'
@@ -128,12 +128,12 @@ class NotificationHub:
         connection.request('GET', url, payload, headers)
         response = connection.getresponse()
         return response
-        print("\n\n--- RESPONSE ---")
-        print(str(response.status) + " " + response.reason)
-        print(response.msg)
-        print("read:")
-        #print(response.read())
-        print("--- END RESPONSE ---")
+        #print("\n\n--- RESPONSE ---")
+        #print(str(response.status) + " " + response.reason)
+        #print(response.msg)
+        #print("read:")
+        ##print(response.read())
+        #print("--- END RESPONSE ---")
         return str(response.read())
 
     def create_or_update_registration_android(self, registration_id, GCM_registration_id, tags):
@@ -158,11 +158,11 @@ class NotificationHub:
         connection.request('PUT', url, body, headers)
         response = connection.getresponse()
         return response
-        print("\n\n--- RESPONSE ---")
-        print(str(response.status) + " " + response.reason)
-        print(response.msg)
-        print(response.read())
-        print("--- END RESPONSE ---")
+        #print("\n\n--- RESPONSE ---")
+        #print(str(response.status) + " " + response.reason)
+        #print(response.msg)
+        #print(response.read())
+        #print("--- END RESPONSE ---")
 
     def create_or_update_registration_iOS(self, registration_id, device_token, tags):
         url = self.Endpoint + self.HubName + '/registrations/' + registration_id + self.API_VERSION
