@@ -7163,7 +7163,94 @@ class order_summary_page(Resource):
         finally:
             disconnect(conn)
 
+class replace_produce_admin(Resource):
+    def get(self,farm_name,produce_name, delivery_date):
+        try:
+            conn = connect()
+            farm_query = """
+                            select business_uid from sf.businesses where business_name = \'""" + farm_name + """\'; 
+                        """
+            farm_items = execute(farm_query, 'get', conn)
+            if farm_items['code'] != 280:
+                farm_items['message'] = 'check sql query'
+                return farm_items
+            
+            farm_uid = farm_items['result'][0]['business_uid']
+            produce_query = """
+                                SELECT item_uid 
+                                FROM sf_items
+                                WHERE item_name = \'""" + produce_name + """\';
+                                
+                             """
+            produce_items = execute(produce_query, 'get', conn)
+            if produce_items['code'] != 280:
+                produce_items['message'] = 'check sql query'
+                return produce_items
+        
+            produce_uid = produce_items['result'][0]['item_uid']
 
+            query_prod = """
+                        SELECT item_uid, business_price, item_photo
+                        FROM (SELECT * FROM sf.sf_items LEFT JOIN sf.supply ON item_uid = sup_item_uid) as itm
+                        WHERE itm.item_name =  \'""" + produce_name + """\' AND itm.itm_business_uid = \'""" + farm_uid + """\';
+                        """ 
+            
+            items_prod = execute(query_prod, 'get', conn)
+            if items_prod['code'] != 280:
+                items_prod['message'] = 'check sql query'
+                return items_prod
+            img = items_prod['result'][0]['item_photo']
+            item_uid = items_prod['result'][0]['item_uid']
+            business_price = items_prod['result'][0]['business_price']
+            #print('item details done')
+            query = """
+                        SELECT pur.purchase_uid,pur.items, pay.start_delivery_date    
+                        FROM sf.purchases as pur, sf.payments as pay
+                        WHERE pur.purchase_uid = pay.pay_purchase_uid AND pay.start_delivery_date LIKE \'""" + delivery_date + '%' + """\' AND pur.purchase_status = 'ACTIVE';
+                        """
+            items = execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'Check sql query'
+                return items
+            #print('purchases done')
+            #print(items)
+            for vals in items['result']:
+                flag = 0
+                #print('IN')
+                produce = json.loads(vals['items'])
+                #print('produce', produce)
+                purchase_uid = vals['purchase_uid']
+                ans = []
+                for product in produce:
+                    tmp = product
+                    if product['name'] == produce_name:
+                        #print('LOGIC', product)
+                        flag = 1
+                        tmp['img'] = img
+                        tmp['item_uid'] = item_uid
+                        tmp['business_price'] = business_price
+                        tmp['itm_business_uid'] = farm_uid
+                    ans.append(tmp)
+                    #print('APPENDED')
+                if flag == 1:
+                    ans = str(ans)
+                    ans = ans.replace("'", '"')
+                    query_update = """
+                                    UPDATE sf.purchases SET items = \'""" + ans + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                                    """
+                    #print('FLAGGGGGGG', query_update)
+                    items_update = execute(query_update, 'post', conn)
+                    if items_update['code'] != 281:
+                        items_update['message'] = 'check sql query for updating items in purchase'
+                        return items_update
+            return items
+
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -8084,6 +8171,7 @@ api.add_resource(all_coupons, '/api/v2/all_coupons')
 api.add_resource(farms_supported, '/api/v2/farms_supported/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(produce_ordered, '/api/v2/produce_ordered/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(order_summary_page, '/api/v2/order_summary_page/<string:delivery_date>')
+api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
