@@ -7113,10 +7113,28 @@ class order_summary_page(Resource):
     def get(self,delivery_date):
         try:
             conn = connect()
+            year, month, day = (int(x) for x in delivery_date.split('-'))
+            delivery_day = date(year, month, day)
+            delivery_day = delivery_day.strftime("%A").upper()
+            # get all business serving on this day
+
+            business_serving = """
+                                SELECT z_businesses FROm sf.zones WHERE z_delivery_day = \'""" + delivery_day + """\';
+                                """
+            business_items = execute(business_serving, 'get', conn)
+            if business_items['code'] != 280:
+                business_items['message'] = 'check sql query'
+                
+            all_bus = set()
+            for bus_vals in business_items['result']:
+                bus_vals = json.loads(bus_vals['z_businesses'])
+                all_bus.update(bus_vals)
+            all_bus = str(tuple(list(all_bus)))
+
             query ="""
                     SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
-                        (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ', '),',', COUNT(business_name))
-                            FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid) AS farms
+                        (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ','),',', COUNT(business_name))
+                            FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid AND item_status = 'Active' AND business_uid IN """ + all_bus + """) AS farms
                     FROM sf.purchases, sf.payments, sf.businesses,
                     JSON_TABLE(items, '$[*]' COLUMNS (
                                 img VARCHAR(255)  PATH '$.img',
