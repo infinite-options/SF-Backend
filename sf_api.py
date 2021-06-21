@@ -6940,16 +6940,26 @@ class payment_profit_customer(Resource):
             disconnect(conn)
 
 class adminCustomerInfo(Resource):
-    def get(self):
+    def get(self, uid):
         try:
             conn = connect()
-            query = """ 
-                    SELECT customer_uid, customer_created_at, customer_first_name, customer_last_name, user_social_media, customer_phone_num, customer_email, customer_address, customer_unit, customer_city, customer_state, customer_zip, customer_lat, customer_long, favorite_produce, purchase_uid, purchase_date, purchase_id, purchase_status, pur_customer_uid, pur_business_uid,  delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, delivery_latitude, delivery_longitude, payment_uid, payment_id, pay_purchase_uid, pay_purchase_id, payment_time_stamp, subtotal, amount_discount, service_fee, delivery_fee, driver_tip, taxes, amount_due, amount_paid
-                    ,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
-                    FROM sf.customers cus,sf.purchases pur ,sf.payments pay
-                    where pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='ACTIVE' and cus.customer_uid=pur.pur_customer_uid 
-                    GROUP BY cus.customer_uid ;
-                    """
+            if uid == 'all':
+                query = """ 
+                        SELECT customer_uid, customer_created_at, customer_first_name, customer_last_name, user_social_media, customer_phone_num, customer_email, customer_address, customer_unit, customer_city, customer_state, customer_zip, customer_lat, customer_long, favorite_produce, purchase_uid, purchase_date, purchase_id, purchase_status, pur_customer_uid, pur_business_uid,  delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, delivery_latitude, delivery_longitude, payment_uid, payment_id, pay_purchase_uid, pay_purchase_id, payment_time_stamp, subtotal, amount_discount, service_fee, delivery_fee, driver_tip, taxes, amount_due, amount_paid
+                        ,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
+                        FROM sf.customers cus,sf.purchases pur ,sf.payments pay
+                        WHERE pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='ACTIVE' and cus.customer_uid=pur.pur_customer_uid 
+                        GROUP BY cus.customer_uid ;
+                        """
+            else:
+                 query = """ 
+                        SELECT customer_uid, customer_created_at, customer_first_name, customer_last_name, user_social_media, customer_phone_num, customer_email, customer_address, customer_unit, customer_city, customer_state, customer_zip, customer_lat, customer_long, favorite_produce, purchase_uid, purchase_date, purchase_id, purchase_status, pur_customer_uid, pur_business_uid,  delivery_address, delivery_unit, delivery_city, delivery_state, delivery_zip, delivery_latitude, delivery_longitude, payment_uid, payment_id, pay_purchase_uid, pay_purchase_id, payment_time_stamp, subtotal, amount_discount, service_fee, delivery_fee, driver_tip, taxes, amount_due, amount_paid
+                        ,COUNT(pur.purchase_uid) AS total_orders,max(pur.purchase_date) AS last_order_date, SUM(amount_paid) as total_revenue
+                        FROM sf.customers cus,sf.purchases pur ,sf.payments pay
+                        WHERE pur.purchase_uid=pay.pay_purchase_id and pur.purchase_status='ACTIVE' and cus.customer_uid=pur.pur_customer_uid and cus.customer_uid = \'""" + uid + """\'
+                        GROUP BY cus.customer_uid ;
+                        """
+
             items = execute(query, 'get', conn)
 
             items['message'] = 'Info Gathered'
@@ -7104,7 +7114,9 @@ class order_summary_page(Resource):
         try:
             conn = connect()
             query ="""
-                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit
+                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
+                        (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ', '),',', COUNT(business_name))
+                            FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid) AS farms
                     FROM sf.purchases, sf.payments, sf.businesses,
                     JSON_TABLE(items, '$[*]' COLUMNS (
                                 img VARCHAR(255)  PATH '$.img',
@@ -7120,7 +7132,8 @@ class order_summary_page(Resource):
                     AND purchase_status = 'ACTIVE'
                     AND start_delivery_date LIKE \'""" + delivery_date + "%"+"""\'
                     AND business_uid = itm_business_uid
-                    GROUP BY name;
+                    GROUP BY name
+                    Order BY name;
                     """
             items = execute(query,'get',conn)
             if items['code'] != 280:
@@ -8048,7 +8061,7 @@ api.add_resource(getBusinessItems_Prime, '/api/v2/getBusinessItems/<string:name>
 api.add_resource(updateOrder, '/api/v2/updateOrder/<string:date>')
 api.add_resource(UpdatePurchaseBusiness_Prime, '/api/v2/UpdatePurchaseBusiness/<string:date>,<string:name>,<string:businessFrom>,<string:businessTo>')
 api.add_resource(payment_profit_customer, '/api/v2/payment_profit_customer/<string:uid>')
-api.add_resource(adminCustomerInfo, '/api/v2/adminCustomerInfo')
+api.add_resource(adminCustomerInfo, '/api/v2/adminCustomerInfo/<string:uid>')
 api.add_resource(all_coupons, '/api/v2/all_coupons')
 api.add_resource(farms_supported, '/api/v2/farms_supported/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(produce_ordered, '/api/v2/produce_ordered/<string:customer_uid>,<string:purchase_uid>')
