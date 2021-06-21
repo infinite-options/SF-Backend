@@ -7167,6 +7167,8 @@ class replace_produce_admin(Resource):
     def get(self,farm_name,produce_name, delivery_date):
         try:
             conn = connect()
+            farm_name = farm_name.replace("%20"," ")
+            farm_name = farm_name.replace("'","''")
             farm_query = """
                             select business_uid from sf.businesses where business_name = \'""" + farm_name + """\'; 
                         """
