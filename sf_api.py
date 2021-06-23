@@ -7254,6 +7254,36 @@ class replace_produce_admin(Resource):
         finally:
             disconnect(conn)
 
+class total_revenue_profit(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT SUM(total_revenue) AS total_revenue,SUM(total_bus_revenue) AS total_bus_revenue,SUM(total_profit) AS total_profit,(SELECT count(purchase_uid) AS total_orders FROM sf.purchases WHERE purchase_status = 'ACTIVE') AS total_orders
+                    FROM
+                    (SELECT SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit, SUM(qty*business_price) AS total_bus_revenue
+                    FROM sf.purchases, sf.payments,
+                    JSON_TABLE(items, '$[*]' COLUMNS (
+                                img VARCHAR(255)  PATH '$.img',
+                                qty VARCHAR(255)  PATH '$.qty',
+                                name VARCHAR(255)  PATH '$.name',
+                                price VARCHAR(255)  PATH '$.price',
+                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid',
+                                business_price VARCHAR(255)  PATH '$.business_price',
+                                unit VARCHAR(255)  PATH '$.unit')
+                    ) AS deconstruct
+                    WHERE purchase_uid = pay_purchase_id
+                    AND purchase_status = 'ACTIVE'
+                    GROUP BY name) AS subquery;
+
+                    """
+            return execute(query, 'get', conn)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
 # -- Queries end here -------------------------------------------------------------------------------
@@ -8055,27 +8085,27 @@ def print_date_time():
 
     try:
         print('in time function')
-        #conn = connect()
-        '''
+        conn = connect()
+        
         query = """
-                UPDATE sf.coupons SET notes = \'""" + str(datetime.now()) + """\' WHERE (coupon_uid = '600-000100');
+                UPDATE sf.coupons SET notes = \'""" + str(datetime.now()) + """\' WHERE (coupon_uid = '600-000068');
                 """
         items = execute(query, 'post', conn)
         if items['code'] != 281:
             items['message'] = 'check sql query for coupons'
         return items
-        '''
+        
     except:
         return 'error occured'
 
     finally:
         print('done')
-        #disconnect(conn)
+        disconnect(conn)
 
 
 #scheduler = BackgroundScheduler()
 #scheduler.add_job(func=#print_date_time, trigger="cron", day_of_week='fri', second=1, minute=3, hour=11)
-#scheduler.add_job(func=#print_date_time, trigger="interval", seconds=3)
+#scheduler.add_job(func=print_date_time, trigger="interval", seconds=10)
 #scheduler.start()
 # Shut down the scheduler when exiting the app
 #atexit.register(lambda: scheduler.shutdown())
@@ -8174,6 +8204,8 @@ api.add_resource(farms_supported, '/api/v2/farms_supported/<string:customer_uid>
 api.add_resource(produce_ordered, '/api/v2/produce_ordered/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(order_summary_page, '/api/v2/order_summary_page/<string:delivery_date>')
 api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
+api.add_resource(total_revenue_profit, '/api/v2/total_revenue_profit')
+
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
