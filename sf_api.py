@@ -7162,6 +7162,61 @@ class order_summary_page(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+class farmer_order_summary_page(Resource):
+    def get(self,delivery_date,business_uid):
+        try:
+            conn = connect()
+            year, month, day = (int(x) for x in delivery_date.split('-'))
+            delivery_day = date(year, month, day)
+            delivery_day = delivery_day.strftime("%A").upper()
+            # get all business serving on this day
+
+            business_serving = """
+                                SELECT z_businesses FROm sf.zones WHERE z_delivery_day = \'""" + delivery_day + """\';
+                                """
+            business_items = execute(business_serving, 'get', conn)
+            if business_items['code'] != 280:
+                business_items['message'] = 'check sql query'
+                
+            all_bus = set()
+            for bus_vals in business_items['result']:
+
+                bus_vals = json.loads(bus_vals['z_businesses'])
+                all_bus.update(bus_vals)
+            all_bus = str(tuple(list(all_bus)))
+
+            query ="""
+                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
+                        (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ','),',', COUNT(business_name))
+                            FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid AND item_status = 'Active' AND business_uid IN """ + all_bus + """) AS farms
+                    FROM sf.purchases, sf.payments, sf.businesses,
+                    JSON_TABLE(items, '$[*]' COLUMNS (
+                                img VARCHAR(255)  PATH '$.img',
+                                qty VARCHAR(255)  PATH '$.qty',
+                                name VARCHAR(255)  PATH '$.name',
+                                price VARCHAR(255)  PATH '$.price',
+                                item_uid VARCHAR(255)  PATH '$.item_uid',
+                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid',
+                                business_price VARCHAR(255)  PATH '$.business_price',
+                                unit VARCHAR(255)  PATH '$.unit')
+                    ) AS deconstruct
+                    WHERE purchase_uid = pay_purchase_id
+                    AND purchase_status = 'ACTIVE'
+                    AND start_delivery_date LIKE \'""" + delivery_date + "%"+"""\'
+                    AND business_uid = itm_business_uid
+                    AND business_uid= \'""" + business_uid + """\'
+                    GROUP BY name
+                    Order BY name;
+                    """
+            items = execute(query,'get',conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+            
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 class replace_produce_admin(Resource):
     def get(self,farm_name,produce_name, delivery_date):
@@ -8173,6 +8228,7 @@ api.add_resource(all_coupons, '/api/v2/all_coupons')
 api.add_resource(farms_supported, '/api/v2/farms_supported/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(produce_ordered, '/api/v2/produce_ordered/<string:customer_uid>,<string:purchase_uid>')
 api.add_resource(order_summary_page, '/api/v2/order_summary_page/<string:delivery_date>')
+api.add_resource(farmer_order_summary_page, '/api/v2/farmer_order_summary_page/<string:delivery_date>,<string:business_uid>')
 api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
 # Notification Endpoints
 
