@@ -1307,7 +1307,7 @@ class createAccount(Resource):
 
             query = """
                     INSERT INTO sf.coupons 
-                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold,'coupon_title') 
+                    (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold,coupon_title) 
                     VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0','Welcome Coupon');
                     """
             item = execute(query, 'post', conn)
