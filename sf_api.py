@@ -7383,6 +7383,70 @@ class admin_items(Resource):
         finally:
             disconnect(conn)
 
+class upload_image_admin(Resource):
+    def post(self):
+        try:
+            print("in")
+            item_photo = request.files.get('item_photo')
+            uid = request.form.get('uid')
+            bucket = 'servingfresh'
+            TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            key = "items/" + str(uid) + "_" + TimeStamp_test
+            print(key)
+           
+            filename = 'https://s3-us-west-1.amazonaws.com/' \
+                    + str(bucket) + '/' + str(key)
+
+            upload_file = s3.put_object(
+                                Bucket=bucket,
+                                Body=item_photo,
+                                Key=key,
+                                ACL='public-read',
+                                ContentType='image/jpeg'
+                            )
+            return filename
+            
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            print("image uploaded!")
+
+class update_item_admin(Resource):
+    def post(self,action):
+        try:
+            conn = connect()
+            print("in")
+            data = request.get_json(force=True)
+            if action == 'update':
+                query = """
+                    UPDATE 
+                    sf.sf_items 
+                    SET 
+                    item_name = \'""" + data['item_name'] + """\', 
+                    item_type = \'""" + data['item_type'] + """\',
+                    item_desc = \'""" + data['item_desc'] + """\', 
+                    item_unit = \'""" + data['item_unit'] + """\', 
+                    item_price = \'""" + str(data['item_price']) + """\',
+                    item_sizes = \'""" + data['item_sizes'] + """\',
+                    item_photo = \'""" + data['item_photo'] + """\',
+                    taxable = \'""" + data['taxable'] + """\',
+                    item_display = \'""" + data['item_display'] + """\'
+                    WHERE (item_uid = \'""" + data['item_uid'] + """\');
+                    """
+            else:
+                query = """
+                        DELETE FROM sf.sf_items WHERE (item_uid = \'""" + data['item_uid'] + """\');
+                        """
+            items = execute(query,'post',conn)
+            return items
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
@@ -8308,6 +8372,8 @@ api.add_resource(farmer_order_summary_page, '/api/v2/farmer_order_summary_page/<
 api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
 api.add_resource(total_revenue_profit, '/api/v2/total_revenue_profit')
 api.add_resource(admin_items, '/api/v2/admin_items')
+api.add_resource(upload_image_admin, '/api/v2/upload_image_admin')
+api.add_resource(update_item_admin, '/api/v2/update_item_admin/<string:action>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
