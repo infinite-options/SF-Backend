@@ -7162,6 +7162,7 @@ class order_summary_page(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
 class farmer_order_summary_page(Resource):
     def get(self,delivery_date,business_uid):
         try:
@@ -7338,6 +7339,51 @@ class total_revenue_profit(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+class admin_items(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT *, (SELECT business_name FROM sf.businesses WHERE business_uid = itm_business_uid) AS business_name
+                    FROM sf.sf_items 
+                    LEFT JOIN sf.supply 
+                    ON item_uid = sup_item_uid
+                    ORDER BY item_name, business_price;
+                    """
+            items =  execute(query, 'get', conn)
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            
+            produce_dict = {}
+            for vals in items['result']:
+                if (vals['item_name']+","+vals['item_unit']) not in produce_dict:
+                    produce_dict[vals['item_name']+","+vals['item_unit']] = {  "item_uid":vals['item_uid'],
+                                                    "item_name":vals['item_name'], 
+                                                    "item_info":vals['item_info'], 
+                                                    "item_type":vals['item_type'], 
+                                                    "item_desc":vals['item_desc'], 
+                                                    "item_unit":vals['item_unit'], 
+                                                    "item_price":vals['item_price'], 
+                                                    "item_sizes":vals['item_sizes'], 
+                                                    "item_photo":vals['item_photo'], 
+                                                    "taxable":vals['taxable'], 
+                                                    "item_display":vals['item_display'], 
+                                                    "farms":[[vals['itm_business_uid'],vals['sup_item_uid'],vals['business_price'],vals['item_status'],vals['business_name']]]
+                                                   
+                                                }
+                else:
+                    produce_dict[vals['item_name']+","+vals['item_unit']]["farms"].append([vals['itm_business_uid'],vals['sup_item_uid'],vals['business_price'],vals['item_status'],vals['business_name']])
+            final_res = [value for key,value in produce_dict.items()]   
+            items['result'] = final_res
+            return items
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 
 # -- Admin Queries End here -------------------------------------------------------------------------------
 
@@ -8261,7 +8307,7 @@ api.add_resource(order_summary_page, '/api/v2/order_summary_page/<string:deliver
 api.add_resource(farmer_order_summary_page, '/api/v2/farmer_order_summary_page/<string:delivery_date>,<string:business_uid>')
 api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
 api.add_resource(total_revenue_profit, '/api/v2/total_revenue_profit')
-
+api.add_resource(admin_items, '/api/v2/admin_items')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
