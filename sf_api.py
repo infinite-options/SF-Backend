@@ -7369,8 +7369,11 @@ class admin_items(Resource):
                     FROM sf.sf_items 
                     LEFT JOIN sf.supply 
                     ON item_uid = sup_item_uid
-                    ORDER BY item_name, business_price;
+                    ORDER BY item_name , business_price;
+                    
                     """
+
+                    
             items =  execute(query, 'get', conn)
             if items['code'] != 280:
                 items['message'] = 'check sql query'
@@ -7402,6 +7405,30 @@ class admin_items(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+# class admin_farmer_items(Resource):
+#     def get(self):
+class admin_farmer_items(Resource):
+    def get(self, business_uid):
+        response = {}
+        items = {}
+        try:
+            conn = connect()
+            query = """
+            SELECT item.item_name,item.item_type,item.item_desc,item.item_unit,item.item_price,item.item_sizes,item.item_photo,item.taxable,item.item_display,item.item_uid,sup.item_status
+                FROM sf.sf_items item 
+                LEFT JOIN sf.supply sup ON item.item_uid = sup_item_uid WHERE sup.itm_business_uid= \'""" + business_uid+ """\'; 
+                    """
+            items = execute(query, 'get', conn)
+
+            response['message'] = 'Details fetch successful'
+            response['result'] = items
+            return response, 200
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 class upload_image_admin(Resource):
     def post(self):
@@ -7468,6 +7495,45 @@ class update_item_admin(Resource):
             raise BadRequest('Request failed, please try again later.')
         finally:
             disconnect(conn)
+
+
+
+class update_farmer_item_admin(Resource):
+    def post(self,action):
+        try:
+            conn = connect()
+            print("in")
+            data = request.get_json(force=True)
+            if action == 'update':
+                query = """
+                    UPDATE 
+                    sf.sf_items 
+                    SET 
+                    item_name = \'""" + data['item_name'] + """\', 
+                    item_desc = \'""" + data['item_desc'] + """\', 
+                    item_price = \'""" + str(data['item_price']) + """\',
+                    item_photo = \'""" + data['item_photo'] + """\',
+                    WHERE (item_uid = \'""" + data['item_uid'] + """\');
+                    """
+            else:
+                query = """
+                        DELETE FROM sf.sf_items WHERE (item_uid = \'""" + data['item_uid'] + """\');
+                        """
+            items = execute(query,'post',conn)
+            return items
+
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
+
+
+
+
+
 
 
 
@@ -8395,8 +8461,10 @@ api.add_resource(farmer_order_summary_page, '/api/v2/farmer_order_summary_page/<
 api.add_resource(replace_produce_admin, '/api/v2/replace_produce_admin/<string:farm_name>,<string:produce_name>,<string:delivery_date>')
 api.add_resource(total_revenue_profit, '/api/v2/total_revenue_profit')
 api.add_resource(admin_items, '/api/v2/admin_items')
+api.add_resource(admin_farmer_items, '/api/v2/admin_farmer_items/<string:business_uid>')
 api.add_resource(upload_image_admin, '/api/v2/upload_image_admin')
 api.add_resource(update_item_admin, '/api/v2/update_item_admin/<string:action>')
+api.add_resource(update_farmer_item_admin, '/api/v2/update_farmer_item_admin/<string:action>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
