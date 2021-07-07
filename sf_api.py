@@ -136,6 +136,7 @@ app.config['MAIL_PASSWORD'] = os.environ.get('SUPPORT_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('SUPPORT_EMAIL')
 
 
+
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 
@@ -1516,6 +1517,26 @@ class email_info(Resource):
         finally:
             disconnect(conn)
 
+class email_validation(Resource):
+    def get(self,email):
+        try:
+            conn = connect()
+
+            msg = Message("Email Verification", sender='support@servingfresh.me', recipients=[email])
+
+            msg.body =  "Hi!\n\n"\
+                        "This email is just to verify your email.\n\n"\
+                        "Email support@ServingFresh.me if you run into any problems or have any questions.\n"\
+                        "Thx - The Serving Fresh Team"
+
+            print(msg.body)
+            mail.send(msg)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+
 class email_verification(Resource):
     def post(self):
 
@@ -1541,10 +1562,6 @@ class email_verification(Resource):
                 items['message'] = "Customer password doesn't exists"
                 items['code'] = 405
                 return items
-
-
-
-
 
             token = s.dumps(email)
             #print(token)
@@ -4071,7 +4088,7 @@ class addItems_Prime(Resource):
                 
                 ##### new
                 new_item = request.form.get('new_item')
-                #print('Hello',new_item)
+                print('Hello',new_item)
                 #Already an item then we just need to update supply table
                 if new_item == 'FALSE':
                     #print('IN IF')
@@ -4112,17 +4129,19 @@ class addItems_Prime(Resource):
                     item_price = request.form.get('item_price') if request.form.get('item_price') is not None else 'NULL'
                     item_sizes = request.form.get('item_sizes') if request.form.get('item_sizes') is not None else 'NULL'
                     favorite = request.form.get('favorite') if request.form.get('favorite') is not None else 'NULL'
-                    item_photo = request.files.get('item_photo')
+                    item_photo = request.form.get('item_photo') if request.form.get('item_photo') is not None else 'NULL'
                     exp_date = request.form.get('exp_date') if request.form.get('exp_date') is not None else 'NULL'
                     taxable = request.form.get('taxable') if request.form.get('taxable') is not None else 'NULL'
-                    #print('data done')
+                    item_display = request.form.get('item_display') if request.form.get('item_display') is not None else 'NULL'
+                    print('data done')
                     query = ["CALL sf.new_sf_items_uid;"]
                     NewIDresponse = execute(query[0], 'get', conn)
                     NewID = NewIDresponse['result'][0]['new_id']
-                    key = "items/" + NewID
-                    item_photo_url = helper_upload_meal_img(item_photo, key)
-                    TimeStamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    #print('before query',item_photo_url,exp_date)
+                    TimeStamp = datetime.strftime(datetime.now(utc),"%Y-%m-%d %H:%M:%S")
+
+                    item_photo_url = item_photo
+                    
+                    print('before query',TimeStamp)
                     query_insert =  '''
                                 INSERT INTO sf.sf_items
                                 SET 
@@ -4133,14 +4152,15 @@ class addItems_Prime(Resource):
                                 item_type = \'''' + item_type + '''\',
                                 item_desc = \'''' + item_desc + '''\',
                                 item_unit = \'''' + item_unit + '''\',
-                                item_price = \'''' + item_price + '''\',
+                                item_price = \'''' + str(item_price) + '''\',
                                 item_sizes = \'''' + item_sizes + '''\',
                                 favorite = \'''' + favorite + '''\',
                                 item_photo = \'''' + item_photo_url + '''\',
                                 exp_date = \'''' + exp_date + '''\',
+                                item_display = \'''' + item_display + '''\',
                                 taxable = \'''' + taxable + '''\';
                                 '''
-                    #print(query)
+                    print(query)
                     items = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
@@ -4149,9 +4169,9 @@ class addItems_Prime(Resource):
                     
                     # add to supply table
 
-                    bus_uid = request.form.get('bus_uid')
+                    bus_uid = request.form.get('business_uid')
                     itm_uid = NewID
-                    bus_price = request.form.get('bus_price')
+                    bus_price = request.form.get('business_price')
                     item_status = request.form.get('item_status')
                     
                     query = ["CALL sf.new_supply_uid;"]
@@ -4235,7 +4255,7 @@ class addItems_Prime(Resource):
                                     '''
                     else:
                         #print('ELSE')
-                        item_photo_url = helper_upload_meal_img(item_photo, key)
+                        item_photo_url = helper_upload_meal_img(item_photo, key) 
                         #print(request.form)
                         query_update =  """
                                         UPDATE sf.sf_items
@@ -7418,6 +7438,7 @@ class update_item_admin(Resource):
             conn = connect()
             print("in")
             data = request.get_json(force=True)
+            print(data)
             if action == 'update':
                 query = """
                     UPDATE 
@@ -7434,6 +7455,7 @@ class update_item_admin(Resource):
                     item_display = \'""" + data['item_display'] + """\'
                     WHERE (item_uid = \'""" + data['item_uid'] + """\');
                     """
+                print(query)
             else:
                 query = """
                         DELETE FROM sf.sf_items WHERE (item_uid = \'""" + data['item_uid'] + """\');
@@ -8296,6 +8318,7 @@ api.add_resource(token_fetch_update, '/api/v2/token_fetch_update/<string:action>
 api.add_resource(createAccount, '/api/v2/createAccount')
 api.add_resource(createAccountGuestToCustomer, '/api/v2/createAccountGuestToCustomer')
 api.add_resource(email_info, '/api/v2/email_info/<string:email>')
+api.add_resource(email_validation, '/api/v2/email_validation/<string:email>')
 api.add_resource(email_verification, '/api/v2/email_verification')
 api.add_resource(AccountSalt, '/api/v2/AccountSalt')
 api.add_resource(Login, '/api/v2/Login/')

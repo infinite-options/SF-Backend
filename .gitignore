@@ -35,3 +35,4 @@ sample.py
 __pycache__/
 test.py
 requirement.txt
+test.csv
