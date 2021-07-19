@@ -30,6 +30,7 @@ env
 venv
 sf_env
 sample.py
+sf_new_env
 
 # __ files
 __pycache__/
