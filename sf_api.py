@@ -352,8 +352,11 @@ class Businesses(Resource):
         items = {}
         try:
             conn = connect()
-            query = """ # QUERY 1 RETURNS ALL BUSINESSES
-                SELECT * FROM sf.businesses WHERE business_status='ACTIVE'; """
+            query = """ 
+                # QUERY 1 RETURNS ALL BUSINESSES
+                SELECT * FROM sf.businesses
+                ORDER BY business_name;
+                 """
             items = execute(query, 'get', conn)
 
             response['message'] = 'Businesses successful'
@@ -1309,7 +1312,7 @@ class createAccount(Resource):
             query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold,coupon_title) 
-                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '0', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '0','Welcome Coupon');
+                    VALUES ( \'""" + couponID + """\', 'NewCustomer', 'TRUE', '0', '10', '5', \'""" + exp_time + """\', '1', 'Welcome Coupon', '0', 'F', \'""" + email + """\', 'null', '20','Welcome Coupon');
                     """
             item = execute(query, 'post', conn)
             if item['code'] != 281:
@@ -4164,29 +4167,7 @@ class addItems_Prime(Resource):
                     items = execute(query_insert, 'post', conn)
                     if items['code'] != 281:
                         items['message'] = 'check sql query'
-                        return items
-                    #print('first query done',items)
-                    
-                    # add to supply table
-
-                    bus_uid = request.form.get('business_uid')
-                    itm_uid = NewID
-                    bus_price = request.form.get('business_price')
-                    item_status = request.form.get('item_status')
-                    
-                    query = ["CALL sf.new_supply_uid;"]
-                    NewIDresponse = execute(query[0], 'get', conn)
-                    supply_uid = NewIDresponse['result'][0]['new_id']
-                    
-                    query_insert = """
-                                   INSERT INTO sf.supply (supply_uid, itm_business_uid, sup_item_uid, business_price, item_status) 
-                                   VALUES 
-                                   (\'""" + supply_uid + """\', \'""" + bus_uid + """\', \'""" + itm_uid + """\', \'""" + bus_price + """\', \'""" + item_status + """\');
-                                   """
-                    #print(query_insert)
-                    items_insert = execute(query_insert, 'post', conn)
-                    if items['code'] != 281:
-                        items['message'] = 'check sql query'
+                        
                     return items
             
             
@@ -4376,8 +4357,6 @@ class business_details_update(Resource):
                     #print("IN ELSE")
                     #print(data)
                     #print('IN')
-
-
                     business_association = str(data['business_association'])
                     business_association = "'" + business_association.replace("'", "\"") + "'"
                     business_hours = str(data['business_hours'])
@@ -4423,7 +4402,8 @@ class business_details_update(Resource):
                                platform_fee = \'""" + data["platform_fee"] + """\',
                                transaction_fee = \'""" + data["transaction_fee"] + """\',
                                revenue_sharing = \'""" + data["revenue_sharing"] + """\',
-                               profit_sharing = \'""" + data["profit_sharing"] + """\'
+                               profit_sharing = \'""" + data["profit_sharing"] + """\',
+                               business_status = \'""" + data["business_status"] + """\'
                                WHERE business_uid = \'""" + data["business_uid"] + """\' ;
                              """
                     #print(query)
@@ -7500,7 +7480,7 @@ class admin_farmer_items(Resource):
             query = """
                     SELECT *
                     FROM sf.sf_items item 
-                    LEFT JOIN sf.supply sup ON item.item_uid = sup_item_uid WHERE sup.itm_business_uid= \'""" + business_uid+ """\'; 
+                    LEFT JOIN sf.supply sup ON item.item_uid = sup_item_uid WHERE sup.itm_business_uid= \'""" + business_uid+ """\' AND item_status != 'Hidden'; 
                     """
             items = execute(query, 'get', conn)
 
@@ -7529,7 +7509,11 @@ class update_farmer_item_admin(Resource):
                     """
             else:
                 query = """
-                        DELETE FROM sf.supply WHERE (supply_uid = \'""" + data['supply_uid'] + """\');
+                        UPDATE 
+                        sf.supply 
+                        SET 
+                        item_status = 'Hidden'
+                        WHERE (supply_uid = \'""" + data['supply_uid'] + """\');
                         """
             items = execute(query,'post',conn)
             return items
@@ -7631,7 +7615,70 @@ class farmer_packing_data(Resource):
         finally:
             disconnect(conn)
 
+
+class get_distinct_column_vals(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            distinct_dict = {}
+            query_1 = """
+                    SELECT DISTINCT item_type
+                    FROM sf.sf_items;
+                    """
+            items_1 = execute(query_1,'get',conn)
+
+            query_2 = """
+                    SELECT DISTINCT item_desc
+                    FROM sf.sf_items;
+                    """
+            items_2 = execute(query_2,'get',conn)
+
+            query_3 = """
+                    SELECT DISTINCT item_unit
+                    FROM sf.sf_items;
+                    """
+            items_3 = execute(query_3,'get',conn)
+
+            query_4 = """
+                    SELECT DISTINCT item_sizes
+                    FROM sf.sf_items;
+                    """
+            items_4 = execute(query_4,'get',conn)
+
+            query_5 = """
+                    SELECT DISTINCT taxable
+                    FROM sf.sf_items;
+                    """
+            items_5 = execute(query_5,'get',conn)
+
+            query_6 = """
+                    SELECT DISTINCT item_display
+                    FROM sf.sf_items;
+                    """
+            items_6 = execute(query_6,'get',conn)
+
+            print(items_1,items_2,items_3,items_4,items_5,items_6)
+
+            if items_1['code'] != 280 or items_2['code'] != 280 or items_3['code'] != 280 or items_4['code'] != 280 or items_5['code'] != 280 or items_6['code'] != 280:
+                return {"code":400,"message":"check sql query"}
             
+            distinct_dict['item_type'] = [vals['item_type'] for vals in items_1['result']]
+            distinct_dict['item_desc'] = [vals['item_desc'] for vals in items_2['result']]
+            distinct_dict['item_unit'] = [vals['item_unit'] for vals in items_3['result']]
+            distinct_dict['item_sizes'] = [vals['item_sizes'] for vals in items_4['result']]
+            distinct_dict['taxable'] = [vals['taxable'] for vals in items_5['result']]
+            distinct_dict['item_display'] = [vals['item_display'] for vals in items_6['result']]
+
+            return {"result":distinct_dict,"code":200}
+
+
+            
+
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+           
 
 
 
@@ -8573,6 +8620,7 @@ api.add_resource(update_item_admin, '/api/v2/update_item_admin/<string:action>')
 api.add_resource(update_farmer_item_admin, '/api/v2/update_farmer_item_admin/<string:action>')
 api.add_resource(new_customer_info, '/api/v2/new_customer_info')
 api.add_resource(farmer_packing_data, '/api/v2/farmer_packing_data/<string:uid>,<string:delivery_date>,<string:action>')
+api.add_resource(get_distinct_column_vals, '/api/v2/get_distinct_column_vals')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
