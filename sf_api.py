@@ -2530,7 +2530,7 @@ class brandAmbassador(Resource):
                     if vals['coupon_id'] == 'SFAmbassador':
                         return 'Customer already an Ambassador'
                 
-                # all check done, now make the custoamer a ambassador and issue them a coupon
+                # all check done, now make the customer a ambassador and issue them a coupon
                 #print("first")
                 query = ["CALL sf.new_coupons_uid;"]
                 
@@ -2544,7 +2544,7 @@ class brandAmbassador(Resource):
                 query = """
                         INSERT INTO sf.coupons 
                         (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
-                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '0', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
+                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '2', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
                         """
                 #print(query)
                 items = execute(query, 'post', conn)
@@ -2618,7 +2618,7 @@ class brandAmbassador(Resource):
                         """
                     items_cust = execute(query_cust, 'get', conn)
                     for vals in items_cust['result']:
-                        if vals['coupon_id'] == 'SFAmbassador':
+                        if vals['coupon_id'] == 'SFAmbassador' and code == info:
                             return {"message":'Customer himself is an Ambassador',"code":505,"discount":"","uids":""}
                     
                     cust_email = info
@@ -2723,7 +2723,7 @@ class brandAmbassador(Resource):
                         items['uids'] = [couponID,rf_id]
                         items['sub'] = qq_ex['result'][0]
                         return items
-
+            
                     else:
                         items = {}
                         items['code'] = 200
@@ -4353,6 +4353,62 @@ class business_details_update(Resource):
                         item['message'] = 'check sql query'
                         item['code'] = 490
                     return item
+                elif action == 'Create':
+                    TimeStamp = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                    query = ["call sf.new_business_uid();"]
+                    businessID = execute(query[0], 'get', conn)
+                    businessUID = businessID['result'][0]['new_id']
+                    
+                    
+                    
+                    query = """
+                               INSERT INTO sf.businesses
+                               SET 
+                               business_created_at = \'""" + TimeStamp + """\',
+                               business_name = \'""" + data["business_name"] + """\',
+                               business_type = \'""" + data["business_type"] + """\',
+                               business_desc = \'""" + data["business_desc"] + """\',
+                               business_contact_first_name = \'""" + data["business_contact_first_name"] + """\',
+                               business_contact_last_name = \'""" + data["business_contact_last_name"] + """\',
+                               business_phone_num = \'""" + data["business_phone_num"] + """\',
+                               business_phone_num2 = \'""" + data["business_phone_num2"] + """\',
+                               business_email = \'""" + data["business_email"] + """\',
+                               business_address = \'""" + data["business_address"] + """\',
+                               business_unit = \'""" + data["business_unit"] + """\',
+                               business_city = \'""" + data["business_city"] + """\',
+                               business_state = \'""" + data["business_state"] + """\',
+                               business_zip = \'""" + data["business_zip"] + """\',
+                               business_longitude = \'""" + data["business_longitude"] + """\',
+                               business_latitude = \'""" + data["business_latitude"] + """\',
+                               business_EIN = \'""" + data["business_EIN"] + """\',
+                               business_WAUBI = \'""" + data["business_WAUBI"] + """\',
+                               business_license = \'""" + data["business_license"] + """\',
+                               business_USDOT = \'""" + data["business_USDOT"] + """\',
+                               bus_notification_approval = \'""" + data["bus_notification_approval"] + """\',
+                               can_cancel = \'""" + data["can_cancel"] + """\',
+                               delivery = \'""" + data["delivery"] + """\',
+                               reusable = \'""" + data["reusable"] + """\',
+                               business_image = \'""" + data["business_image"] + """\',
+                               business_password = \'""" + data["business_password"] + """\',
+                               platform_fee = \'""" + data["platform_fee"] + """\',
+                               transaction_fee = \'""" + data["transaction_fee"] + """\',
+                               revenue_sharing = \'""" + data["revenue_sharing"] + """\',
+                               profit_sharing = \'""" + data["profit_sharing"] + """\',
+                               business_status = \'""" + data["business_status"] + """\',
+                               business_uid = \'""" + businessUID + """\' ;
+                             """
+                    print(query)
+                    item = execute(query, 'post', conn)
+                    #print(item)
+                    if item['code'] == 281:
+                        item['code'] = 200
+                        item['message'] = 'Business info created'
+                    else:
+                        item['message'] = 'check sql query'
+                        item['code'] = 490
+                    return item
+
+                
                 else:
                     #print("IN ELSE")
                     #print(data)
@@ -4451,6 +4507,23 @@ class business_image_upload(Resource):
         finally:
             disconnect(conn)
             #print('process completed')
+
+class new_business_image_upload(Resource):
+
+    def post(self):
+
+        try:
+            bus_photo = request.files.get('bus_photo') if request.files.get('bus_photo') is not None else 'NULL'
+            TimeStamp_test = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+            key = "business/" + "_" + TimeStamp_test
+            bus_photo_url = helper_upload_meal_img(bus_photo, key)
+            return bus_photo_url
+        except:
+                #print("Error happened while outputting from business table")
+                raise BadRequest('Request failed, please try again later.')
+        finally:
+            print('process completed')
+
 
 class orders_by_farm(Resource):
 
@@ -7615,7 +7688,6 @@ class farmer_packing_data(Resource):
         finally:
             disconnect(conn)
 
-
 class get_distinct_column_vals(Resource):
     def get(self):
         try:
@@ -7679,7 +7751,33 @@ class get_distinct_column_vals(Resource):
         finally:
             disconnect(conn)
            
-
+class sweepstakes(Resource):
+    def post(self, action):
+        try:
+            conn = connect()
+            if action == 'get':
+                query = """
+                        SELECT * FROM sf.sweepstakes;
+                        """
+                return execute(query,'get',conn)
+            elif action == 'post':
+                data = request.get_json(force=True)
+                query_uid = """
+                            CALL sf.new_sweepstakes_uid();
+                            """
+                uid = execute(query_uid,'get',conn)
+                sweep_uid = uid['result'][0]['new_id']
+                
+                query = """
+                        INSERT INTO sf.sweepstakes (sweep_uid, sweep_name, sweep_address, sweep_zipcode, sweep_phone_number, sweep_referrer, sweep_referrer_email) 
+                        VALUES 
+                        (\'""" + sweep_uid + """\', \'""" + data['sweep_name'] + """\', \'""" + data['sweep_address'] + """\', \'""" + data['sweep_zipcode'] + """\', \'""" + data['sweep_phone_number'] + """\', \'""" + data['sweep_referrer'] + """\', \'""" + data['sweep_referrer_email'] + """\');
+                        """
+                return execute(query,'post',conn)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 
@@ -7698,65 +7796,83 @@ class customer_info_business(Resource):
 
         try:
             conn = connect()
-            query = """
-                    SELECT 
+            # query = """
+            #         SELECT 
 
-                        custom.customer_uid,
-                        custom.customer_first_name,
-                        custom.customer_last_name,
-                        custom.customer_email,
-                        custom.customer_phone_num,
-                        custom.customer_address,
-                        custom.customer_unit,
-                        custom.customer_city,
-                        custom.customer_zip,
-                        custom.cust_notification_approval,
-                        custom.SMS_freq_preference,
-                        custom.SMS_last_notification,
-                        custom.cust_guid_device_id_notification,
-                        DS.business_name,
-                        DS.price,
-                        DS.itm_business_uid,
-                        DS.number_of_orders,
-                        DS.latest_order_date
+            #             custom.customer_uid,
+            #             custom.customer_first_name,
+            #             custom.customer_last_name,
+            #             custom.customer_email,
+            #             custom.customer_phone_num,
+            #             custom.customer_address,
+            #             custom.customer_unit,
+            #             custom.customer_city,
+            #             custom.customer_zip,
+            #             custom.cust_notification_approval,
+            #             custom.SMS_freq_preference,
+            #             custom.SMS_last_notification,
+            #             custom.cust_guid_device_id_notification,
+            #             DS.business_name,
+            #             DS.price,
+            #             DS.itm_business_uid,
+            #             DS.number_of_orders,
+            #             DS.latest_order_date
                     
-                    FROM
-                    (SELECT  
-                    cust.customer_uid AS c_uid,
-                    cust.customer_first_name,
-                    cust.customer_last_name,
-                    cust.customer_email,
-                    cust.customer_phone_num,
-                    cust.customer_address,
-                    cust.customer_unit,
-                    cust.customer_city,
-                    cust.customer_zip,
-                    cust.customer_created_at,
-                    cust.cust_notification_approval,
-                    cust.SMS_freq_preference,
-                    cust.SMS_last_notification,
-                    cust.cust_guid_device_id_notification,
-                    pay.pay_purchase_uid,
-                    (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
-                    deconstruct.*,
-                    count(DISTINCT pay_purchase_uid) AS number_of_orders, 
-                    max(pay.payment_time_stamp) AS latest_order_date
-                                FROM sf.purchases , 
-                                     JSON_TABLE(items, '$[*]' COLUMNS (
-                                                img VARCHAR(255)  PATH '$.img',
-                                                description VARCHAR(255)  PATH '$.description',
-                                                qty VARCHAR(255)  PATH '$.qty',
-                                                name VARCHAR(255)  PATH '$.name',
-                                                price VARCHAR(255)  PATH '$.price',
-                                                item_uid VARCHAR(255)  PATH '$.item_uid',
-                                                itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
-                                     ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
-                    WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid AND purchase_status = 'ACTIVE'
-                    GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
-					RIGHT JOIN sf.customers AS custom
-                    ON DS.c_uid = custom.customer_uid 
-                    WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON);
-                    """
+            #         FROM
+            #         (SELECT  
+            #         cust.customer_uid AS c_uid,
+            #         cust.customer_first_name,
+            #         cust.customer_last_name,
+            #         cust.customer_email,
+            #         cust.customer_phone_num,
+            #         cust.customer_address,
+            #         cust.customer_unit,
+            #         cust.customer_city,
+            #         cust.customer_zip,
+            #         cust.customer_created_at,
+            #         cust.cust_notification_approval,
+            #         cust.SMS_freq_preference,
+            #         cust.SMS_last_notification,
+            #         cust.cust_guid_device_id_notification,
+            #         pay.pay_purchase_uid,
+            #         (SELECT business_name FROM sf.businesses AS bus WHERE bus.business_uid = deconstruct.itm_business_uid) AS business_name,
+            #         deconstruct.*,
+            #         count(DISTINCT pay_purchase_uid) AS number_of_orders, 
+            #         max(pay.payment_time_stamp) AS latest_order_date
+            #                     FROM sf.purchases , 
+            #                          JSON_TABLE(items, '$[*]' COLUMNS (
+            #                                     img VARCHAR(255)  PATH '$.img',
+            #                                     description VARCHAR(255)  PATH '$.description',
+            #                                     qty VARCHAR(255)  PATH '$.qty',
+            #                                     name VARCHAR(255)  PATH '$.name',
+            #                                     price VARCHAR(255)  PATH '$.price',
+            #                                     item_uid VARCHAR(255)  PATH '$.item_uid',
+            #                                     itm_business_uid VARCHAR(255) PATH '$.itm_business_uid')
+            #                          ) AS deconstruct, sf.payments AS pay, sf.customers AS cust
+            #         WHERE purchase_uid = pay.pay_purchase_uid AND pur_customer_uid = cust.customer_uid AND purchase_status = 'ACTIVE'
+            #         GROUP BY deconstruct.itm_business_uid, pur_customer_uid) AS DS
+			# 		RIGHT JOIN sf.customers AS custom
+            #         ON DS.c_uid = custom.customer_uid 
+            #         WHERE custom.cust_guid_device_id_notification <> CAST('null' AS JSON);
+            #         """
+            
+            query = """
+                    SELECT outcus.customer_uid,outcus.customer_first_name,outcus.customer_last_name,outcus.customer_phone_num,outcus.customer_email,
+                    outcus.customer_address,outcus.customer_unit,outcus.customer_city,outcus.customer_state,outcus.customer_zip,
+                    if(outcus.cust_guid_device_id_notification <> CAST('null' AS JSON),'YES','NO') AS has_guid,
+                    outcus.cust_guid_device_id_notification,
+                    IFNULL(number_of_orders_in,0) AS number_of_orders,
+                    incus.* 
+                    FROM sf.customers AS outcus
+                    LEFT JOIN
+                    (SELECT cus.customer_uid AS uid,
+                    count(pur.purchase_uid) AS number_of_orders_in, max(pay.start_delivery_date) AS latest_order_date_in
+                    FROM sf.customers AS cus, sf.payments AS pay, sf.purchases AS pur
+                    WHERE cus.customer_uid = pur.pur_customer_uid AND pay.pay_purchase_uid = pur.purchase_uid
+                    AND pur.purchase_status = 'ACTIVE'
+                    GROUP BY cus.customer_uid) AS incus
+                    ON outcus.customer_uid = incus.uid;
+                     """
             items = execute(query, 'get', conn)
 
             if items['code'] == 280:
@@ -7874,11 +7990,14 @@ class Send_Twilio_SMS(Resource):
         ##print(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
         for destination in numbers:
-            client.messages.create(
-                body = message,
-                from_= '+19254815757',
-                to = "+1" + destination
-            )
+            try:
+                client.messages.create(
+                    body = message,
+                    from_= '+19254815757',
+                    to = "+1" + destination
+                )
+            except:
+                continue
         items['code'] = 200
         items['Message'] = 'SMS sent successfully to all recipients'
         return items
@@ -8576,6 +8695,7 @@ api.add_resource(addItems_Prime, '/api/v2/addItems_Prime/<string:action>')
 api.add_resource(all_businesses, '/api/v2/all_businesses')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
 api.add_resource(business_image_upload, '/api/v2/business_image_upload')
+api.add_resource(new_business_image_upload, '/api/v2/new_business_image_upload')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
 api.add_resource(orders_info, '/api/v2/orders_info')
 api.add_resource(orderSummary, '/api/v2/orderSummary')
@@ -8621,6 +8741,7 @@ api.add_resource(update_farmer_item_admin, '/api/v2/update_farmer_item_admin/<st
 api.add_resource(new_customer_info, '/api/v2/new_customer_info')
 api.add_resource(farmer_packing_data, '/api/v2/farmer_packing_data/<string:uid>,<string:delivery_date>,<string:action>')
 api.add_resource(get_distinct_column_vals, '/api/v2/get_distinct_column_vals')
+api.add_resource(sweepstakes, '/api/v2/sweepstakes/<string:action>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
