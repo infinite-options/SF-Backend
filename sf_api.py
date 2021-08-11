@@ -2561,7 +2561,7 @@ class brandAmbassador(Resource):
             elif action == 'discount_checker':
 
                 if not items_amb['result']:
-                    return {"message":'No code exists',"code":501,"discount":"","uids":""}
+                    return {"message":'No such code exists',"code":501,"discount":"","uids":""}
                 
                 # check for SFGiftCard
 
@@ -4403,6 +4403,7 @@ class business_details_update(Resource):
                     if item['code'] == 281:
                         item['code'] = 200
                         item['message'] = 'Business info created'
+                        item['uid'] = businessUID
                     else:
                         item['message'] = 'check sql query'
                         item['code'] = 490
@@ -4480,6 +4481,78 @@ class business_details_update(Resource):
                 disconnect(conn)
                 #print('process completed')
 
+class add_business_to_zone(Resource):
+
+    def post(self):
+
+        try:
+            conn = connect()
+            data = request.get_json(force=True)
+
+            zone_uids = data['zone_uid']
+            bus_uid = data['bus_uid']
+            query = """
+                    SELECT zone_uid,z_businesses FROM sf.zones;
+                    """
+            items = execute(query, 'get', conn)
+
+            if items['code'] != 280:
+                items['message'] = 'check sql query'
+                return items
+            for arr_bus in items['result']:
+                arr_zone = arr_bus['zone_uid']
+                arr = json.loads(arr_bus['z_businesses'])
+
+                # add business to zone
+                if arr_zone in zone_uids:
+                    # if business already there then continue
+                    if bus_uid in arr:
+                        print("in IF continue")
+                        continue
+                    else:
+                        arr.append(bus_uid)
+                        arr = str(arr)
+                        arr  = "'" + arr.replace("'", "\"") + "'"
+
+                        query_insert = """
+                                        UPDATE sf.zones
+                                        SET z_businesses = """ + arr + """
+                                        WHERE zone_uid = \'""" + arr_zone + """\';
+                                        """
+                        print("in IF")
+                        print(query_insert)
+                        items = execute(query_insert,'post',conn)
+                
+                # if zone is not passed
+                else:
+                    # if business in this zone then remove it
+                    if bus_uid in arr:
+                        try:
+                            arr.remove(bus_uid)
+                            arr = str(arr)
+                            arr  = "'" + arr.replace("'", "\"") + "'"
+
+                            query_insert = """
+                                            UPDATE sf.zones
+                                            SET z_businesses = """ + arr + """
+                                            WHERE zone_uid = \'""" + arr_zone + """\';
+                                            """
+                            print("in else")
+                            print(query_insert)
+                            items = execute(query_insert,'post',conn)
+                        except:
+                            continue
+                    else:
+                        print("in else continue")
+                        continue
+                
+            return {"code":200,"message":"Zones has been updated"}   
+            
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 class business_image_upload(Resource):
 
     def post(self):
@@ -4523,7 +4596,6 @@ class new_business_image_upload(Resource):
                 raise BadRequest('Request failed, please try again later.')
         finally:
             print('process completed')
-
 
 class orders_by_farm(Resource):
 
@@ -8694,6 +8766,7 @@ api.add_resource(calculateOrderAmount_Prime, '/api/v2/calculateOrderAmount')
 api.add_resource(addItems_Prime, '/api/v2/addItems_Prime/<string:action>')
 api.add_resource(all_businesses, '/api/v2/all_businesses')
 api.add_resource(business_details_update, '/api/v2/business_details_update/<string:action>')
+api.add_resource(add_business_to_zone, '/api/v2/add_business_to_zone')
 api.add_resource(business_image_upload, '/api/v2/business_image_upload')
 api.add_resource(new_business_image_upload, '/api/v2/new_business_image_upload')
 api.add_resource(orders_by_farm, '/api/v2/orders_by_farm')
