@@ -2991,7 +2991,9 @@ class ProduceByLocation_Prime(Resource):
                                     z_biz_id VARCHAR(255) PATH '$')
                                                  ) as zjt) as rjzjt
                     ON b.business_uid = rjzjt.z_biz_id
-                    WHERE zone IN """ + str(tuple(zones)) + """ AND zone_status = 'ACTIVE';
+                    WHERE zone IN """ + str(tuple(zones)) + """ 
+                    AND zone_status = 'ACTIVE'
+                    AND b.business_status = 'ACTIVE';
                     """
             items = execute(query, 'get', conn)
 
@@ -4358,9 +4360,16 @@ class business_details_update(Resource):
                     query = ["call sf.new_business_uid();"]
                     businessID = execute(query[0], 'get', conn)
                     businessUID = businessID['result'][0]['new_id']
+
+                    tmp_data = {}
+
+                    for key,vals in data.items():
+                        print(vals)
+                        if "'" in vals:
+                            vals = vals.replace("'","\\'")
+                        tmp_data[key] = vals
                     
-                    
-                    
+                    data = tmp_data
                     query = """
                                INSERT INTO sf.businesses
                                SET 
@@ -4423,6 +4432,15 @@ class business_details_update(Resource):
                     business_delivery_hours = str(data['business_delivery_hours'])
                     business_delivery_hours = "'" + business_delivery_hours.replace("'", "\"") + "'"
                     #print('OUT')
+                    tmp_data = {}
+
+                    for key,vals in data.items():
+                        print(vals)
+                        if "'" in vals:
+                            vals = vals.replace("'","\\'")
+                        tmp_data[key] = vals
+                    
+                    data = tmp_data
                     query = """
                                UPDATE sf.businesses
                                SET 
@@ -7283,7 +7301,7 @@ class order_summary_page(Resource):
             all_bus = str(tuple(list(all_bus)))
 
             query ="""
-                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
+                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit, SUM(qty*business_price) AS total_cp, 
                         (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ','),',', COUNT(business_name))
                             FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid AND item_status = 'Active' AND business_uid IN """ + all_bus + """) AS farms
                     FROM sf.purchases, sf.payments, sf.businesses,
