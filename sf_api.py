@@ -48,6 +48,9 @@ from werkzeug.exceptions import BadRequest, NotFound
 from werkzeug.datastructures import ImmutableMultiDict
 from werkzeug.security import generate_password_hash, check_password_hash
 
+from flask_httpauth import HTTPBasicAuth
+auth = HTTPBasicAuth()
+
 # Twilio settings
 from twilio.rest import Client
 
@@ -192,6 +195,20 @@ getNow = lambda: datetime.strftime(datetime.now(), "%Y-%m-%d %H:%M:%S")
 isDebug = False
 NOTIFICATION_HUB_KEY = os.environ.get('NOTIFICATION_HUB_KEY')
 NOTIFICATION_HUB_NAME = os.environ.get('NOTIFICATION_HUB_NAME')
+
+
+#new httpAuth
+user = 'parva.shah808@gmail.com'
+pw = 'parva.shah808@gmail.com'
+users = {
+    user: generate_password_hash(pw)
+}
+
+@auth.verify_password
+def verify_password(username, password):
+    if username in users:
+        return check_password_hash(users.get(username), password)
+    return False
 
 # Connect to MySQL database (API v2)
 def connect():
@@ -1503,7 +1520,9 @@ class createAccountGuestToCustomer(Resource):
         finally:
             disconnect(conn)
 
+
 class email_info(Resource):
+    @auth.login_required
     def get(self, email):
         try:
             conn = connect()
@@ -2544,7 +2563,7 @@ class brandAmbassador(Resource):
                 query = """
                         INSERT INTO sf.coupons 
                         (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
-                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '2', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
+                        VALUES ( \'""" + couponID + """\', 'SFAmbassador', 'TRUE', '0', '10', '0', \'""" + exp_date + """\', '1', 'SFAmbassador', '0', 'F', \'""" + code + """\', 'null', '10', 'SFAmbassador');
                         """
                 #print(query)
                 items = execute(query, 'post', conn)
@@ -2647,7 +2666,7 @@ class brandAmbassador(Resource):
                     query = """
                     INSERT INTO sf.coupons 
                     (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
-                    VALUES ( \'""" + couponID + """\', 'SFReferral', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + cust_email + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFReferral');
+                    VALUES ( \'""" + couponID + """\', 'SFReferral', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '1', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + cust_email + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFReferral');
                     """
                     items = execute(query, 'post', conn)
                     if items['code'] != 281:
@@ -2705,7 +2724,7 @@ class brandAmbassador(Resource):
                         query = """
                         INSERT INTO sf.coupons 
                         (coupon_uid, coupon_id, valid, discount_percent, discount_amount, discount_shipping, expire_date, limits, notes, num_used, recurring, email_id, cup_business_uid, threshold, coupon_title) 
-                        VALUES ( \'""" + couponID + """\', 'SFDiscount', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '2', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + info + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFDiscount');
+                        VALUES ( \'""" + couponID + """\', 'SFDiscount', \'""" + final_res['valid'] + """\', \'""" + str(final_res['discount_percent']) + """\', \'""" + str(final_res['discount_amount']) + """\', \'""" + str(final_res['discount_shipping']) + """\', \'""" + exp_date + """\', '1', \'""" + code + """\', '0', \'""" + final_res['recurring'] + """\', \'""" + info + """\', \'""" + final_res['cup_business_uid'] + """\', \'""" + str(final_res['threshold']) + """\', 'SFDiscount');
                         """
                         
                         items = execute(query, 'post', conn)
@@ -3304,6 +3323,19 @@ class available_Coupons(Resource):
             items = execute(query, 'get', conn)
             items['message'] = 'Coupons sent successfully'
             items['code'] = 200
+
+            query_dropdown_valid = """
+                                select distinct valid
+                                from sf.coupons;
+                            """
+            items['valid'] = [vals['valid'] for vals in execute(query_dropdown_valid,'get',conn)['result']]
+
+            query_dropdown_id = """
+                                select distinct coupon_id
+                                from sf.coupons;
+                            """
+            items['coupon_id'] = [vals['coupon_id'] for vals in execute(query_dropdown_id,'get',conn)['result']]
+            
             return items
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -3325,6 +3357,18 @@ class available_Coupons_temp(Resource):
             items = execute(query, 'get', conn)
             items['message'] = 'Coupons sent successfully'
             items['code'] = 200
+
+            query_dropdown_valid = """
+                                select distinct valid
+                                from sf.coupons;
+                            """
+            items['valid'] = [vals['valid'] for vals in execute(query_dropdown_valid,'get',conn)['result']]
+
+            query_dropdown_id = """
+                                select distinct coupon_id
+                                from sf.coupons;
+                            """
+            items['coupon_id'] = [vals['coupon_id'] for vals in execute(query_dropdown_id,'get',conn)['result']]
             return items
         except:
             raise BadRequest('Request failed, please try again later.')
@@ -7301,7 +7345,7 @@ class order_summary_page(Resource):
             all_bus = str(tuple(list(all_bus)))
 
             query ="""
-                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit, SUM(qty*business_price) AS total_cp, 
+                    SELECT  item_uid,name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit, SUM(qty*business_price) AS total_cp, 
                         (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ','),',', COUNT(business_name))
                             FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid AND item_status = 'Active' AND business_uid IN """ + all_bus + """) AS farms
                     FROM sf.purchases, sf.payments, sf.businesses,
@@ -7319,7 +7363,7 @@ class order_summary_page(Resource):
                     AND purchase_status = 'ACTIVE'
                     AND start_delivery_date LIKE \'""" + delivery_date + "%"+"""\'
                     AND business_uid = itm_business_uid
-                    GROUP BY name
+                    GROUP BY item_uid
                     Order BY name;
                     """
             items = execute(query,'get',conn)
@@ -7356,7 +7400,7 @@ class farmer_order_summary_page(Resource):
             all_bus = str(tuple(list(all_bus)))
 
             query ="""
-                    SELECT  name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*business_price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
+                    SELECT  item_uid,name,img,unit,business_name,business_price,price,(price-business_price) AS profit, SUM(qty) AS quantity, SUM(qty*business_price) AS total_revenue, SUM(qty*(price-business_price)) AS total_profit,
                         (SELECT CONCAT(GROUP_CONCAT(business_name ORDER BY business_name ASC SEPARATOR ','),',', COUNT(business_name))
                             FROM sf.businesses, sf.supply WHERE sup_item_uid = deconstruct.item_uid AND itm_business_uid = business_uid AND item_status = 'Active' AND business_uid IN """ + all_bus + """) AS farms
                     FROM sf.purchases, sf.payments, sf.businesses,
@@ -7375,7 +7419,7 @@ class farmer_order_summary_page(Resource):
                     AND start_delivery_date LIKE \'""" + delivery_date + "%"+"""\'
                     AND business_uid = itm_business_uid
                     AND business_uid= \'""" + business_uid + """\'
-                    GROUP BY name
+                    GROUP BY item_uid
                     Order BY name;
                     """
             items = execute(query,'get',conn)
@@ -7513,7 +7557,7 @@ class total_revenue_profit(Resource):
                     ) AS deconstruct
                     WHERE purchase_uid = pay_purchase_id
                     AND purchase_status = 'ACTIVE'
-                    GROUP BY name) AS subquery;
+                    GROUP BY deconstruct.item_uid) AS subquery;
 
                     """
             return execute(query, 'get', conn)
@@ -7869,6 +7913,32 @@ class sweepstakes(Resource):
         finally:
             disconnect(conn)
 
+class change_delivery_date(Resource):
+    def get(self,delivery_date,payment_uid):
+        try:
+            conn = connect()
+            query = """
+                    UPDATE sf.payments SET start_delivery_date = \'""" + delivery_date + """\' WHERE (payment_uid = \'""" + payment_uid + """\');
+                    """
+            return execute(query,'post',conn)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
+class rate_order(Resource):
+    def get(self,rating,purchase_uid):
+        try:
+            conn = connect()
+            query = """
+                    UPDATE sf.purchases SET feedback_rating = \'""" + rating + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                    """
+            return execute(query,'post',conn)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
+
 
 
 
@@ -8090,7 +8160,7 @@ class Send_Twilio_SMS(Resource):
                 continue
         items['code'] = 200
         items['Message'] = 'SMS sent successfully to all recipients'
-        return items
+        return {'code':200,'Message':'SMS sent successfully to all recipients'}
 
 class Send_Notification(Resource):
 
@@ -8183,7 +8253,7 @@ class Send_Notification(Resource):
             }
             hub.send_gcm_notification(fcm_payload, tags = tag)
 
-        return 200
+        return {'code':200,'Message':'Notifications sent successfully to all recipients'}
 
 class Get_Registrations_From_Tag(Resource):
     def get(self, tag):
@@ -8833,6 +8903,8 @@ api.add_resource(new_customer_info, '/api/v2/new_customer_info')
 api.add_resource(farmer_packing_data, '/api/v2/farmer_packing_data/<string:uid>,<string:delivery_date>,<string:action>')
 api.add_resource(get_distinct_column_vals, '/api/v2/get_distinct_column_vals')
 api.add_resource(sweepstakes, '/api/v2/sweepstakes/<string:action>')
+api.add_resource(change_delivery_date, '/api/v2/change_delivery_date/<string:delivery_date>,<string:payment_uid>')
+api.add_resource(rate_order, '/api/v2/rate_order/<string:rating>,<string:purchase_uid>')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
