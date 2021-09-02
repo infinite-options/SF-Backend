@@ -3093,6 +3093,14 @@ class ProduceByLocation_Prime(Resource):
 
             result = [i for j, i in enumerate(result) if j not in rm_idx]
             items['result'] = result
+
+            # remove :SF or anything from produce name
+            for i,vals in enumerate(items['result']):
+                if ':' in vals['item_name']:
+                    items['result'][i]['item_name'] = vals['item_name'].split(':')[0]
+
+
+
             item_type = set()
             
             for vals in items['result']:
