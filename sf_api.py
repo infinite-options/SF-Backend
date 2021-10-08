@@ -3458,6 +3458,15 @@ class purchase_Data_SF(Resource):
         try:
             conn = connect()
             data = request.get_json(force=True)
+            tmp_data = {}
+
+            for key,vals in data.items():
+                print(vals)
+                if "'" in vals:
+                    vals = vals.replace("'","\\'")
+                tmp_data[key] = vals
+            
+            data = tmp_data
 
             # Purchases start here
 
@@ -5633,6 +5642,22 @@ class update_zones(Resource):
                 query = """
                         SELECT * FROM sf.zones;
                         """
+
+                items = execute(query, 'get', conn)
+                if items['code'] != 280:
+                    items['message'] = 'check sql query for get request'
+                return items
+            
+            elif action == 'get_admin':
+                category = data['category']
+                if category == 'North': 
+                    query = """
+                            SELECT * FROM sf.zones WHERE RT_lat >  37.5;
+                            """
+                else:
+                    query = """
+                            SELECT * FROM sf.zones WHERE RT_lat < 37.5  ;
+                            """
 
                 items = execute(query, 'get', conn)
                 if items['code'] != 280:
@@ -7935,11 +7960,16 @@ class change_delivery_date(Resource):
             disconnect(conn)
 
 class rate_order(Resource):
-    def get(self,rating,purchase_uid):
+    def post(self):
         try:
             conn = connect()
+            data = request.get_json(force=True)
             query = """
-                    UPDATE sf.purchases SET feedback_rating = \'""" + rating + """\' WHERE (purchase_uid = \'""" + purchase_uid + """\');
+                    UPDATE sf.purchases
+                    SET
+                    feedback_rating = \'""" + data['rating'] + """\',
+                    feedback_notes = \'""" + data['comment'] + """\'
+                    WHERE (purchase_uid = \'""" + data['purchase_uid'] + """\');
                     """
             return execute(query,'post',conn)
         except:
@@ -7947,6 +7977,18 @@ class rate_order(Resource):
         finally:
             disconnect(conn)
 
+class farm_market_address(Resource):
+    def get(self):
+        try:
+            conn = connect()
+            query = """
+                    SELECT * FROM sf.businesses WHERE business_type = 'Farmers Market';
+                    """
+            return execute(query,'get',conn)
+        except:
+            raise BadRequest('Request failed, please try again later.')
+        finally:
+            disconnect(conn)
 
 
 
@@ -8912,7 +8954,8 @@ api.add_resource(farmer_packing_data, '/api/v2/farmer_packing_data/<string:uid>,
 api.add_resource(get_distinct_column_vals, '/api/v2/get_distinct_column_vals')
 api.add_resource(sweepstakes, '/api/v2/sweepstakes/<string:action>')
 api.add_resource(change_delivery_date, '/api/v2/change_delivery_date/<string:delivery_date>,<string:payment_uid>')
-api.add_resource(rate_order, '/api/v2/rate_order/<string:rating>,<string:purchase_uid>')
+api.add_resource(rate_order, '/api/v2/rate_order')
+api.add_resource(farm_market_address, '/api/v2/farm_market_address')
 # Notification Endpoints
 
 api.add_resource(customer_info_business, '/api/v2/customer_info_business')
@@ -8933,6 +8976,8 @@ api.add_resource(try_catch_storage, '/api/v2/try_catch_storage')
 api.add_resource(alert_message, '/api/v2/alert_message')
 api.add_resource(version_details, '/api/v2/version_details')
 api.add_resource(test_html, '/api/v2/test_html')
+
+
 
 #Create_or_Update_Registration_iOS
 #Update_Registration_With_GUID_Android
