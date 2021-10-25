@@ -3530,6 +3530,8 @@ class purchase_Data_SF(Resource):
                                 delivery_latitude = \'""" + delivery_latitude + """\',
                                 delivery_longitude = \'""" + delivery_longitude + """\',
                                 purchase_notes = \'""" + purchase_notes + """\',
+                                feedback_rating = '-1',
+                                feedback_notes = '',
                                 delivery_status = \'""" + delivery_status + """\';
                             """
             items = execute(query_insert, 'post', conn)
@@ -4014,6 +4016,15 @@ class history(Resource):
                     items['result'][i]['coupon_id'] = ''
                     items['result'][i]['notes'] = ''
             '''
+
+            print(items)
+
+            for i,val in enumerate(items['result']):
+                if val['feedback_rating'][0] == '[':
+                    items['result'][i]['feedback_rating'] = int(val['feedback_rating'][1])
+                else:
+                    items['result'][i]['feedback_rating'] = -1
+
 
             items['message'] = 'History Loaded successful'
             items['code'] = 200
