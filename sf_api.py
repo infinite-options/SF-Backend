@@ -3321,12 +3321,19 @@ class available_Coupons(Resource):
             if email == 'guest':
                 email = ''
             
-            query = """
-                    SELECT *
-                    FROM sf.coupons
-                    WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > num_used AND expire_date> CURDATE();;
-                    """
-            
+            # query = """
+            #         SELECT *
+            #         FROM sf.coupons
+            #         WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > num_used AND expire_date> CURDATE();;
+            #         """
+
+            query = """            
+                SELECT *
+                FROM sf.coupons
+                WHERE (email_id = \'""" + email + """\' OR email_id = '') AND limits > num_used AND expire_date> CURDATE() AND 
+                    IF ((SELECT COUNT(purchase_uid) AS orders FROM sf.purchases
+                         WHERE delivery_email = \'""" + email + """\') > 0,coupon_uid != '600-000265',limits > num_used);
+            """
                 
             items = execute(query, 'get', conn)
             items['message'] = 'Coupons sent successfully'
