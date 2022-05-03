@@ -1832,14 +1832,14 @@ class AppleLogin (Resource):
             conn = connect()
             token = request.form.get('id_token')
             access_token = request.form.get('code')
-            #print(token)
+            print(token)
             if token:
-                #print('INN')
+                print('INN')
                 data = jwt.decode(token, verify=False)
-                #print('data-----', data)
+                print('data-----', data)
                 email = data.get('email')
 
-                #print(data, email)
+                print(data, email)
                 if email is not None:
                     sub = data['sub']
                     query = """
@@ -1857,7 +1857,7 @@ class AppleLogin (Resource):
                     WHERE social_id = \'""" + sub + """\';
                     """
                     items = execute(query, 'get', conn)
-                    #print(items)
+                    print(items)
 
                     if items['code'] != 280:
                         items['message'] = "Internal error"
@@ -1868,23 +1868,23 @@ class AppleLogin (Resource):
 
 
                     if not items['result']:
-                        #print('New customer')
+                        print('New customer')
                         items['message'] = "Social_id doesn't exists Please go to the signup page"
                         get_user_id_query = "CALL new_customer_uid();"
                         NewUserIDresponse = execute(get_user_id_query, 'get', conn)
 
                         if NewUserIDresponse['code'] == 490:
                             string = " Cannot get new User id. "
-                            #print("*" * (len(string) + 10))
-                            #print(string.center(len(string) + 10, "*"))
-                            #print("*" * (len(string) + 10))
+                            print("*" * (len(string) + 10))
+                            print(string.center(len(string) + 10, "*"))
+                            print("*" * (len(string) + 10))
                             response['message'] = "Internal Server Error."
                             response['code'] = 500
                             return response
 
                         NewUserID = NewUserIDresponse['result'][0]['new_id']
                         user_social_signup = 'APPLE'
-                        #print('NewUserID', NewUserID)
+                        print('NewUserID', NewUserID)
 
 
                         customer_insert_query = """
@@ -1914,35 +1914,35 @@ class AppleLogin (Resource):
 
                         item = execute(customer_insert_query, 'post', conn)
 
-                        #print('INSERT')
+                        print('INSERT')
 
                         if item['code'] != 281:
                             item['message'] = 'Check insert sql query'
                             return item
-                        #print('successful redirect to signup')
+                        print('successful redirect to signup')
                         return redirect("https://servingfresh.me/socialsignup?id=" + NewUserID)
 
 
                     # Existing customer
 
-                    #print('existing-------')
-                    #print(items['result'][0]['user_social_media'])
-                    #print(items['result'][0]['social_id'])
+                    print('existing-------')
+                    print(items['result'][0]['user_social_media'])
+                    print(items['result'][0]['social_id'])
 
                     if items['result'][0]['user_social_media'] != "APPLE":
-                        #print('1-----')
+                        print('1-----')
                         items['message'] = "Wrong social media used for signup. Use \'" + items['result'][0]['user_social_media'] + "\'."
                         items['code'] = 400
                         return redirect("https://servingfresh.me/?media=" + items['result'][0]['user_social_media'])
 
                     elif items['result'][0]['social_id'] != sub:
-                        #print('20-----')
+                        print('20-----')
                         items['message'] = "social_id mismatch"
                         items['code'] = 400
                         return redirect("https://servingfresh.me/")
 
                     else:
-                        #print('successful redirect to farms')
+                        print('successful redirect to farms')
                         return redirect("https://servingfresh.me/?id=" + items['result'][0]['customer_uid'])
 
 
@@ -1972,7 +1972,7 @@ class access_refresh_update(Resource):
             query = """
                     UPDATE sf.customers SET user_access_token = \'""" + data['access_token'] + """\', user_refresh_token = \'""" + data['refresh_token'] + """\', social_timestamp =  \'""" + data['social_timestamp'] + """\' WHERE (customer_uid = \'""" + data['uid'] + """\'); ;
                     """
-            #print(query)
+            # print(query)
             items = execute(query, 'post', conn)
             if items['code'] == 281:
                 items['message'] = 'Access and refresh token updated successfully'
